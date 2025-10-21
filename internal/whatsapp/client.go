@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"go.mau.fi/whatsmeow"
-	waProto "go.mau.fi/whatsmeow/binary/proto"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	waLog "go.mau.fi/whatsmeow/util/log"
@@ -103,7 +103,7 @@ func (c *Client) SendTextMessage(chatJID types.JID, text string) (types.MessageI
 		return "", fmt.Errorf("not connected to WhatsApp")
 	}
 
-	msg := &waProto.Message{
+	msg := &waE2E.Message{
 		Conversation: &text,
 	}
 
