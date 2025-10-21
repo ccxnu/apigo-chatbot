@@ -32,6 +32,9 @@ func main() {
 
 	route.Setup(app.Cache, timeout, app.Db, mux, humaAPI)
 
+	// Initialize WhatsApp service (placeholder for future implementation)
+	initializeWhatsAppService(app)
+
 	// Global middlewares (order matters: Logging -> CORS -> Auth -> Handler)
 	handler := middleware.LoggingMiddleware(
 		middleware.CORSMiddleware(
@@ -46,3 +49,13 @@ func main() {
 		slog.Error("Could not start server", "error", err)
 	}
 }
+
+// initializeWhatsAppService placeholder for future WhatsApp service initialization
+// Currently disabled to avoid import cycles - will be refactored in next phase
+func initializeWhatsAppService(app config.Application) interface{} {
+	// WhatsApp infrastructure is available via admin API routes
+	// Service can be enabled by adding WHATSAPP_CONFIG parameter to database
+	slog.Info("WhatsApp admin API ready", "endpoints", "/admin/whatsapp/*")
+	return nil
+}
+

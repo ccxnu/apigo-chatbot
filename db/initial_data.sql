@@ -158,6 +158,54 @@ begin
         values ('ERROR_CODES', 'ERR_DELETE_DOCUMENT', '{"message": "Error al eliminar el documento"}'::jsonb, 'Error deleting document');
     end if;
 
+    -- ERR_WHATSAPP_SESSION_NOT_FOUND
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_WHATSAPP_SESSION_NOT_FOUND') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_WHATSAPP_SESSION_NOT_FOUND', '{"message": "Sesión de WhatsApp no encontrada"}'::jsonb, 'WhatsApp session not found');
+    end if;
+
+    -- ERR_UPDATE_WHATSAPP_SESSION
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_UPDATE_WHATSAPP_SESSION') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_UPDATE_WHATSAPP_SESSION', '{"message": "Error al actualizar sesión de WhatsApp"}'::jsonb, 'Error updating WhatsApp session');
+    end if;
+
+    -- ERR_UPDATE_QR_CODE
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_UPDATE_QR_CODE') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_UPDATE_QR_CODE', '{"message": "Error al actualizar código QR"}'::jsonb, 'Error updating QR code');
+    end if;
+
+    -- ERR_CONVERSATION_NOT_FOUND
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_CONVERSATION_NOT_FOUND') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_CONVERSATION_NOT_FOUND', '{"message": "Conversación no encontrada"}'::jsonb, 'Conversation not found');
+    end if;
+
+    -- ERR_CREATE_CONVERSATION
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_CREATE_CONVERSATION') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_CREATE_CONVERSATION', '{"message": "Error al crear conversación"}'::jsonb, 'Error creating conversation');
+    end if;
+
+    -- ERR_LINK_USER_CONVERSATION
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_LINK_USER_CONVERSATION') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_LINK_USER_CONVERSATION', '{"message": "Error al vincular usuario a conversación"}'::jsonb, 'Error linking user to conversation');
+    end if;
+
+    -- ERR_CREATE_MESSAGE
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_CREATE_MESSAGE') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_CREATE_MESSAGE', '{"message": "Error al crear mensaje"}'::jsonb, 'Error creating message');
+    end if;
+
+    -- ERR_USER_NOT_FOUND
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_USER_NOT_FOUND') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_USER_NOT_FOUND', '{"message": "Usuario no encontrado"}'::jsonb, 'User not found');
+    end if;
+
     -- ERR_PERMISSION_DENIED
     if not exists (select 1 from cht_parameters where prm_code = 'ERR_PERMISSION_DENIED') then
         insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)

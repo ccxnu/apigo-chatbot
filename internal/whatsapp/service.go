@@ -1,0 +1,260 @@
+package whatsapp
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+
+	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/store"
+	"go.mau.fi/whatsmeow/types/events"
+
+	"api-chatbot/domain"
+)
+
+// Service manages WhatsApp client lifecycle and event handling
+type Service struct {
+	client     *Client
+	dispatcher *MessageDispatcher
+	sessionUC  domain.WhatsAppSessionUseCase
+	sessionName string
+}
+
+// NewService creates a new WhatsApp service
+func NewService(
+	deviceStore *store.Device,
+	sessionName string,
+	sessionUC domain.WhatsAppSessionUseCase,
+	handlers []MessageHandler,
+) (*Service, error) {
+	client, err := NewClient(deviceStore, sessionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create WhatsApp client: %w", err)
+	}
+
+	dispatcher := NewMessageDispatcher(client, handlers)
+
+	return &Service{
+		client:      client,
+		dispatcher:  dispatcher,
+		sessionUC:   sessionUC,
+		sessionName: sessionName,
+	}, nil
+}
+
+// Start initializes the WhatsApp connection and starts listening for events
+func (s *Service) Start(ctx context.Context) error {
+	// Register event handler
+	s.client.WAClient.AddEventHandler(s.handleEvent)
+
+	// Connect to WhatsApp
+	if err := s.client.WAClient.Connect(); err != nil {
+		return fmt.Errorf("failed to connect to WhatsApp: %w", err)
+	}
+
+	slog.Info("WhatsApp service started", "session", s.sessionName)
+	return nil
+}
+
+// Stop gracefully disconnects the WhatsApp client
+func (s *Service) Stop() {
+	if s.client != nil && s.client.WAClient != nil {
+		s.client.WAClient.Disconnect()
+		slog.Info("WhatsApp service stopped", "session", s.sessionName)
+	}
+}
+
+// GetQRChannel returns the channel for QR code events
+func (s *Service) GetQRChannel() <-chan string {
+	qrChan := make(chan string, 1)
+
+	s.client.WAClient.AddEventHandler(func(evt interface{}) {
+		if qrEvt, ok := evt.(*events.QR); ok {
+			qrChan <- qrEvt.Codes[0]
+		}
+	})
+
+	return qrChan
+}
+
+// handleEvent processes all WhatsApp events
+func (s *Service) handleEvent(evt interface{}) {
+	switch v := evt.(type) {
+	case *events.Message:
+		s.handleIncomingMessage(v)
+
+	case *events.QR:
+		s.handleQRCode(v)
+
+	case *events.Connected:
+		s.handleConnected()
+
+	case *events.Disconnected:
+		s.handleDisconnected()
+
+	case *events.PairSuccess:
+		s.handlePairSuccess(v)
+	}
+}
+
+// handleIncomingMessage processes incoming WhatsApp messages
+func (s *Service) handleIncomingMessage(evt *events.Message) {
+	ctx := context.Background()
+
+	// Convert whatsmeow event to domain message
+	msg := convertEventToMessage(evt)
+
+	// Dispatch to handlers
+	if err := s.dispatcher.Dispatch(ctx, msg); err != nil {
+		slog.Error("Failed to dispatch message",
+			"messageID", msg.MessageID,
+			"chatID", msg.ChatID,
+			"error", err,
+		)
+	}
+}
+
+// handleQRCode processes QR code events and updates database
+func (s *Service) handleQRCode(evt *events.QR) {
+	if len(evt.Codes) == 0 {
+		return
+	}
+
+	qrCode := evt.Codes[0]
+	slog.Info("QR code received", "session", s.sessionName)
+
+	// TODO: Update QR code in database
+	// This would require a new use case method like UpdateQRCode
+	ctx := context.Background()
+	params := domain.UpdateSessionStatusParams{
+		SessionName: s.sessionName,
+	}
+
+	_ = s.sessionUC.UpdateConnectionStatus(ctx, params)
+}
+
+// handleConnected processes connection success events
+func (s *Service) handleConnected() {
+	slog.Info("WhatsApp connected", "session", s.sessionName)
+
+	ctx := context.Background()
+
+	// Get device info
+	device := s.client.DeviceStore
+
+	connected := true
+	params := domain.UpdateSessionStatusParams{
+		SessionName: s.sessionName,
+		PhoneNumber: device.ID.User,
+		Connected:   connected,
+	}
+
+	result := s.sessionUC.UpdateConnectionStatus(ctx, params)
+	if !result.Success {
+		slog.Error("Failed to update connection status",
+			"session", s.sessionName,
+			"code", result.Code,
+		)
+	}
+}
+
+// handleDisconnected processes disconnection events
+func (s *Service) handleDisconnected() {
+	slog.Warn("WhatsApp disconnected", "session", s.sessionName)
+
+	ctx := context.Background()
+
+	connected := false
+	params := domain.UpdateSessionStatusParams{
+		SessionName: s.sessionName,
+		Connected:   connected,
+	}
+
+	result := s.sessionUC.UpdateConnectionStatus(ctx, params)
+	if !result.Success {
+		slog.Error("Failed to update disconnection status",
+			"session", s.sessionName,
+			"code", result.Code,
+		)
+	}
+}
+
+// handlePairSuccess processes successful pairing events
+func (s *Service) handlePairSuccess(evt *events.PairSuccess) {
+	slog.Info("WhatsApp pairing successful",
+		"session", s.sessionName,
+		"phone", evt.ID.User,
+		"platform", evt.Platform,
+	)
+
+	ctx := context.Background()
+
+	connected := true
+	platform := evt.Platform
+	params := domain.UpdateSessionStatusParams{
+		SessionName: s.sessionName,
+		PhoneNumber: evt.ID.User,
+		Platform:    platform,
+		Connected:   connected,
+	}
+
+	result := s.sessionUC.UpdateConnectionStatus(ctx, params)
+	if !result.Success {
+		slog.Error("Failed to update pairing status",
+			"session", s.sessionName,
+			"code", result.Code,
+		)
+	}
+}
+
+// convertEventToMessage converts whatsmeow event to domain IncomingMessage
+func convertEventToMessage(evt *events.Message) *domain.IncomingMessage {
+	msg := &domain.IncomingMessage{
+		MessageID:   evt.Info.ID,
+		ChatID:      evt.Info.Chat.String(),
+		From:        evt.Info.Sender.String(),
+		FromMe:      evt.Info.IsFromMe,
+		Timestamp:   evt.Info.Timestamp.Unix(),
+		IsGroup:     evt.Info.IsGroup,
+		MessageType: string(evt.Message.GetConversation()),
+	}
+
+	// Extract text content
+	if evt.Message.GetConversation() != "" {
+		msg.Body = evt.Message.GetConversation()
+		msg.MessageType = "text"
+	} else if ext := evt.Message.GetExtendedTextMessage(); ext != nil {
+		msg.Body = ext.GetText()
+		msg.MessageType = "text"
+
+		// Handle quoted messages
+		if quoted := ext.GetContextInfo().GetQuotedMessage(); quoted != nil {
+			msg.QuotedMessage = quoted.GetConversation()
+		}
+	}
+
+	// Extract group info
+	if evt.Info.IsGroup {
+		msg.GroupName = evt.Info.PushName
+	}
+
+	// Extract media (images, videos, documents, etc.)
+	if img := evt.Message.GetImageMessage(); img != nil {
+		msg.MessageType = "image"
+		msg.MediaURL = img.GetUrl()
+		msg.Body = img.GetCaption()
+	} else if vid := evt.Message.GetVideoMessage(); vid != nil {
+		msg.MessageType = "video"
+		msg.MediaURL = vid.GetUrl()
+		msg.Body = vid.GetCaption()
+	} else if doc := evt.Message.GetDocumentMessage(); doc != nil {
+		msg.MessageType = "document"
+		msg.MediaURL = doc.GetUrl()
+		msg.Body = doc.GetFileName()
+	} else if aud := evt.Message.GetAudioMessage(); aud != nil {
+		msg.MessageType = "audio"
+		msg.MediaURL = aud.GetUrl()
+	}
+
+	return msg
+}

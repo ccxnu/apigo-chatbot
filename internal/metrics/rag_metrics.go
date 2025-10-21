@@ -136,7 +136,7 @@ func (m *RAGMetrics) CalculateNDCG(chunks []RetrievedChunk) float64 {
 	copy(idealChunks, chunks)
 
 	// Sort by relevance (relevance first, then by similarity score)
-	for i := 0; i < len(idealChunks); i++ {
+	for i := range idealChunks {
 		for j := i + 1; j < len(idealChunks); j++ {
 			iScore := 0.0
 			if idealChunks[i].IsRelevant {

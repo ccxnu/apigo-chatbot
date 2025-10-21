@@ -26,6 +26,8 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	docRepo := repository.NewDocumentRepository(dataAccess)
 	chunkRepo := repository.NewChunkRepository(dataAccess)
 	statsRepo := repository.NewChunkStatisticsRepository(dataAccess)
+	sessionRepo := repository.NewWhatsAppSessionRepository(dataAccess)
+	convRepo := repository.NewConversationRepository(dataAccess)
 
 	// Initialize clients
 	httpClient := httpclient.NewHTTPClient(paramCache)
@@ -38,6 +40,8 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	docUseCase := usecase.NewDocumentUseCase(docRepo, paramCache, timeout)
 	chunkUseCase := usecase.NewChunkUseCase(chunkRepo, statsRepo, paramCache, embeddingService, timeout)
 	statsUseCase := usecase.NewChunkStatisticsUseCase(statsRepo, paramCache, timeout)
+	sessionUseCase := usecase.NewWhatsAppSessionUseCase(sessionRepo, paramCache, timeout)
+	convUseCase := usecase.NewConversationUseCase(convRepo, paramCache, timeout)
 
 	// Register all routes
 	// All routes are now registered via Huma which uses the ServeMux
@@ -50,4 +54,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	NewDocumentRouter(docUseCase, mux, humaAPI)
 	NewChunkRouter(chunkUseCase, mux, humaAPI)
 	NewChunkStatisticsRouter(statsUseCase, mux, humaAPI)
+
+	// WhatsApp admin routes
+	NewWhatsAppAdminRouter(sessionUseCase, convUseCase, mux, humaAPI)
 }
