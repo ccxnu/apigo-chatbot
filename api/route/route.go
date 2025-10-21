@@ -36,7 +36,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	// Initialize use cases
 	paramUseCase := usecase.NewParameterUseCase(paramRepo, paramCache, timeout)
 	docUseCase := usecase.NewDocumentUseCase(docRepo, paramCache, timeout)
-	chunkUseCase := usecase.NewChunkUseCase(chunkRepo, paramCache, embeddingService, timeout)
+	chunkUseCase := usecase.NewChunkUseCase(chunkRepo, statsRepo, paramCache, embeddingService, timeout)
 	statsUseCase := usecase.NewChunkStatisticsUseCase(statsRepo, paramCache, timeout)
 
 	// Register all routes

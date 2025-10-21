@@ -98,6 +98,66 @@ begin
         values ('ERROR_CODES', 'ERR_CHUNK_STATS_NOT_FOUND', '{"message": "Estadísticas del fragmento no encontradas"}'::jsonb, 'Chunk statistics not found');
     end if;
 
+    -- ERR_CREATE_CHUNK
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_CREATE_CHUNK') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_CREATE_CHUNK', '{"message": "Error al crear el fragmento de documento"}'::jsonb, 'Error creating chunk');
+    end if;
+
+    -- ERR_UPDATE_CHUNK_EMBEDDING
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_UPDATE_CHUNK_EMBEDDING') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_UPDATE_CHUNK_EMBEDDING', '{"message": "Error al actualizar el embedding del fragmento"}'::jsonb, 'Error updating chunk embedding');
+    end if;
+
+    -- ERR_DELETE_CHUNK
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_DELETE_CHUNK') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_DELETE_CHUNK', '{"message": "Error al eliminar el fragmento"}'::jsonb, 'Error deleting chunk');
+    end if;
+
+    -- ERR_BULK_CREATE_CHUNKS
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_BULK_CREATE_CHUNKS') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_BULK_CREATE_CHUNKS', '{"message": "Error al crear múltiples fragmentos"}'::jsonb, 'Error bulk creating chunks');
+    end if;
+
+    -- ERR_INCREMENT_CHUNK_USAGE
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_INCREMENT_CHUNK_USAGE') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_INCREMENT_CHUNK_USAGE', '{"message": "Error al incrementar el contador de uso del fragmento"}'::jsonb, 'Error incrementing chunk usage');
+    end if;
+
+    -- ERR_UPDATE_CHUNK_METRICS
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_UPDATE_CHUNK_METRICS') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_UPDATE_CHUNK_METRICS', '{"message": "Error al actualizar las métricas de calidad del fragmento"}'::jsonb, 'Error updating chunk quality metrics');
+    end if;
+
+    -- ERR_UPDATE_CHUNK_STALENESS
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_UPDATE_CHUNK_STALENESS') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_UPDATE_CHUNK_STALENESS', '{"message": "Error al actualizar la obsolescencia del fragmento"}'::jsonb, 'Error updating chunk staleness');
+    end if;
+
+    -- ERR_CREATE_DOCUMENT
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_CREATE_DOCUMENT') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_CREATE_DOCUMENT', '{"message": "Error al crear el documento"}'::jsonb, 'Error creating document');
+    end if;
+
+    -- ERR_UPDATE_DOCUMENT
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_UPDATE_DOCUMENT') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_UPDATE_DOCUMENT', '{"message": "Error al actualizar el documento"}'::jsonb, 'Error updating document');
+    end if;
+
+    -- ERR_DELETE_DOCUMENT
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_DELETE_DOCUMENT') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_DELETE_DOCUMENT', '{"message": "Error al eliminar el documento"}'::jsonb, 'Error deleting document');
+    end if;
+
     -- ERR_PERMISSION_DENIED
     if not exists (select 1 from cht_parameters where prm_code = 'ERR_PERMISSION_DENIED') then
         insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
@@ -300,7 +360,7 @@ begin
     -- =====================================================
     -- LLM Configuration
     -- =====================================================
-    if not exists (select 1 from cht_parameters where prm_code = 'LLM_CONFIG') then
+    if not exists (select 1 from cht_parameters where prm_code = 'GROK_API_KEY') then
         insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
         values (
             'LLM_API_CONFIGURATION',
