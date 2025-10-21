@@ -2,35 +2,27 @@ package handlers
 
 import (
 	"context"
+	"strings"
 
 	"api-chatbot/domain"
-	"api-chatbot/internal/whatsapp"
 )
 
 // CommandHandler handles bot commands like /help, /horarios, etc.
 type CommandHandler struct {
-	whatsapp.BaseHandler
-	filter *whatsapp.MessageFilter
+	priority int
 }
 
 // NewCommandHandler creates a new command handler
-func NewCommandHandler(
-	client *whatsapp.Client,
-	convUseCase domain.ConversationUseCase,
-) *CommandHandler {
+func NewCommandHandler(priority int) *CommandHandler {
 	return &CommandHandler{
-		BaseHandler: whatsapp.BaseHandler{
-			Client:      client,
-			ConvUseCase: convUseCase,
-		},
-		filter: whatsapp.NewMessageFilter(),
+		priority: priority,
 	}
 }
 
 // Match checks if message is a command
 func (h *CommandHandler) Match(ctx context.Context, msg *domain.IncomingMessage) bool {
 	// Skip own messages
-	if h.filter.IsFromMe(msg) {
+	if msg.FromMe {
 		return false
 	}
 
@@ -40,26 +32,26 @@ func (h *CommandHandler) Match(ctx context.Context, msg *domain.IncomingMessage)
 
 // Handle processes the command
 func (h *CommandHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) error {
-	switch {
-	case h.filter.IsCommand(msg, "help"):
+	cmd := strings.ToLower(strings.TrimPrefix(msg.Body, "/"))
+	cmd = strings.Fields(cmd)[0] // Get first word only
+
+	switch cmd {
+	case "help", "ayuda":
 		return h.handleHelp(ctx, msg)
-	case h.filter.IsCommand(msg, "horarios"):
+	case "horarios", "schedule":
 		return h.handleSchedules(ctx, msg)
-	case h.filter.IsCommand(msg, "commands"):
-	case h.filter.IsCommand(msg, "comandos"):
+	case "commands", "comandos":
 		return h.handleCommands(ctx, msg)
-	case h.filter.IsCommand(msg, "start"):
+	case "start", "inicio":
 		return h.handleStart(ctx, msg)
 	default:
 		return h.handleUnknownCommand(ctx, msg)
 	}
-
-	return nil
 }
 
 // Priority - commands have higher priority than RAG
 func (h *CommandHandler) Priority() int {
-	return 100 // High priority
+	return h.priority
 }
 
 // handleHelp shows help information

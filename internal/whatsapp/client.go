@@ -134,7 +134,7 @@ func (c *Client) Logout() error {
 		return fmt.Errorf("not logged in")
 	}
 
-	err := c.WAClient.Logout()
+	err := c.WAClient.Logout(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to logout: %w", err)
 	}

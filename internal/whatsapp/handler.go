@@ -22,15 +22,15 @@ type MessageHandler interface {
 // MessageDispatcher routes messages to appropriate handlers
 type MessageDispatcher struct {
 	handlers []MessageHandler
-	client   *Client
 }
 
 // NewMessageDispatcher creates a new message dispatcher
-func NewMessageDispatcher(client *Client) *MessageDispatcher {
-	return &MessageDispatcher{
-		handlers: make([]MessageHandler, 0),
-		client:   client,
+func NewMessageDispatcher(handlers []MessageHandler) *MessageDispatcher {
+	dispatcher := &MessageDispatcher{
+		handlers: handlers,
 	}
+	dispatcher.sortHandlers()
+	return dispatcher
 }
 
 // RegisterHandler adds a handler to the dispatcher

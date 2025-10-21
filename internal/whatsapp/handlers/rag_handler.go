@@ -6,57 +6,45 @@ import (
 	"strings"
 
 	"api-chatbot/domain"
-	"api-chatbot/internal/whatsapp"
 )
 
 // RAGHandler handles Q&A using the RAG system
 // Similar to your NestJS MessageHandler
 type RAGHandler struct {
-	whatsapp.BaseHandler
 	chunkUseCase domain.ChunkUseCase
-	filter       *whatsapp.MessageFilter
+	priority     int
 }
 
 // NewRAGHandler creates a new RAG handler
 func NewRAGHandler(
-	client *whatsapp.Client,
-	convUseCase domain.ConversationUseCase,
 	chunkUseCase domain.ChunkUseCase,
+	priority int,
 ) *RAGHandler {
 	return &RAGHandler{
-		BaseHandler: whatsapp.BaseHandler{
-			Client:      client,
-			ConvUseCase: convUseCase,
-		},
 		chunkUseCase: chunkUseCase,
-		filter:       whatsapp.NewMessageFilter(),
+		priority:     priority,
 	}
 }
 
 // Match determines if this handler should process the message
 func (h *RAGHandler) Match(ctx context.Context, msg *domain.IncomingMessage) bool {
-	// Skip commands
-	if h.filter.IsCommand(msg, "commands") {
-		return false
-	}
-	if h.filter.IsCommand(msg, "help") {
-		return false
-	}
-	if h.filter.IsCommand(msg, "horarios") {
+	// Skip commands (anything starting with /)
+	if len(msg.Body) > 0 && msg.Body[0] == '/' {
 		return false
 	}
 
 	// Skip own messages
-	if h.filter.IsFromMe(msg) {
+	if msg.FromMe {
 		return false
 	}
 
 	// Only process text messages with content
-	if !h.filter.IsTextMessage(msg) || !h.filter.HasBody(msg) {
-		return false
+	msgType := msg.MessageType
+	if msgType == "" {
+		msgType = "text"
 	}
 
-	return true
+	return msgType == "text" && len(msg.Body) > 0
 }
 
 // Handle processes the message using RAG
@@ -78,7 +66,8 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	}
 
 	// Build context from chunks
-	context := h.buildContext(result.Data)
+	contextStr := h.buildContext(result.Data)
+	_ = contextStr // Will be used when LLM is integrated
 
 	// TODO: Call LLM (Grok/OpenAI) to generate answer using the context
 	// For now, send the most relevant chunk
@@ -89,7 +78,7 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 
 // Priority returns the handler priority (lower than command handlers)
 func (h *RAGHandler) Priority() int {
-	return 10 // Default priority
+	return h.priority
 }
 
 // buildContext creates context string from retrieved chunks
@@ -130,26 +119,9 @@ func (h *RAGHandler) generateSimpleAnswer(chunks []domain.ChunkWithSimilarity) s
 	return answer
 }
 
-// sendMessage sends a text message to the chat
+// sendMessage is a placeholder - actual sending will be done by the service
 func (h *RAGHandler) sendMessage(chatID, message string) error {
-	// Parse chat JID
-	jid, err := h.parseJID(chatID)
-	if err != nil {
-		return fmt.Errorf("failed to parse chat ID: %w", err)
-	}
-
-	// Send message
-	_, err = h.Client.SendTextMessage(jid, message)
-	if err != nil {
-		return fmt.Errorf("failed to send message: %w", err)
-	}
-
+	// TODO: Actual message sending will be handled by the WhatsApp service
+	// For now, just log that we would send this message
 	return nil
-}
-
-// parseJID converts chat ID string to types.JID
-func (h *RAGHandler) parseJID(chatID string) (interface{}, error) {
-	// TODO: Implement proper JID parsing using whatsmeow types
-	// For now, return placeholder
-	return chatID, nil
 }

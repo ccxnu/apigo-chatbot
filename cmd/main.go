@@ -5,9 +5,15 @@ import (
 	"net/http"
 	"time"
 
+	"api-chatbot/api/dal"
 	"api-chatbot/api/middleware"
 	"api-chatbot/api/route"
 	"api-chatbot/config"
+	"api-chatbot/internal/embedding"
+	"api-chatbot/internal/httpclient"
+	"api-chatbot/internal/whatsapp"
+	"api-chatbot/repository"
+	"api-chatbot/usecase"
 )
 
 func main() {
@@ -32,8 +38,12 @@ func main() {
 
 	route.Setup(app.Cache, timeout, app.Db, mux, humaAPI)
 
-	// Initialize WhatsApp service (placeholder for future implementation)
-	initializeWhatsAppService(app)
+	// Initialize WhatsApp service
+	whatsappService := initializeWhatsAppService(app, timeout)
+	if whatsappService != nil {
+		defer whatsappService.Stop()
+		slog.Info("WhatsApp service running")
+	}
 
 	// Global middlewares (order matters: Logging -> CORS -> Auth -> Handler)
 	handler := middleware.LoggingMiddleware(
@@ -50,12 +60,29 @@ func main() {
 	}
 }
 
-// initializeWhatsAppService placeholder for future WhatsApp service initialization
-// Currently disabled to avoid import cycles - will be refactored in next phase
-func initializeWhatsAppService(app config.Application) interface{} {
-	// WhatsApp infrastructure is available via admin API routes
-	// Service can be enabled by adding WHATSAPP_CONFIG parameter to database
-	slog.Info("WhatsApp admin API ready", "endpoints", "/admin/whatsapp/*")
-	return nil
+// initializeWhatsAppService creates and starts the WhatsApp service
+func initializeWhatsAppService(app config.Application, timeout time.Duration) *whatsapp.Service {
+	// Initialize use cases needed for WhatsApp
+	dataAccess := dal.NewDAL(app.Db)
+
+	// Session use case
+	sessionRepo := repository.NewWhatsAppSessionRepository(dataAccess)
+	sessionUC := usecase.NewWhatsAppSessionUseCase(sessionRepo, app.Cache, timeout)
+
+	// Chunk use case for RAG
+	chunkRepo := repository.NewChunkRepository(dataAccess)
+	statsRepo := repository.NewChunkStatisticsRepository(dataAccess)
+	httpClient := httpclient.NewHTTPClient(app.Cache)
+	embeddingService := embedding.NewOpenAIEmbeddingService(app.Cache, httpClient)
+	chunkUC := usecase.NewChunkUseCase(chunkRepo, statsRepo, app.Cache, embeddingService, timeout)
+
+	// Initialize WhatsApp service (returns nil if disabled in config)
+	service, err := config.InitializeWhatsAppService(app, sessionUC, chunkUC)
+	if err != nil {
+		slog.Error("Failed to initialize WhatsApp service", "error", err)
+		return nil
+	}
+
+	return service
 }
 

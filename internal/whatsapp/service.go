@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types/events"
 
@@ -27,12 +26,18 @@ func NewService(
 	sessionUC domain.WhatsAppSessionUseCase,
 	handlers []MessageHandler,
 ) (*Service, error) {
-	client, err := NewClient(deviceStore, sessionName)
+	cfg := Config{
+		SessionName: sessionName,
+		DeviceStore: deviceStore,
+		LogLevel:    "INFO",
+	}
+
+	client, err := NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create WhatsApp client: %w", err)
 	}
 
-	dispatcher := NewMessageDispatcher(client, handlers)
+	dispatcher := NewMessageDispatcher(handlers)
 
 	return &Service{
 		client:      client,
@@ -120,7 +125,6 @@ func (s *Service) handleQRCode(evt *events.QR) {
 		return
 	}
 
-	qrCode := evt.Codes[0]
 	slog.Info("QR code received", "session", s.sessionName)
 
 	// TODO: Update QR code in database
@@ -241,19 +245,19 @@ func convertEventToMessage(evt *events.Message) *domain.IncomingMessage {
 	// Extract media (images, videos, documents, etc.)
 	if img := evt.Message.GetImageMessage(); img != nil {
 		msg.MessageType = "image"
-		msg.MediaURL = img.GetUrl()
+		msg.MediaURL = img.GetURL()
 		msg.Body = img.GetCaption()
 	} else if vid := evt.Message.GetVideoMessage(); vid != nil {
 		msg.MessageType = "video"
-		msg.MediaURL = vid.GetUrl()
+		msg.MediaURL = vid.GetURL()
 		msg.Body = vid.GetCaption()
 	} else if doc := evt.Message.GetDocumentMessage(); doc != nil {
 		msg.MessageType = "document"
-		msg.MediaURL = doc.GetUrl()
+		msg.MediaURL = doc.GetURL()
 		msg.Body = doc.GetFileName()
 	} else if aud := evt.Message.GetAudioMessage(); aud != nil {
 		msg.MessageType = "audio"
-		msg.MediaURL = aud.GetUrl()
+		msg.MediaURL = aud.GetURL()
 	}
 
 	return msg
