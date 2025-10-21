@@ -6,47 +6,38 @@ import (
 
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
-	"go.mau.fi/whatsmeow/store/sqlstore"
+	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
 	waLog "go.mau.fi/whatsmeow/util/log"
 )
 
 // Client wraps whatsmeow client for WhatsApp integration
 type Client struct {
-	WAClient  *whatsmeow.Client
-	Container *sqlstore.Container
-	SessionID string
+	WAClient    *whatsmeow.Client
+	DeviceStore *store.Device
+	SessionName string
 }
 
 // Config holds configuration for WhatsApp client
 type Config struct {
-	DBDialect string // "postgres" or "sqlite3"
-	DBAddress string // connection string
-	SessionID string // unique session identifier
-	LogLevel  string // "ERROR", "WARN", "INFO", "DEBUG"
+	SessionName  string        // unique session identifier
+	DeviceStore  *store.Device // whatsmeow device store
+	LogLevel     string        // "ERROR", "WARN", "INFO", "DEBUG"
 }
 
 // NewClient creates a new WhatsApp client
 func NewClient(cfg Config) (*Client, error) {
-	// Create database container for session storage
-	container, err := sqlstore.New(cfg.DBDialect, cfg.DBAddress, waLog.Noop)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create SQL store: %w", err)
-	}
-
-	// Get device store (creates if doesn't exist)
-	deviceStore, err := container.GetFirstDevice()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get device: %w", err)
+	if cfg.DeviceStore == nil {
+		return nil, fmt.Errorf("device store is required")
 	}
 
 	// Create whatsmeow client
-	waClient := whatsmeow.NewClient(deviceStore, waLog.Noop)
+	waClient := whatsmeow.NewClient(cfg.DeviceStore, waLog.Noop)
 
 	return &Client{
-		WAClient:  waClient,
-		Container: container,
-		SessionID: cfg.SessionID,
+		WAClient:    waClient,
+		DeviceStore: cfg.DeviceStore,
+		SessionName: cfg.SessionName,
 	}, nil
 }
 
