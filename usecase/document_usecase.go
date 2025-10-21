@@ -5,6 +5,7 @@ import (
 	"time"
 
 	d "api-chatbot/domain"
+	"api-chatbot/internal/logger"
 )
 
 type documentUseCase struct {
@@ -31,6 +32,11 @@ func (u *documentUseCase) GetAll(c context.Context, limit, offset int) d.Result[
 
 	docs, err := u.docRepo.GetAll(ctx, limit, offset)
 	if err != nil {
+		logger.LogError(ctx, "Failed to fetch all documents from database", err,
+			"operation", "GetAll",
+			"limit", limit,
+			"offset", offset,
+		)
 		return d.Error[[]d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
@@ -43,10 +49,18 @@ func (u *documentUseCase) GetByID(c context.Context, docID int) d.Result[*d.Docu
 
 	doc, err := u.docRepo.GetByID(ctx, docID)
 	if err != nil {
+		logger.LogError(ctx, "Failed to fetch document by ID from database", err,
+			"operation", "GetByID",
+			"docID", docID,
+		)
 		return d.Error[*d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if doc == nil {
+		logger.LogWarn(ctx, "Document not found",
+			"operation", "GetByID",
+			"docID", docID,
+		)
 		return d.Error[*d.Document](u.paramCache, "ERR_DOCUMENT_NOT_FOUND")
 	}
 
@@ -59,6 +73,12 @@ func (u *documentUseCase) GetByCategory(c context.Context, category string, limi
 
 	docs, err := u.docRepo.GetByCategory(ctx, category, limit, offset)
 	if err != nil {
+		logger.LogError(ctx, "Failed to fetch documents by category from database", err,
+			"operation", "GetByCategory",
+			"category", category,
+			"limit", limit,
+			"offset", offset,
+		)
 		return d.Error[[]d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
@@ -71,6 +91,11 @@ func (u *documentUseCase) SearchByTitle(c context.Context, titlePattern string, 
 
 	docs, err := u.docRepo.SearchByTitle(ctx, titlePattern, limit)
 	if err != nil {
+		logger.LogError(ctx, "Failed to search documents by title from database", err,
+			"operation", "SearchByTitle",
+			"titlePattern", titlePattern,
+			"limit", limit,
+		)
 		return d.Error[[]d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
@@ -83,10 +108,20 @@ func (u *documentUseCase) Create(c context.Context, params d.CreateDocumentParam
 
 	result, err := u.docRepo.Create(ctx, params)
 	if err != nil || result == nil {
+		logger.LogError(ctx, "Failed to create document in database", err,
+			"operation", "Create",
+			"title", params.Title,
+			"category", params.Category,
+		)
 		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
+		logger.LogWarn(ctx, "Document creation failed with business logic error",
+			"operation", "Create",
+			"code", result.Code,
+			"title", params.Title,
+		)
 		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
@@ -99,10 +134,16 @@ func (u *documentUseCase) Update(c context.Context, params d.UpdateDocumentParam
 
 	result, err := u.docRepo.Update(ctx, params)
 	if err != nil || result == nil {
+		logger.LogError(ctx, "Failed to update document in database", err, params)
 		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
+		logger.LogWarn(ctx, "Document update failed with business logic error",
+			"operation", "Update",
+			"code", result.Code,
+			"docID", params.DocID,
+		)
 		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
@@ -115,10 +156,19 @@ func (u *documentUseCase) Delete(c context.Context, docID int) d.Result[d.Data] 
 
 	result, err := u.docRepo.Delete(ctx, docID)
 	if err != nil || result == nil {
+		logger.LogError(ctx, "Failed to delete document from database", err,
+			"operation", "Delete",
+			"docID", docID,
+		)
 		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
+		logger.LogWarn(ctx, "Document deletion failed with business logic error",
+			"operation", "Delete",
+			"code", result.Code,
+			"docID", docID,
+		)
 		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
