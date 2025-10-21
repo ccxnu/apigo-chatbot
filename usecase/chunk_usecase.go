@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	d "api-chatbot/domain"
@@ -287,7 +286,7 @@ func (u *chunkUseCase) Delete(c context.Context, chunkID int) d.Result[d.Data] {
 }
 
 func (u *chunkUseCase) BulkCreate(c context.Context, documentID int, contents []string) d.Result[d.Data] {
-	ctx, cancel := context.WithTimeout(c, 60 * time.Second)
+	ctx, cancel := context.WithTimeout(c, 60*time.Second)
 	defer cancel()
 
 	embeddingsFloat32, err := u.embeddingService.GenerateEmbeddings(ctx, contents)
@@ -302,15 +301,15 @@ func (u *chunkUseCase) BulkCreate(c context.Context, documentID int, contents []
 
 	var vectorEmbeddings []pgvector.Vector
 
-    for _, emb32 := range embeddingsFloat32 {
-        vectorEmbeddings = append(vectorEmbeddings, pgvector.NewVector(emb32))
-    }
+	for _, emb32 := range embeddingsFloat32 {
+		vectorEmbeddings = append(vectorEmbeddings, pgvector.NewVector(emb32))
+	}
 
-    params := d.BulkCreateChunksParams{
-        DocumentID: documentID,
-        Contents:   contents,
-        Embeddings: &vectorEmbeddings,
-    }
+	params := d.BulkCreateChunksParams{
+		DocumentID: documentID,
+		Contents:   contents,
+		Embeddings: &vectorEmbeddings,
+	}
 
 	result, err := u.chunkRepo.BulkCreate(ctx, params)
 	if err != nil || result == nil {

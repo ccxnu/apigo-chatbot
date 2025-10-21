@@ -7,38 +7,38 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"api-chatbot/api/request"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 type GetChunksByDocumentResponse struct {
-	Body domain.Result[[]domain.Chunk]
+	Body d.Result[[]d.Chunk]
 }
 
 type GetChunkByIDResponse struct {
-	Body domain.Result[*domain.Chunk]
+	Body d.Result[*d.Chunk]
 }
 
 type SimilaritySearchResponse struct {
-	Body domain.Result[[]domain.ChunkWithSimilarity]
+	Body d.Result[[]d.ChunkWithSimilarity]
 }
 
 type CreateChunkResponse struct {
-	Body domain.Result[domain.Data]
+	Body d.Result[d.Data]
 }
 
 type UpdateChunkContentResponse struct {
-	Body domain.Result[domain.Data]
+	Body d.Result[d.Data]
 }
 
 type DeleteChunkResponse struct {
-	Body domain.Result[domain.Data]
+	Body d.Result[d.Data]
 }
 
 type BulkCreateChunksResponse struct {
-	Body domain.Result[domain.Data]
+	Body d.Result[d.Data]
 }
 
-func NewChunkRouter(chunkUseCase domain.ChunkUseCase, mux *http.ServeMux, humaAPI huma.API) {
+func NewChunkRouter(chunkUseCase d.ChunkUseCase, mux *http.ServeMux, humaAPI huma.API) {
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-chunks-by-document",
 		Method:      "POST",

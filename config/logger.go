@@ -13,13 +13,13 @@ import (
 )
 
 type LogConfig struct {
-	Level       string `json:"level"`       // debug, info, warn, error
-	Format      string `json:"format"`      // json, text
-	Output      string `json:"output"`      // stdout, file, both
-	FilePath    string `json:"filePath"`    // logs/app.log
-	MaxSizeMB   int    `json:"maxSizeMB"`   // max size in MB before rotation
-	MaxBackups  int    `json:"maxBackups"`  // max number of old log files
-	MaxAgeDays  int    `json:"maxAgeDays"`  // max days to retain old logs
+	Level      string `json:"level"`      // debug, info, warn, error
+	Format     string `json:"format"`     // json, text
+	Output     string `json:"output"`     // stdout, file, both
+	FilePath   string `json:"filePath"`   // logs/app.log
+	MaxSizeMB  int    `json:"maxSizeMB"`  // max size in MB before rotation
+	MaxBackups int    `json:"maxBackups"` // max number of old log files
+	MaxAgeDays int    `json:"maxAgeDays"` // max days to retain old logs
 }
 
 func SetupLogger(cache domain.ParameterCache) (*slog.Logger, func() error) {

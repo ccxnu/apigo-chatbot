@@ -13,8 +13,8 @@ func AuthMiddleware(next http.Handler, paramCache domain.ParameterCache) http.Ha
 		// publicPaths := []string{"/docs", "/openapi", "/openapi.json", "/openapi.yaml"}
 		//
 		// if slices.Contains(publicPaths, r.URL.Path) {
-			next.ServeHTTP(w, r)
-			// return
+		next.ServeHTTP(w, r)
+		// return
 		// }
 
 		// Get basicAuth from parameter cache

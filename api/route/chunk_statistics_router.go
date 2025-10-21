@@ -7,31 +7,31 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"api-chatbot/api/request"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 // Huma response types for chunk statistics
 type GetChunkStatisticsResponse struct {
-	Body domain.Result[*domain.ChunkStatistics]
+	Body d.Result[*d.ChunkStatistics]
 }
 
 type GetTopChunksByUsageResponse struct {
-	Body domain.Result[[]domain.TopChunkByUsage]
+	Body d.Result[[]d.TopChunkByUsage]
 }
 
 type IncrementChunkUsageResponse struct {
-	Body domain.Result[map[string]any]
+	Body d.Result[d.Data]
 }
 
 type UpdateChunkQualityMetricsResponse struct {
-	Body domain.Result[map[string]any]
+	Body d.Result[d.Data]
 }
 
 type UpdateChunkStalenessResponse struct {
-	Body domain.Result[map[string]any]
+	Body d.Result[d.Data]
 }
 
-func NewChunkStatisticsRouter(statsUseCase domain.ChunkStatisticsUseCase, mux *http.ServeMux, humaAPI huma.API) {
+func NewChunkStatisticsRouter(statsUseCase d.ChunkStatisticsUseCase, mux *http.ServeMux, humaAPI huma.API) {
 	// Huma documented routes with /api/v1/ prefix
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-chunk-statistics",
@@ -85,7 +85,7 @@ func NewChunkStatisticsRouter(statsUseCase domain.ChunkStatisticsUseCase, mux *h
 	}, func(ctx context.Context, input *struct {
 		Body request.UpdateChunkQualityMetricsRequest
 	}) (*UpdateChunkQualityMetricsResponse, error) {
-		params := domain.UpdateChunkQualityMetricsParams{
+		params := d.UpdateChunkQualityMetricsParams{
 			ChunkID:      input.Body.ChunkID,
 			PrecisionAtK: input.Body.PrecisionAtK,
 			RecallAtK:    input.Body.RecallAtK,
@@ -108,7 +108,7 @@ func NewChunkStatisticsRouter(statsUseCase domain.ChunkStatisticsUseCase, mux *h
 	}, func(ctx context.Context, input *struct {
 		Body request.UpdateChunkStalenessRequest
 	}) (*UpdateChunkStalenessResponse, error) {
-		params := domain.UpdateChunkStalenessParams{
+		params := d.UpdateChunkStalenessParams{
 			ChunkID:       input.Body.ChunkID,
 			StalenessDays: input.Body.StalenessDays,
 		}

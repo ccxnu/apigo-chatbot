@@ -8,39 +8,39 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"api-chatbot/api/request"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 // Huma response types for documents
 type GetAllDocumentsResponse struct {
-	Body domain.Result[[]domain.Document]
+	Body d.Result[[]d.Document]
 }
 
 type GetDocumentByIDResponse struct {
-	Body domain.Result[*domain.Document]
+	Body d.Result[*d.Document]
 }
 
 type GetDocumentsByCategoryResponse struct {
-	Body domain.Result[[]domain.Document]
+	Body d.Result[[]d.Document]
 }
 
 type SearchDocumentsByTitleResponse struct {
-	Body domain.Result[[]domain.Document]
+	Body d.Result[[]d.Document]
 }
 
 type CreateDocumentResponse struct {
-	Body domain.Result[map[string]any]
+	Body d.Result[d.Data]
 }
 
 type UpdateDocumentResponse struct {
-	Body domain.Result[map[string]any]
+	Body d.Result[d.Data]
 }
 
 type DeleteDocumentResponse struct {
-	Body domain.Result[map[string]any]
+	Body d.Result[d.Data]
 }
 
-func NewDocumentRouter(docUseCase domain.DocumentUseCase, mux *http.ServeMux, humaAPI huma.API) {
+func NewDocumentRouter(docUseCase d.DocumentUseCase, mux *http.ServeMux, humaAPI huma.API) {
 	// Huma documented routes with /api/v1/ prefix
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-all-documents",
@@ -117,7 +117,7 @@ func NewDocumentRouter(docUseCase domain.DocumentUseCase, mux *http.ServeMux, hu
 			}
 		}
 
-		params := domain.CreateDocumentParams{
+		params := d.CreateDocumentParams{
 			Category:    input.Body.Category,
 			Title:       input.Body.Title,
 			Summary:     input.Body.Summary,
@@ -147,7 +147,7 @@ func NewDocumentRouter(docUseCase domain.DocumentUseCase, mux *http.ServeMux, hu
 			}
 		}
 
-		params := domain.UpdateDocumentParams{
+		params := d.UpdateDocumentParams{
 			DocID:       input.Body.DocID,
 			Category:    input.Body.Category,
 			Title:       input.Body.Title,

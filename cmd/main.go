@@ -85,4 +85,3 @@ func initializeWhatsAppService(app config.Application, timeout time.Duration) *w
 
 	return service
 }
-

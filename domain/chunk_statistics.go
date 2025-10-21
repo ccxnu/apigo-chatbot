@@ -74,7 +74,7 @@ type ChunkStatisticsRepository interface {
 type ChunkStatisticsUseCase interface {
 	GetByChunk(ctx context.Context, chunkID int) Result[*ChunkStatistics]
 	GetTopByUsage(ctx context.Context, limit int) Result[[]TopChunkByUsage]
-	IncrementUsage(ctx context.Context, chunkID int) Result[map[string]any]
-	UpdateQualityMetrics(ctx context.Context, params UpdateChunkQualityMetricsParams) Result[map[string]any]
-	UpdateStaleness(ctx context.Context, params UpdateChunkStalenessParams) Result[map[string]any]
+	IncrementUsage(ctx context.Context, chunkID int) Result[Data]
+	UpdateQualityMetrics(ctx context.Context, params UpdateChunkQualityMetricsParams) Result[Data]
+	UpdateStaleness(ctx context.Context, params UpdateChunkStalenessParams) Result[Data]
 }

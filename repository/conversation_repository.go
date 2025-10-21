@@ -13,9 +13,9 @@ const (
 	fnGetConversationByChatID = "fn_get_conversation_by_chat_id"
 	fnGetConversationHistory  = "fn_get_conversation_history"
 	// Stored Procedures (Writes)
-	spCreateConversation           = "sp_create_conversation"
-	spLinkUserToConversation       = "sp_link_user_to_conversation"
-	spCreateConversationMessage    = "sp_create_conversation_message"
+	spCreateConversation        = "sp_create_conversation"
+	spLinkUserToConversation    = "sp_link_user_to_conversation"
+	spCreateConversationMessage = "sp_create_conversation_message"
 )
 
 type conversationRepository struct {

@@ -13,9 +13,9 @@ import (
 
 // Service manages WhatsApp client lifecycle and event handling
 type Service struct {
-	client     *Client
-	dispatcher *MessageDispatcher
-	sessionUC  domain.WhatsAppSessionUseCase
+	client      *Client
+	dispatcher  *MessageDispatcher
+	sessionUC   domain.WhatsAppSessionUseCase
 	sessionName string
 }
 

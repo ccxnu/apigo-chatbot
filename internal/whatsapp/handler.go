@@ -65,7 +65,7 @@ func (d *MessageDispatcher) sortHandlers() {
 
 // BaseHandler provides common functionality for handlers
 type BaseHandler struct {
-	Client     *Client
+	Client      *Client
 	ConvUseCase domain.ConversationUseCase
 }
 

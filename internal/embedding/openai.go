@@ -111,18 +111,18 @@ func (s *OpenAIEmbeddingService) GenerateEmbeddings(ctx context.Context, texts [
 		return nil, fmt.Errorf("batch size of %d exceeds the OpenAI maximum of %d texts per request. Please chunk your input", len(texts), maxBatchSize)
 	}
 
-    var filteredTexts []string
-    for _, text := range texts {
-        if text != "" {
-            filteredTexts = append(filteredTexts, text)
-        }
-    }
+	var filteredTexts []string
+	for _, text := range texts {
+		if text != "" {
+			filteredTexts = append(filteredTexts, text)
+		}
+	}
 
-    if len(filteredTexts) == 0 {
-        return nil, nil // All inputs were empty
-    }
+	if len(filteredTexts) == 0 {
+		return nil, nil // All inputs were empty
+	}
 
-    textsToSend := filteredTexts
+	textsToSend := filteredTexts
 
 	apiURL, apiKey, model, err := s.getConfig()
 	if err != nil {
@@ -163,8 +163,8 @@ func (s *OpenAIEmbeddingService) GenerateEmbeddings(ctx context.Context, texts [
 		if item.Index >= 0 && item.Index < len(textsToSend) {
 			embeddings[item.Index] = item.Embedding
 		} else {
-            return nil, fmt.Errorf("received embedding with out-of-bounds index: %d", item.Index)
-        }
+			return nil, fmt.Errorf("received embedding with out-of-bounds index: %d", item.Index)
+		}
 	}
 
 	return embeddings, nil

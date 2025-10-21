@@ -66,7 +66,7 @@ type DocumentUseCase interface {
 	GetByID(ctx context.Context, docID int) Result[*Document]
 	GetByCategory(ctx context.Context, category string, limit, offset int) Result[[]Document]
 	SearchByTitle(ctx context.Context, titlePattern string, limit int) Result[[]Document]
-	Create(ctx context.Context, params CreateDocumentParams) Result[map[string]any]
-	Update(ctx context.Context, params UpdateDocumentParams) Result[map[string]any]
-	Delete(ctx context.Context, docID int) Result[map[string]any]
+	Create(ctx context.Context, params CreateDocumentParams) Result[Data]
+	Update(ctx context.Context, params UpdateDocumentParams) Result[Data]
+	Delete(ctx context.Context, docID int) Result[Data]
 }

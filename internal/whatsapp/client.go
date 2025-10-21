@@ -20,9 +20,9 @@ type Client struct {
 
 // Config holds configuration for WhatsApp client
 type Config struct {
-	SessionName  string        // unique session identifier
-	DeviceStore  *store.Device // whatsmeow device store
-	LogLevel     string        // "ERROR", "WARN", "INFO", "DEBUG"
+	SessionName string        // unique session identifier
+	DeviceStore *store.Device // whatsmeow device store
+	LogLevel    string        // "ERROR", "WARN", "INFO", "DEBUG"
 }
 
 // NewClient creates a new WhatsApp client

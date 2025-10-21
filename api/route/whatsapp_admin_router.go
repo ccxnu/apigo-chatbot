@@ -7,29 +7,29 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"api-chatbot/api/request"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 // Huma response types for WhatsApp admin
 type GetWhatsAppStatusResponse struct {
-	Body domain.Result[*domain.WhatsAppSession]
+	Body d.Result[*d.WhatsAppSession]
 }
 
 type GetWhatsAppQRCodeResponse struct {
-	Body domain.Result[domain.Data]
+	Body d.Result[d.Data]
 }
 
 type UpdateWhatsAppStatusResponse struct {
-	Body domain.Result[domain.Data]
+	Body d.Result[d.Data]
 }
 
 type GetConversationHistoryResponse struct {
-	Body domain.Result[[]domain.ConversationMessage]
+	Body d.Result[[]d.ConversationMessage]
 }
 
 func NewWhatsAppAdminRouter(
-	sessionUseCase domain.WhatsAppSessionUseCase,
-	convUseCase domain.ConversationUseCase,
+	sessionUseCase d.WhatsAppSessionUseCase,
+	convUseCase d.ConversationUseCase,
 	mux *http.ServeMux,
 	humaAPI huma.API,
 ) {
@@ -72,7 +72,7 @@ func NewWhatsAppAdminRouter(
 	}, func(ctx context.Context, input *struct {
 		Body request.UpdateWhatsAppStatusRequest
 	}) (*UpdateWhatsAppStatusResponse, error) {
-		params := domain.UpdateSessionStatusParams{
+		params := d.UpdateSessionStatusParams{
 			SessionName: input.Body.SessionName,
 		}
 		// Handle optional fields

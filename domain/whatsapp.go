@@ -9,18 +9,18 @@ import (
 
 // WhatsAppSession represents a WhatsApp connection session
 type WhatsAppSession struct {
-	ID          int       `json:"id" db:"wss_id"`
-	SessionName string    `json:"sessionName" db:"wss_session_name"`
-	PhoneNumber string    `json:"phoneNumber" db:"wss_phone_number"`
-	DeviceName  string    `json:"deviceName" db:"wss_device_name"`
-	Platform    string    `json:"platform" db:"wss_platform"`
-	QRCode      string    `json:"qrCode" db:"wss_qr_code"`
-	Connected   bool      `json:"connected" db:"wss_connected"`
+	ID          int        `json:"id" db:"wss_id"`
+	SessionName string     `json:"sessionName" db:"wss_session_name"`
+	PhoneNumber string     `json:"phoneNumber" db:"wss_phone_number"`
+	DeviceName  string     `json:"deviceName" db:"wss_device_name"`
+	Platform    string     `json:"platform" db:"wss_platform"`
+	QRCode      string     `json:"qrCode" db:"wss_qr_code"`
+	Connected   bool       `json:"connected" db:"wss_connected"`
 	LastSeen    *time.Time `json:"lastSeen" db:"wss_last_seen"`
-	SessionData Data      `json:"sessionData" db:"wss_session_data"`
-	Active      bool      `json:"active" db:"wss_active"`
-	CreatedAt   time.Time `json:"createdAt" db:"wss_created_at"`
-	UpdatedAt   time.Time `json:"updatedAt" db:"wss_updated_at"`
+	SessionData Data       `json:"sessionData" db:"wss_session_data"`
+	Active      bool       `json:"active" db:"wss_active"`
+	CreatedAt   time.Time  `json:"createdAt" db:"wss_created_at"`
+	UpdatedAt   time.Time  `json:"updatedAt" db:"wss_updated_at"`
 }
 
 // Conversation represents a WhatsApp chat conversation
