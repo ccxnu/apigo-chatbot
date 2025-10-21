@@ -4,20 +4,20 @@ import (
 	"context"
 	"time"
 
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 type whatsAppSessionUseCase struct {
-	sessionRepo    domain.WhatsAppSessionRepository
-	paramCache     domain.ParameterCache
+	sessionRepo    d.WhatsAppSessionRepository
+	paramCache     d.ParameterCache
 	contextTimeout time.Duration
 }
 
 func NewWhatsAppSessionUseCase(
-	sessionRepo domain.WhatsAppSessionRepository,
-	paramCache domain.ParameterCache,
+	sessionRepo d.WhatsAppSessionRepository,
+	paramCache d.ParameterCache,
 	timeout time.Duration,
-) domain.WhatsAppSessionUseCase {
+) d.WhatsAppSessionUseCase {
 	return &whatsAppSessionUseCase{
 		sessionRepo:    sessionRepo,
 		paramCache:     paramCache,
@@ -25,110 +25,53 @@ func NewWhatsAppSessionUseCase(
 	}
 }
 
-// getErrorMessage retrieves error message from parameter cache
-func (u *whatsAppSessionUseCase) getErrorMessage(errorCode string) string {
-	if param, exists := u.paramCache.Get(errorCode); exists {
-		if data, err := param.GetDataAsMap(); err == nil {
-			if message, ok := data["message"].(string); ok {
-				return message
-			}
-		}
-	}
-	return "Ha ocurrido un error"
-}
-
-func (u *whatsAppSessionUseCase) GetSessionStatus(c context.Context, sessionName string) domain.Result[*domain.WhatsAppSession] {
+func (u *whatsAppSessionUseCase) GetSessionStatus(c context.Context, sessionName string) d.Result[*d.WhatsAppSession] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	session, err := u.sessionRepo.GetBySessionName(ctx, sessionName)
 	if err != nil {
-		return domain.Result[*domain.WhatsAppSession]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[*d.WhatsAppSession](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if session == nil {
-		return domain.Result[*domain.WhatsAppSession]{
-			Success: false,
-			Code:    "ERR_WHATSAPP_SESSION_NOT_FOUND",
-			Info:    u.getErrorMessage("ERR_WHATSAPP_SESSION_NOT_FOUND"),
-			Data:    nil,
-		}
+		return d.Error[*d.WhatsAppSession](u.paramCache, "ERR_WHATSAPP_SESSION_NOT_FOUND")
 	}
 
-	return domain.Result[*domain.WhatsAppSession]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    session,
-	}
+	return d.Success(session)
 }
 
-func (u *whatsAppSessionUseCase) GetQRCode(c context.Context, sessionName string) domain.Result[domain.Data] {
+func (u *whatsAppSessionUseCase) GetQRCode(c context.Context, sessionName string) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	session, err := u.sessionRepo.GetBySessionName(ctx, sessionName)
 	if err != nil {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if session == nil {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    "ERR_WHATSAPP_SESSION_NOT_FOUND",
-			Info:    u.getErrorMessage("ERR_WHATSAPP_SESSION_NOT_FOUND"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_WHATSAPP_SESSION_NOT_FOUND")
 	}
 
-	return domain.Result[domain.Data]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data: domain.Data{
-			"qrCode":    session.QRCode,
-			"connected": session.Connected,
-		},
-	}
+	return d.Success(d.Data{
+		"qrCode":    session.QRCode,
+		"connected": session.Connected,
+	})
 }
 
-func (u *whatsAppSessionUseCase) UpdateConnectionStatus(c context.Context, params domain.UpdateSessionStatusParams) domain.Result[domain.Data] {
+func (u *whatsAppSessionUseCase) UpdateConnectionStatus(c context.Context, params d.UpdateSessionStatusParams) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.sessionRepo.UpdateStatus(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[domain.Data]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    nil,
-	}
+	return d.Success(d.Data{})
 }

@@ -246,7 +246,7 @@ func (u *chunkUseCase) BulkCreate(c context.Context, documentID int, contents []
     params := d.BulkCreateChunksParams{
         DocumentID: documentID,
         Contents:   contents,
-        Embeddings: &vectorEmbeddings, // Puntero a [][]float64
+        Embeddings: &vectorEmbeddings,
     }
 
 	result, err := u.chunkRepo.BulkCreate(ctx, params)

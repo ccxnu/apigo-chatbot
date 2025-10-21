@@ -4,20 +4,20 @@ import (
 	"context"
 	"time"
 
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 type documentUseCase struct {
-	docRepo        domain.DocumentRepository
-	paramCache     domain.ParameterCache
+	docRepo        d.DocumentRepository
+	paramCache     d.ParameterCache
 	contextTimeout time.Duration
 }
 
 func NewDocumentUseCase(
-	docRepo domain.DocumentRepository,
-	paramCache domain.ParameterCache,
+	docRepo d.DocumentRepository,
+	paramCache d.ParameterCache,
 	timeout time.Duration,
-) domain.DocumentUseCase {
+) d.DocumentUseCase {
 	return &documentUseCase{
 		docRepo:        docRepo,
 		paramCache:     paramCache,
@@ -25,206 +25,102 @@ func NewDocumentUseCase(
 	}
 }
 
-// getErrorMessage retrieves error message from parameter cache
-func (u *documentUseCase) getErrorMessage(errorCode string) string {
-	if param, exists := u.paramCache.Get(errorCode); exists {
-		if data, err := param.GetDataAsMap(); err == nil {
-			if message, ok := data["message"].(string); ok {
-				return message
-			}
-		}
-	}
-	return "Ha ocurrido un error"
-}
-
-func (u *documentUseCase) GetAll(c context.Context, limit, offset int) domain.Result[[]domain.Document] {
+func (u *documentUseCase) GetAll(c context.Context, limit, offset int) d.Result[[]d.Document] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	docs, err := u.docRepo.GetAll(ctx, limit, offset)
 	if err != nil {
-		return domain.Result[[]domain.Document]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    []domain.Document{},
-		}
+		return d.Error[[]d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
-	return domain.Result[[]domain.Document]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    docs,
-	}
+	return d.Success(docs)
 }
 
-func (u *documentUseCase) GetByID(c context.Context, docID int) domain.Result[*domain.Document] {
+func (u *documentUseCase) GetByID(c context.Context, docID int) d.Result[*d.Document] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	doc, err := u.docRepo.GetByID(ctx, docID)
 	if err != nil {
-		return domain.Result[*domain.Document]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[*d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if doc == nil {
-		return domain.Result[*domain.Document]{
-			Success: false,
-			Code:    "ERR_DOCUMENT_NOT_FOUND",
-			Info:    u.getErrorMessage("ERR_DOCUMENT_NOT_FOUND"),
-			Data:    nil,
-		}
+		return d.Error[*d.Document](u.paramCache, "ERR_DOCUMENT_NOT_FOUND")
 	}
 
-	return domain.Result[*domain.Document]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    doc,
-	}
+	return d.Success(doc)
 }
 
-func (u *documentUseCase) GetByCategory(c context.Context, category string, limit, offset int) domain.Result[[]domain.Document] {
+func (u *documentUseCase) GetByCategory(c context.Context, category string, limit, offset int) d.Result[[]d.Document] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	docs, err := u.docRepo.GetByCategory(ctx, category, limit, offset)
 	if err != nil {
-		return domain.Result[[]domain.Document]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    []domain.Document{},
-		}
+		return d.Error[[]d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
-	return domain.Result[[]domain.Document]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    docs,
-	}
+	return d.Success(docs)
 }
 
-func (u *documentUseCase) SearchByTitle(c context.Context, titlePattern string, limit int) domain.Result[[]domain.Document] {
+func (u *documentUseCase) SearchByTitle(c context.Context, titlePattern string, limit int) d.Result[[]d.Document] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	docs, err := u.docRepo.SearchByTitle(ctx, titlePattern, limit)
 	if err != nil {
-		return domain.Result[[]domain.Document]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    []domain.Document{},
-		}
+		return d.Error[[]d.Document](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
-	return domain.Result[[]domain.Document]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    docs,
-	}
+	return d.Success(docs)
 }
 
-func (u *documentUseCase) Create(c context.Context, params domain.CreateDocumentParams) domain.Result[map[string]any] {
+func (u *documentUseCase) Create(c context.Context, params d.CreateDocumentParams) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.docRepo.Create(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[map[string]any]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data: map[string]any{
-			"docId": result.DocID,
-		},
-	}
+	return d.Success(d.Data{"docId": result.DocID})
 }
 
-func (u *documentUseCase) Update(c context.Context, params domain.UpdateDocumentParams) domain.Result[map[string]any] {
+func (u *documentUseCase) Update(c context.Context, params d.UpdateDocumentParams) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.docRepo.Update(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[map[string]any]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    nil,
-	}
+	return d.Success(d.Data{})
 }
 
-func (u *documentUseCase) Delete(c context.Context, docID int) domain.Result[map[string]any] {
+func (u *documentUseCase) Delete(c context.Context, docID int) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.docRepo.Delete(ctx, docID)
 	if err != nil || result == nil {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[map[string]any]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    nil,
-	}
+	return d.Success(d.Data{})
 }

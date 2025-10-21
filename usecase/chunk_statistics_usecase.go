@@ -4,20 +4,20 @@ import (
 	"context"
 	"time"
 
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 type chunkStatisticsUseCase struct {
-	statsRepo      domain.ChunkStatisticsRepository
-	paramCache     domain.ParameterCache
+	statsRepo      d.ChunkStatisticsRepository
+	paramCache     d.ParameterCache
 	contextTimeout time.Duration
 }
 
 func NewChunkStatisticsUseCase(
-	statsRepo domain.ChunkStatisticsRepository,
-	paramCache domain.ParameterCache,
+	statsRepo d.ChunkStatisticsRepository,
+	paramCache d.ParameterCache,
 	timeout time.Duration,
-) domain.ChunkStatisticsUseCase {
+) d.ChunkStatisticsUseCase {
 	return &chunkStatisticsUseCase{
 		statsRepo:      statsRepo,
 		paramCache:     paramCache,
@@ -25,160 +25,78 @@ func NewChunkStatisticsUseCase(
 	}
 }
 
-// getErrorMessage retrieves error message from parameter cache
-func (u *chunkStatisticsUseCase) getErrorMessage(errorCode string) string {
-	if param, exists := u.paramCache.Get(errorCode); exists {
-		if data, err := param.GetDataAsMap(); err == nil {
-			if message, ok := data["message"].(string); ok {
-				return message
-			}
-		}
-	}
-	return "Ha ocurrido un error"
-}
-
-func (u *chunkStatisticsUseCase) GetByChunk(c context.Context, chunkID int) domain.Result[*domain.ChunkStatistics] {
+func (u *chunkStatisticsUseCase) GetByChunk(c context.Context, chunkID int) d.Result[*d.ChunkStatistics] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	stats, err := u.statsRepo.GetByChunk(ctx, chunkID)
 	if err != nil {
-		return domain.Result[*domain.ChunkStatistics]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[*d.ChunkStatistics](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if stats == nil {
-		return domain.Result[*domain.ChunkStatistics]{
-			Success: false,
-			Code:    "ERR_CHUNK_STATS_NOT_FOUND",
-			Info:    u.getErrorMessage("ERR_CHUNK_STATS_NOT_FOUND"),
-			Data:    nil,
-		}
+		return d.Error[*d.ChunkStatistics](u.paramCache, "ERR_CHUNK_STATS_NOT_FOUND")
 	}
 
-	return domain.Result[*domain.ChunkStatistics]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    stats,
-	}
+	return d.Success(stats)
 }
 
-func (u *chunkStatisticsUseCase) GetTopByUsage(c context.Context, limit int) domain.Result[[]domain.TopChunkByUsage] {
+func (u *chunkStatisticsUseCase) GetTopByUsage(c context.Context, limit int) d.Result[[]d.TopChunkByUsage] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	topChunks, err := u.statsRepo.GetTopByUsage(ctx, limit)
 	if err != nil {
-		return domain.Result[[]domain.TopChunkByUsage]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    []domain.TopChunkByUsage{},
-		}
+		return d.Error[[]d.TopChunkByUsage](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
-	return domain.Result[[]domain.TopChunkByUsage]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    topChunks,
-	}
+	return d.Success(topChunks)
 }
 
-func (u *chunkStatisticsUseCase) IncrementUsage(c context.Context, chunkID int) domain.Result[map[string]any] {
+func (u *chunkStatisticsUseCase) IncrementUsage(c context.Context, chunkID int) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.statsRepo.IncrementUsage(ctx, chunkID)
 	if err != nil || result == nil {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[map[string]any]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    nil,
-	}
+	return d.Success(d.Data{})
 }
 
-func (u *chunkStatisticsUseCase) UpdateQualityMetrics(c context.Context, params domain.UpdateChunkQualityMetricsParams) domain.Result[map[string]any] {
+func (u *chunkStatisticsUseCase) UpdateQualityMetrics(c context.Context, params d.UpdateChunkQualityMetricsParams) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.statsRepo.UpdateQualityMetrics(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[map[string]any]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    nil,
-	}
+	return d.Success(d.Data{})
 }
 
-func (u *chunkStatisticsUseCase) UpdateStaleness(c context.Context, params domain.UpdateChunkStalenessParams) domain.Result[map[string]any] {
+func (u *chunkStatisticsUseCase) UpdateStaleness(c context.Context, params d.UpdateChunkStalenessParams) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.statsRepo.UpdateStaleness(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[map[string]any]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[map[string]any]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    nil,
-	}
+	return d.Success(d.Data{})
 }

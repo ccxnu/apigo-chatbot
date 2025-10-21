@@ -4,20 +4,20 @@ import (
 	"context"
 	"time"
 
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 type conversationUseCase struct {
-	convRepo       domain.ConversationRepository
-	paramCache     domain.ParameterCache
+	convRepo       d.ConversationRepository
+	paramCache     d.ParameterCache
 	contextTimeout time.Duration
 }
 
 func NewConversationUseCase(
-	convRepo domain.ConversationRepository,
-	paramCache domain.ParameterCache,
+	convRepo d.ConversationRepository,
+	paramCache d.ParameterCache,
 	timeout time.Duration,
-) domain.ConversationUseCase {
+) d.ConversationUseCase {
 	return &conversationUseCase{
 		convRepo:       convRepo,
 		paramCache:     paramCache,
@@ -25,169 +25,85 @@ func NewConversationUseCase(
 	}
 }
 
-// getErrorMessage retrieves error message from parameter cache
-func (u *conversationUseCase) getErrorMessage(errorCode string) string {
-	if param, exists := u.paramCache.Get(errorCode); exists {
-		if data, err := param.GetDataAsMap(); err == nil {
-			if message, ok := data["message"].(string); ok {
-				return message
-			}
-		}
-	}
-	return "Ha ocurrido un error"
-}
-
-func (u *conversationUseCase) GetOrCreateConversation(c context.Context, params domain.CreateConversationParams) domain.Result[*domain.Conversation] {
+func (u *conversationUseCase) GetOrCreateConversation(c context.Context, params d.CreateConversationParams) d.Result[*d.Conversation] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	// Try to get existing conversation
 	conversation, err := u.convRepo.GetByChatID(ctx, params.ChatID)
 	if err != nil {
-		return domain.Result[*domain.Conversation]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[*d.Conversation](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	// If found, return it
 	if conversation != nil {
-		return domain.Result[*domain.Conversation]{
-			Success: true,
-			Code:    "OK",
-			Info:    u.getErrorMessage("OK"),
-			Data:    conversation,
-		}
+		return d.Success(conversation)
 	}
 
 	// Create new conversation
 	result, err := u.convRepo.Create(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[*domain.Conversation]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[*d.Conversation](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[*domain.Conversation]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[*d.Conversation](u.paramCache, result.Code)
 	}
 
 	// Get the created conversation
 	conversation, err = u.convRepo.GetByChatID(ctx, params.ChatID)
 	if err != nil {
-		return domain.Result[*domain.Conversation]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[*d.Conversation](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
-	return domain.Result[*domain.Conversation]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    conversation,
-	}
+	return d.Success(conversation)
 }
 
-func (u *conversationUseCase) SaveMessage(c context.Context, params domain.CreateMessageParams) domain.Result[domain.Data] {
+func (u *conversationUseCase) SaveMessage(c context.Context, params d.CreateMessageParams) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	result, err := u.convRepo.CreateMessage(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[domain.Data]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data: domain.Data{
-			"messageId": result.MessageID,
-		},
-	}
+	return d.Success(d.Data{"messageId": result.MessageID})
 }
 
-func (u *conversationUseCase) GetConversationHistory(c context.Context, chatID string, limit int) domain.Result[[]domain.ConversationMessage] {
+func (u *conversationUseCase) GetConversationHistory(c context.Context, chatID string, limit int) d.Result[[]d.ConversationMessage] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	messages, err := u.convRepo.GetConversationHistory(ctx, chatID, limit)
 	if err != nil {
-		return domain.Result[[]domain.ConversationMessage]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    []domain.ConversationMessage{},
-		}
+		return d.Error[[]d.ConversationMessage](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
-	return domain.Result[[]domain.ConversationMessage]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    messages,
-	}
+	return d.Success(messages)
 }
 
-func (u *conversationUseCase) LinkUserAfterValidation(c context.Context, chatID, identityNumber string) domain.Result[domain.Data] {
+func (u *conversationUseCase) LinkUserAfterValidation(c context.Context, chatID, identityNumber string) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
-	params := domain.LinkUserToConversationParams{
+	params := d.LinkUserToConversationParams{
 		ChatID:         chatID,
 		IdentityNumber: identityNumber,
 	}
 
 	result, err := u.convRepo.LinkUserToConversation(ctx, params)
 	if err != nil || result == nil {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    "ERR_INTERNAL_DB",
-			Info:    u.getErrorMessage("ERR_INTERNAL_DB"),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
-		return domain.Result[domain.Data]{
-			Success: false,
-			Code:    result.Code,
-			Info:    u.getErrorMessage(result.Code),
-			Data:    nil,
-		}
+		return d.Error[d.Data](u.paramCache, result.Code)
 	}
 
-	return domain.Result[domain.Data]{
-		Success: true,
-		Code:    "OK",
-		Info:    u.getErrorMessage("OK"),
-		Data:    nil,
-	}
+	return d.Success(d.Data{})
 }
