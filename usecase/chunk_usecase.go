@@ -3,9 +3,11 @@ package usecase
 import (
 	"context"
 	"time"
+	"fmt"
 
 	d "api-chatbot/domain"
 	"api-chatbot/internal/metrics"
+	"github.com/pgvector/pgvector-go"
 )
 
 type chunkUseCase struct {
@@ -226,24 +228,30 @@ func (u *chunkUseCase) Delete(c context.Context, chunkID int) d.Result[d.Data] {
 }
 
 func (u *chunkUseCase) BulkCreate(c context.Context, documentID int, contents []string) d.Result[d.Data] {
-	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
+	ctx, cancel := context.WithTimeout(c, 60 * time.Second)
 	defer cancel()
 
-	// Generate embeddings for all contents (batch processing)
-	embeddings, err := u.embeddingService.GenerateEmbeddings(ctx, contents)
+	embeddingsFloat32, err := u.embeddingService.GenerateEmbeddings(ctx, contents)
 	if err != nil {
+		fmt.Printf("Error al generar embeddings: %v\n", err)
 		return d.Error[d.Data](u.cache, "ERR_EMBEDDING_GENERATION")
 	}
 
-	// Create params with generated embeddings
-	params := d.BulkCreateChunksParams{
-		DocumentID: documentID,
-		Contents:   contents,
-		Embeddings: &embeddings,
-	}
+	var vectorEmbeddings []pgvector.Vector
+
+    for _, emb32 := range embeddingsFloat32 {
+        vectorEmbeddings = append(vectorEmbeddings, pgvector.NewVector(emb32))
+    }
+
+    params := d.BulkCreateChunksParams{
+        DocumentID: documentID,
+        Contents:   contents,
+        Embeddings: &vectorEmbeddings, // Puntero a [][]float64
+    }
 
 	result, err := u.chunkRepo.BulkCreate(ctx, params)
 	if err != nil || result == nil {
+		fmt.Printf("Error al generar embeddings: %v\n", err)
 		return d.Error[d.Data](u.cache, "ERR_INTERNAL_DB")
 	}
 

@@ -106,19 +106,36 @@ func (s *OpenAIEmbeddingService) GenerateEmbeddings(ctx context.Context, texts [
 		return nil, nil
 	}
 
+	const maxBatchSize = 2048 // Standard maximum for V3 models
+	if len(texts) > maxBatchSize {
+		return nil, fmt.Errorf("batch size of %d exceeds the OpenAI maximum of %d texts per request. Please chunk your input", len(texts), maxBatchSize)
+	}
+
+    var filteredTexts []string
+    for _, text := range texts {
+        if text != "" {
+            filteredTexts = append(filteredTexts, text)
+        }
+    }
+
+    if len(filteredTexts) == 0 {
+        return nil, nil // All inputs were empty
+    }
+
+    textsToSend := filteredTexts
+
 	apiURL, apiKey, model, err := s.getConfig()
 	if err != nil {
+		fmt.Printf("ERROR: Failed to generate embeddings: %v\n", err)
 		return nil, err
 	}
 
-	// Prepare request body for batch input
 	reqBody := openAIRequest{
-		Input:          texts, // slice of strings for batching
+		Input:          textsToSend, // Use the filtered list
 		Model:          model,
 		EncodingFormat: "float",
 	}
 
-	// Create HTTP request
 	httpReq := domain.HTTPRequest{
 		URL:    apiURL,
 		Method: "POST",
@@ -128,25 +145,26 @@ func (s *OpenAIEmbeddingService) GenerateEmbeddings(ctx context.Context, texts [
 		},
 	}
 
-	// Execute request
 	var openAIResp openAIResponse
 	err = s.httpClient.Do(ctx, httpReq, &openAIResp)
 
 	if err != nil {
+		fmt.Printf("ERROR: Failed to calling embeddings: %v\n", err)
 		return nil, fmt.Errorf("error calling OpenAI API for batch embeddings: %w", err)
 	}
 
-	// Validate response length against input length
-	if len(openAIResp.Data) != len(texts) {
-		return nil, fmt.Errorf("OpenAI API returned %d embeddings, expected %d", len(openAIResp.Data), len(texts))
+	if len(openAIResp.Data) != len(textsToSend) {
+		return nil, fmt.Errorf("OpenAI API returned %d embeddings, expected %d based on filtered input", len(openAIResp.Data), len(textsToSend))
 	}
 
-	// Extract and reorder embeddings based on index to ensure correctness
-	embeddings := make([][]float32, len(texts))
+	embeddings := make([][]float32, len(textsToSend))
+
 	for _, item := range openAIResp.Data {
-		if item.Index >= 0 && item.Index < len(texts) {
+		if item.Index >= 0 && item.Index < len(textsToSend) {
 			embeddings[item.Index] = item.Embedding
-		}
+		} else {
+            return nil, fmt.Errorf("received embedding with out-of-bounds index: %d", item.Index)
+        }
 	}
 
 	return embeddings, nil

@@ -86,7 +86,8 @@ func InitializeWhatsAppService(
 	}
 
 	// Start the service
-	if err = service.Start(ctx); err != nil {
+	ctx = context.Background()
+	if err := service.Start(ctx); err != nil {
 		return nil, fmt.Errorf("failed to start WhatsApp service: %w", err)
 	}
 

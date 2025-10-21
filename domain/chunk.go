@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"api-chatbot/api/dal"
+	"github.com/pgvector/pgvector-go"
 )
 
 type Chunk struct {
@@ -54,7 +55,7 @@ type DeleteChunkResult struct {
 type BulkCreateChunksParams struct {
 	DocumentID int
 	Contents   []string
-	Embeddings *[][]float32
+	Embeddings *[]pgvector.Vector
 }
 
 type BulkCreateChunksResult struct {

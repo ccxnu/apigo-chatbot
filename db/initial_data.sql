@@ -568,6 +568,46 @@ begin
         );
     end if;
 
+    -- =====================================================
+    -- WhatsApp Configuration
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'WHATSAPP_CONFIG') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'WHATSAPP_CONFIGURATION',
+            'WHATSAPP_CONFIG',
+            '{
+                "enabled": false,
+                "sessionName": "chatbot-session",
+                "contextTimeout": 2,
+                "autoReconnect": true,
+                "maxReconnectAttempts": 5
+            }'::jsonb,
+            'WhatsApp service configuration - set enabled:true to activate'
+        );
+    end if;
+
+    -- =====================================================
+    -- LLM Configuration
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'LLM_CONFIG') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'LLM_CONFIGURATION',
+            'LLM_CONFIG',
+            '{
+                "provider": "grok",
+                "apiKey": "YOUR_GROK_API_KEY_HERE",
+                "model": "grok-beta",
+                "temperature": 0.7,
+                "maxTokens": 1000,
+                "timeout": 30,
+                "systemPrompt": "Eres un asistente virtual del instituto educativo. Tu objetivo es ayudar a estudiantes y profesores con información académica de manera clara, precisa y amigable. Siempre basa tus respuestas en el contexto proporcionado."
+            }'::jsonb,
+            'LLM provider configuration (grok, openai, anthropic)'
+        );
+    end if;
+
 end $$;
 
 -- =====================================================
