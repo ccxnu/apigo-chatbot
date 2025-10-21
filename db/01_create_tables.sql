@@ -42,6 +42,9 @@ create table if not exists public.cht_users (
     usr_name            varchar(100) not null,
     usr_email           varchar(100) unique not null,
     usr_phone           varchar(20),
+    usr_rol             varchar(50) references cht_parameters(prm_code),
+    usr_details         jsonb default '{}'::jsonb,
+    usr_whatsapp        varchar(50),
     usr_active          boolean not null default true,
     usr_created_at      timestamp not null default current_timestamp,
     usr_updated_at      timestamp not null default current_timestamp
@@ -152,6 +155,62 @@ create table if not exists public.cht_logs (
 );
 
 -- =====================================================
+-- Table: cht_whatsapp_sessions (WhatsApp Connection)
+-- =====================================================
+create table if not exists public.cht_whatsapp_sessions (
+    wss_id              serial primary key,
+    wss_session_name    varchar(50) unique not null,
+    wss_phone_number    varchar(50),
+    wss_device_name     varchar(100),
+    wss_platform        varchar(50),
+    wss_qr_code         text,
+    wss_connected       boolean not null default false,
+    wss_last_seen       timestamp,
+    wss_session_data    jsonb default '{}'::jsonb,
+    wss_active          boolean not null default true,
+    wss_created_at      timestamp not null default current_timestamp,
+    wss_updated_at      timestamp not null default current_timestamp
+);
+
+-- =====================================================
+-- Table: cht_conversations (WhatsApp Conversations)
+-- =====================================================
+create table if not exists public.cht_conversations (
+    cnv_id              serial primary key,
+    cnv_fk_user         int references cht_users(usr_id),
+    cnv_chat_id         varchar(100) not null,
+    cnv_phone_number    varchar(50) not null,
+    cnv_contact_name    varchar(100),
+    cnv_is_group        boolean not null default false,
+    cnv_group_name      varchar(100),
+    cnv_last_message_at timestamp,
+    cnv_message_count   int not null default 0,
+    cnv_active          boolean not null default true,
+    cnv_created_at      timestamp not null default current_timestamp,
+    cnv_updated_at      timestamp not null default current_timestamp,
+    constraint uk_chat_id unique (cnv_chat_id)
+);
+
+-- =====================================================
+-- Table: cht_conversation_messages (WhatsApp Messages)
+-- =====================================================
+create table if not exists public.cht_conversation_messages (
+    cvm_id              serial primary key,
+    cvm_fk_conversation int not null references cht_conversations(cnv_id) on delete cascade,
+    cvm_message_id      varchar(100) unique not null,
+    cvm_from_me         boolean not null default false,
+    cvm_sender_name     varchar(100),
+    cvm_message_type    varchar(20) not null check (cvm_message_type in ('text', 'image', 'document', 'audio', 'video', 'sticker')),
+    cvm_body            text,
+    cvm_media_url       varchar(500),
+    cvm_quoted_message  varchar(100),
+    cvm_timestamp       bigint not null,
+    cvm_is_forwarded    boolean not null default false,
+    cvm_metadata        jsonb default '{}'::jsonb,
+    cvm_created_at      timestamp not null default current_timestamp
+);
+
+-- =====================================================
 -- Indexes for Performance
 -- =====================================================
 
@@ -202,6 +261,25 @@ create index if not exists idx_cht_logs_created on cht_logs(log_created_at desc)
 create index if not exists idx_cht_logs_user on cht_logs(log_user_id);
 create index if not exists idx_cht_logs_details on cht_logs using gin(log_details);
 
+-- WhatsApp Sessions
+create index if not exists idx_cht_whatsapp_sessions_name on cht_whatsapp_sessions(wss_session_name);
+create index if not exists idx_cht_whatsapp_sessions_connected on cht_whatsapp_sessions(wss_connected);
+create index if not exists idx_cht_whatsapp_sessions_active on cht_whatsapp_sessions(wss_active);
+
+-- Conversations
+create index if not exists idx_cht_conversations_user on cht_conversations(cnv_fk_user);
+create index if not exists idx_cht_conversations_chat_id on cht_conversations(cnv_chat_id);
+create index if not exists idx_cht_conversations_phone on cht_conversations(cnv_phone_number);
+create index if not exists idx_cht_conversations_last_msg on cht_conversations(cnv_last_message_at desc);
+create index if not exists idx_cht_conversations_active on cht_conversations(cnv_active);
+
+-- Conversation Messages
+create index if not exists idx_cht_conv_msgs_conversation on cht_conversation_messages(cvm_fk_conversation);
+create index if not exists idx_cht_conv_msgs_message_id on cht_conversation_messages(cvm_message_id);
+create index if not exists idx_cht_conv_msgs_timestamp on cht_conversation_messages(cvm_timestamp desc);
+create index if not exists idx_cht_conv_msgs_from_me on cht_conversation_messages(cvm_from_me);
+create index if not exists idx_cht_conv_msgs_type on cht_conversation_messages(cvm_message_type);
+
 -- =====================================================
 -- Update Timestamp Trigger Function
 -- =====================================================
@@ -219,6 +297,10 @@ begin
         new.chk_updated_at = current_timestamp;
     elsif TG_TABLE_NAME = 'cht_chunk_statistics' then
         new.cst_updated_at = current_timestamp;
+    elsif TG_TABLE_NAME = 'cht_whatsapp_sessions' then
+        new.wss_updated_at = current_timestamp;
+    elsif TG_TABLE_NAME = 'cht_conversations' then
+        new.cnv_updated_at = current_timestamp;
     end if;
     return new;
 end;
@@ -230,12 +312,16 @@ drop trigger if exists tr_cht_users_updated on cht_users;
 drop trigger if exists tr_cht_documents_updated on cht_documents;
 drop trigger if exists tr_cht_chunks_updated on cht_chunks;
 drop trigger if exists tr_cht_chunk_stats_updated on cht_chunk_statistics;
+drop trigger if exists tr_cht_whatsapp_sessions_updated on cht_whatsapp_sessions;
+drop trigger if exists tr_cht_conversations_updated on cht_conversations;
 
 create trigger tr_cht_parameters_updated before update on cht_parameters for each row execute function fn_update_timestamp();
 create trigger tr_cht_users_updated before update on cht_users for each row execute function fn_update_timestamp();
 create trigger tr_cht_documents_updated before update on cht_documents for each row execute function fn_update_timestamp();
 create trigger tr_cht_chunks_updated before update on cht_chunks for each row execute function fn_update_timestamp();
 create trigger tr_cht_chunk_stats_updated before update on cht_chunk_statistics for each row execute function fn_update_timestamp();
+create trigger tr_cht_whatsapp_sessions_updated before update on cht_whatsapp_sessions for each row execute function fn_update_timestamp();
+create trigger tr_cht_conversations_updated before update on cht_conversations for each row execute function fn_update_timestamp();
 
 -- =====================================================
 -- Comments
@@ -250,3 +336,6 @@ comment on table cht_chunk_statistics is 'Usage and quality metrics for chunks';
 comment on table cht_messages is 'Chat messages with AI responses';
 comment on table cht_message_statistics is 'Performance metrics for messages';
 comment on table cht_logs is 'System audit and error logs';
+comment on table cht_whatsapp_sessions is 'WhatsApp connection sessions and device information';
+comment on table cht_conversations is 'WhatsApp conversations and chat metadata';
+comment on table cht_conversation_messages is 'Individual WhatsApp messages in conversations';
