@@ -1,4 +1,4 @@
--- =====================================================
+--- =====================================================
 -- Initial Parameters Data
 -- =====================================================
 
@@ -162,6 +162,36 @@ begin
     if not exists (select 1 from cht_parameters where prm_code = 'ERR_WHATSAPP_SESSION_NOT_FOUND') then
         insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
         values ('ERROR_CODES', 'ERR_WHATSAPP_SESSION_NOT_FOUND', '{"message": "Sesión de WhatsApp no encontrada"}'::jsonb, 'WhatsApp session not found');
+    end if;
+
+    -- ERR_IDENTITY_NOT_FOUND
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_IDENTITY_NOT_FOUND') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_IDENTITY_NOT_FOUND', '{"message": "Número de cédula no encontrado en el sistema del instituto"}'::jsonb, 'Identity number not found in institute system');
+    end if;
+
+    -- ERR_INVALID_IDENTITY
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_INVALID_IDENTITY') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_INVALID_IDENTITY', '{"message": "Número de cédula inválido o no encontrado"}'::jsonb, 'Invalid or not found identity number');
+    end if;
+
+    -- ERR_USER_ALREADY_EXISTS
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_USER_ALREADY_EXISTS') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_USER_ALREADY_EXISTS', '{"message": "El usuario ya existe en el sistema"}'::jsonb, 'User already exists');
+    end if;
+
+    -- ERR_CREATE_USER
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_CREATE_USER') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_CREATE_USER', '{"message": "Error al crear el usuario"}'::jsonb, 'Error creating user');
+    end if;
+
+    -- ERR_EXTERNAL_USER_INFO_REQUIRED
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_EXTERNAL_USER_INFO_REQUIRED') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_EXTERNAL_USER_INFO_REQUIRED', '{"message": "Usuario externo - por favor proporciona tu nombre y correo electrónico"}'::jsonb, 'External user information required');
     end if;
 
     -- ERR_UPDATE_WHATSAPP_SESSION
@@ -406,43 +436,14 @@ begin
     end if;
 
     -- =====================================================
-    -- LLM Configuration
+    -- DEPRECATED: Old LLM configurations (replaced by LLM_CONFIG below)
+    -- These are kept for reference but should not be used
     -- =====================================================
-    if not exists (select 1 from cht_parameters where prm_code = 'GROK_API_KEY') then
-        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
-        values (
-            'LLM_API_CONFIGURATION',
-            'GROK_API_KEY',
-            '{
-                "url": "https://api.groq.com/openai/v1",
-                "model": "llama-3.1-8b-instant",
-                "apiKey": "gsk_pAQxP4lxdKiW"
-            }'::jsonb,
-            'Large Language Model API configuration'
-        );
-    end if;
-
-    -- =====================================================
-    -- Claude AI Configuration (Legacy - keeping for reference)
-    -- =====================================================
-    if not exists (select 1 from cht_parameters where prm_code = 'CLAUDE_API_KEY') then
-        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
-        values (
-            'LLM_API_CONFIGURATION',
-            'CLAUDE_API_KEY',
-            '{
-                "apiKey": "",
-                "model": "claude-sonnet-4-5-20250929",
-                "maxTokens": 4096,
-                "temperature": 0.7
-            }'::jsonb,
-            'Claude AI API configuration and model settings'
-        );
-    end if;
+    -- GROK_API_KEY and CLAUDE_API_KEY have been replaced by unified LLM_CONFIG
 
     if not exists (select 1 from cht_parameters where prm_code = 'RATE_LIMIT') then
         insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
-        values ( 'LLM_API_CONFIGURATION', 'RATE_LIMIT', '{"requestsPerMinute": 60, "requestsPerHour": 1000}'::jsonb, 'API rate limiting configuration' );
+        values ( 'LLM_CONFIGURATION', 'RATE_LIMIT', '{"requestsPerMinute": 60, "requestsPerHour": 1000}'::jsonb, 'API rate limiting configuration' );
     end if;
 
     -- =====================================================
@@ -553,21 +554,6 @@ begin
         values ( 'SESSION_CONFIGURATION', 'SESSION_TIMEOUT', '{"minutes": 30}'::jsonb, 'User session timeout in minutes' );
     end if;
 
-    if not exists (select 1 from cht_parameters where prm_code = 'RAG_CONFIG') then
-        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
-        values (
-            'RAG_CONFIGURATION',
-            'RAG_CONFIG',
-            '{
-                "topK": 5,
-                "similarityThreshold": 0.7,
-                "chunkSize": 1000,
-                "chunkOverlap": 200
-            }'::jsonb,
-            'Retrieval Augmented Generation settings'
-        );
-    end if;
-
     -- =====================================================
     -- WhatsApp Configuration
     -- =====================================================
@@ -588,6 +574,141 @@ begin
     end if;
 
     -- =====================================================
+    -- AcademicOK API Configuration
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'ACADEMICOK_CONFIGURATION') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'ACADEMICOK_CONFIGURATION',
+            'ACADEMICOK_CONFIGURATION',
+            '{
+                "personaURL": "https://itsl.academicok.com/api?a=apidatospersona",
+                "docenteURL": "https://itsl.academicok.com/api?a=apidatosdocente",
+                "personaKey": "j62kDJnltU4wVqp",
+                "docenteKey": "123",
+                "timeout": 10
+            }'::jsonb,
+            'AcademicOK API configuration for student and professor validation'
+        );
+    end if;
+
+    -- =====================================================
+    -- RAG Configuration
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'RAG_SEARCH_LIMIT') then
+           insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+           values ('RAG_CONFIGURATION', 'RAG_SEARCH_LIMIT', '{"value": 5}'::jsonb, 'Maximum number of chunks to retrieve in similarity search');
+	end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_MIN_SIMILARITY') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_MIN_SIMILARITY', '{"value": 0.3}'::jsonb, 'Minimum similarity threshold (0.0-1.0) for RAG search results');
+      end if;
+
+      -- =====================================================
+      -- RAG Configuration - Error Messages
+      -- =====================================================
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_ERROR_MESSAGE') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_ERROR_MESSAGE', '{"message": "Lo siento, ocurrió un error al procesar tu mensaje."}'::jsonb, 'Error message when RAG processing fails');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_NO_RESULTS_MESSAGE') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_NO_RESULTS_MESSAGE', '{"message": "Lo siento, no encontré información relevante sobre tu consulta. ¿Podrías reformular tu pregunta?"}'::jsonb, 'Message when no relevant chunks found');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_NO_RELEVANT_INFO') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_NO_RELEVANT_INFO', '{"message": "No encontré información relevante."}'::jsonb, 'Simple no results message');
+      end if;
+
+      -- =====================================================
+      -- RAG Configuration - Response Templates
+      -- =====================================================
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_SOURCE_PREFIX') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_SOURCE_PREFIX', '{"template": "## Fuente %d:%s\n"}'::jsonb, 'Template for source prefix in context building (args: index, title)');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_ANSWER_FORMAT')
+ then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_ANSWER_FORMAT', '{"template": "📚 Basado en: *%s*\n\n%s\n\n_Similitud: %.0f%%_"}'::jsonb, 'Template for answer formatting (args: docTitle, content, similarity%)');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code =
+ 'RAG_MULTIPLE_SOURCES_SUFFIX') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_MULTIPLE_SOURCES_SUFFIX', '{"template":"\n\n_(También encontré información en %d documentos más)_"}'::jsonb, 'Suffix when multiple sources found (args: count)');
+      end if;
+
+      -- =====================================================
+      -- WhatsApp Bot - Command Messages
+      -- =====================================================
+      if not exists (select 1 from cht_parameters where prm_code = 'MESSAGE_HELP') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_HELP', '{"message": "👋 *Bienvenido al Asistente del Instituto*\n\nSoy tu asistente virtual y puedo ayudarte con:\n\n🎓 *Información Académica*\n   • Programas y carreras\n   • Requisitos de admisión\n   • Proceso de matrícula\n   • Calendario académico\n\n📚 *Consultas Generales*\n   Solo escribe tu pregunta y te ayudaré a encontrar la información que necesitas.\n\n⚡ *Comandos Disponibles*\n   /help - Muestra esta ayuda\n   /horarios - Consulta horarios de clases\n   /comandos - Lista todos los comandos\n\n💬 También puedes hacer preguntas directamente, por ejemplo:\n   \"¿Cuál es el proceso de matrícula?\"\n \"¿Qué carreras ofrecen?\"\n\n¿En qué puedo ayudarte hoy?"}'::jsonb, 'Help command response text');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'MESSAGE_SCHEDULES') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_SCHEDULES', '{"message": "📅 *Consulta de Horarios*\n\nPara consultar horarios, por favor proporciona:\n   • Nombre de la carrera o programa\n   • Semestre o nivel\n   • (Opcional) Materia específica\n\nEjemplo: \"Horario de Ingeniería en Sistemas, tercer semestre\"\n\nTambién puedo ayudarte con horarios de:\n   🏫 Horarios de atención administrativa\n   📖 Horarios de biblioteca\n   🏃 Horarios de actividades extracurriculares\n\n¿Qué horario necesitas consultar?"}'::jsonb, 'Schedules command response text');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'MESSAGE_COMMANDS') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_COMMANDS', '{"message": "⚡ *Comandos Disponibles*\n\n/help - Muestra ayuda general del bot\n/horarios - Consulta horarios de clases\n/comandos - Muestra esta lista de comandos\n/start - Reinicia la conversación\n\n💡 *Tip*: No necesitas usar comandos para hacer preguntas. ¡Solo escribe tu consulta!"}'::jsonb, 'Commands list response text');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'MESSAGE_START') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_START', '{"message": "👋 ¡Hola! Soy el asistente virtual del Instituto.\n\nEstoy aquí para ayudarte con información sobre:\n • Programas académicos\n   • Admisiones y matrículas\n   • Horarios y calendarios\n • Y mucho más...\n\nEscribe /help para ver todo lo que puedo hacer, o simplemente hazme una pregunta.\n\n¿En qué puedo ayudarte?"}'::jsonb, 'Start/welcome command response text');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code =
+ 'MESSAGE_UNKNOWN_COMMAND') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_UNKNOWN_COMMAND', '{"message": "❓ Comando no reconocido.\n\nEscribe /help para ver los comandos disponibles, o simplemente hazme tu pregunta directamente."}'::jsonb, 'Unknown command response text');
+      end if;
+
+      -- =====================================================
+      -- WhatsApp Bot - User Registration Messages
+      -- =====================================================
+      if not exists (select 1 from cht_parameters where prm_code =
+ 'MESSAGE_REQUEST_CEDULA') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_REQUEST_CEDULA', '{"message": "👋 ¡Hola! Bienvenido al asistente virtual del Instituto.\n\nPara poder ayudarte, necesito que te registres primero.\n\nPor favor, envíame tu número de cédula (10 dígitos).\n\nEjemplo: 1234567890"}'::jsonb, 'Message requesting user to provide cedula for registration');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code =
+ 'MESSAGE_CEDULA_VALIDATION_ERROR') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_CEDULA_VALIDATION_ERROR', '{"message": "❌ No pude validar tu cédula. Por favor verifica que sea correcta e intenta nuevamente."}'::jsonb, 'Error message when cedula validation fails');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code =
+ 'MESSAGE_REGISTRATION_ERROR') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_REGISTRATION_ERROR', '{"message": "❌ Ocurrió un error al registrarte. Por favor intenta nuevamente."}'::jsonb, 'Error message when user registration fails');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code =
+ 'MESSAGE_EXTERNAL_USER') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_EXTERNAL_USER', '{"message": "👤 No encontré tu cédula en nuestra base de datos.\n\nSi eres un visitante externo, por favor proporciona:\n1. Tu nombre completo\n2. Tu correo electrónico\n\nEjemplo:\nJuan Pérez\njuan.perez@email.com\n\nO si eres estudiante/docente, verifica que tu cédula sea correcta."}'::jsonb, 'Message for external users not found in institute database');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code =
+ 'MESSAGE_WELCOME_REGISTERED') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'MESSAGE_WELCOME_REGISTERED', '{"template": "%s ¡Bienvenido, %s!\n\nHas sido registrado exitosamente como %s.\n\nAhora puedes:\n• Hacer preguntas sobre el instituto\n• Consultar horarios con /horarios\n• Ver ayuda con /help\n\n¿En qué puedo ayudarte hoy?"}'::jsonb, 'Welcome message after successful registration (args: roleEmoji, userName, roleText)');
+      end if;
+
+      -- =====================================================
+      -- LLM Configuration
+
+    -- =====================================================
     -- LLM Configuration
     -- =====================================================
     if not exists (select 1 from cht_parameters where prm_code = 'LLM_CONFIG') then
@@ -596,17 +717,31 @@ begin
             'LLM_CONFIGURATION',
             'LLM_CONFIG',
             '{
-                "provider": "grok",
-                "apiKey": "YOUR_GROK_API_KEY_HERE",
-                "model": "grok-beta",
+                "provider": "groq",
+                "apiKey": "YOUR_GROQ_API_KEY_HERE",
+                "baseURL": "https://api.groq.com/openai/v1",
+                "model": "llama-3.3-70b-versatile",
                 "temperature": 0.7,
                 "maxTokens": 1000,
                 "timeout": 30,
                 "systemPrompt": "Eres un asistente virtual del instituto educativo. Tu objetivo es ayudar a estudiantes y profesores con información académica de manera clara, precisa y amigable. Siempre basa tus respuestas en el contexto proporcionado."
             }'::jsonb,
-            'LLM provider configuration (grok, openai, anthropic)'
+            'LLM provider configuration (groq, openai, anthropic). Use baseURL to connect to OpenAI-compatible APIs.'
         );
     end if;
+
+    -- Alternative OpenAI configuration example (commented out)
+    -- To use OpenAI instead of Groq, update LLM_CONFIG with:
+    -- {
+    --   "provider": "openai",
+    --   "apiKey": "YOUR_OPENAI_API_KEY_HERE",
+    --   "baseURL": "https://api.openai.com/v1",
+    --   "model": "gpt-4o-mini",
+    --   "temperature": 0.7,
+    --   "maxTokens": 1000,
+    --   "timeout": 30,
+    --   "systemPrompt": "..."
+    -- }
 
 end $$;
 

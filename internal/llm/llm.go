@@ -61,13 +61,16 @@ type Message struct {
 
 // Config holds configuration for LLM providers
 type Config struct {
-	// Provider name: "grok", "openai", "anthropic"
+	// Provider name: "groq", "openai", "anthropic"
 	Provider string
 
 	// API key for authentication
 	APIKey string
 
-	// Model name (e.g., "grok-beta", "gpt-4", "claude-3-opus")
+	// BaseURL for the API (e.g., "https://api.groq.com/openai/v1", "https://api.openai.com/v1")
+	BaseURL string
+
+	// Model name (e.g., "llama-3.3-70b-versatile", "gpt-4o-mini", "claude-3-opus")
 	Model string
 
 	// Default temperature
