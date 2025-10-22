@@ -602,7 +602,32 @@ begin
 
       if not exists (select 1 from cht_parameters where prm_code = 'RAG_MIN_SIMILARITY') then
           insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
-          values ('RAG_CONFIGURATION', 'RAG_MIN_SIMILARITY', '{"value": 0.3}'::jsonb, 'Minimum similarity threshold (0.0-1.0) for RAG search results');
+          values ('RAG_CONFIGURATION', 'RAG_MIN_SIMILARITY', '{"value": 0.2}'::jsonb, 'Minimum similarity threshold (0.0-1.0) for RAG search results');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_KEYWORD_WEIGHT') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_KEYWORD_WEIGHT', '{"value": 0.15}'::jsonb, 'Weight for keyword search in hybrid search (0.0-1.0)');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_CONVERSATION_HISTORY_LIMIT') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_CONVERSATION_HISTORY_LIMIT', '{"value": 10}'::jsonb, 'Number of previous messages to include in conversation context');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_LLM_TEMPERATURE') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_LLM_TEMPERATURE', '{"value": 0.7}'::jsonb, 'LLM temperature for RAG responses (0.0-2.0)');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_LLM_MAX_TOKENS') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_LLM_MAX_TOKENS', '{"value": 1000}'::jsonb, 'Maximum tokens for LLM RAG responses');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_SYSTEM_PROMPT') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_SYSTEM_PROMPT', '{"message": "Eres un asistente virtual del instituto educativo. Tu objetivo es ayudar a estudiantes y profesores con información académica de manera clara, precisa y amigable. Siempre basa tus respuestas en el contexto proporcionado."}'::jsonb, 'System prompt for RAG LLM interactions');
       end if;
 
       -- =====================================================
