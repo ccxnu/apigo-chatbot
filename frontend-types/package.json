@@ -1,0 +1,20 @@
+{
+  "name": "@api-chatbot/types",
+  "version": "1.0.0",
+  "description": "TypeScript types and API client for api-chatbot backend",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "typescript",
+    "types",
+    "api-client"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

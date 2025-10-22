@@ -1,6 +1,7 @@
 package jwttoken
 
 import (
+	d "api-chatbot/domain"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,7 +15,7 @@ type CustomClaims struct {
 	Name        string                 `json:"name"`
 	Role        string                 `json:"role"`
 	Permissions []string               `json:"permissions,omitempty"`
-	Claims      map[string]interface{} `json:"claims,omitempty"` // Custom extensible claims
+	Claims      d.Data `json:"claims,omitempty"` // Custom extensible claims
 	TokenType   string                 `json:"tokenType"`        // "access" or "refresh"
 	jwt.RegisteredClaims
 }
@@ -45,7 +46,7 @@ type TokenMetadata struct {
 	Name        string
 	Role        string
 	Permissions []string
-	Claims      map[string]interface{}
+	Claims      d.Data
 	TokenFamily string // For refresh token rotation
 	IPAddress   string
 	UserAgent   string

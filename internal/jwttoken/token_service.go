@@ -1,6 +1,7 @@
 package jwttoken
 
 import (
+	d "api-chatbot/domain"
 	"fmt"
 	"time"
 
@@ -18,7 +19,7 @@ type TokenService struct {
 
 // NewTokenService creates a new token service with configuration from parameter cache
 // Falls back to defaults if JWT_CONFIG parameter is not found
-func NewTokenService(paramCache interface{}) *TokenService {
+func NewTokenService(paramCache any) *TokenService {
 	// Default values
 	accessSecret := "change-me-in-production-access-secret-key"
 	refreshSecret := "change-me-in-production-refresh-secret-key"
@@ -27,7 +28,7 @@ func NewTokenService(paramCache interface{}) *TokenService {
 
 	// Try to get configuration from parameter cache
 	if cache, ok := paramCache.(interface {
-		Get(code string) (interface{ GetDataAsMap() (map[string]interface{}, error) }, bool)
+		Get(code string) (interface{ GetDataAsMap() (d.Data, error) }, bool)
 	}); ok {
 		if param, exists := cache.Get("JWT_CONFIG"); exists {
 			if data, err := param.GetDataAsMap(); err == nil {
@@ -148,7 +149,7 @@ func (ts *TokenService) CreateRefreshToken(metadata TokenMetadata) (string, erro
 
 // ValidateAccessToken validates and parses an access token
 func (ts *TokenService) ValidateAccessToken(tokenString string) (*CustomClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -174,7 +175,7 @@ func (ts *TokenService) ValidateAccessToken(tokenString string) (*CustomClaims, 
 
 // ValidateRefreshToken validates and parses a refresh token
 func (ts *TokenService) ValidateRefreshToken(tokenString string) (*RefreshTokenClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}

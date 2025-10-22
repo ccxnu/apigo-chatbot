@@ -1,26 +1,29 @@
 package request
 
-import "api-chatbot/domain"
+import d "api-chatbot/domain"
 
 // LoginRequest represents admin login credentials
 type LoginRequest struct {
+	d.Base
 	Username string `json:"username" validate:"required,min=3,max=50" doc:"Admin username"`
 	Password string `json:"password" validate:"required,min=8" doc:"Admin password"`
 }
 
 // RefreshTokenRequest represents token refresh request
 type RefreshTokenRequest struct {
+	d.Base
 	RefreshToken string `json:"refreshToken" validate:"required" doc:"Valid refresh token"`
 }
 
 // LogoutRequest represents logout request
 type LogoutRequest struct {
+	d.Base
 	RefreshToken string `json:"refreshToken" validate:"required" doc:"Refresh token to revoke"`
 }
 
 // CreateAdminRequest represents admin user creation request
 type CreateAdminRequest struct {
-	domain.Base
+	d.Base
 	Username    string              `json:"username" validate:"required,min=3,max=50" doc:"Admin username"`
 	Email       string              `json:"email" validate:"required,email,max=100" doc:"Admin email address"`
 	Password    string              `json:"password" validate:"required,min=8" doc:"Admin password"`

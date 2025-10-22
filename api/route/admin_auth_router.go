@@ -3,7 +3,6 @@ package route
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -28,22 +27,6 @@ type CreateAdminResponse struct {
 	Body d.Result[*d.AdminUser]
 }
 
-// Helper to extract IP and User-Agent from context
-func getClientInfo(ctx context.Context) (string, string) {
-	// Try to get from Huma context metadata
-	if md, ok := ctx.Value("request").(*http.Request); ok {
-		ipAddress := md.RemoteAddr
-		if forwarded := md.Header.Get("X-Forwarded-For"); forwarded != "" {
-			ipAddress = strings.Split(forwarded, ",")[0]
-		} else if realIP := md.Header.Get("X-Real-IP"); realIP != "" {
-			ipAddress = realIP
-		}
-		userAgent := md.Header.Get("User-Agent")
-		return ipAddress, userAgent
-	}
-	return "unknown", "unknown"
-}
-
 func NewAdminAuthRouter(adminUseCase d.AdminUseCase, mux *http.ServeMux, humaAPI huma.API) {
 	// Login endpoint
 	huma.Register(humaAPI, huma.Operation{
@@ -56,8 +39,7 @@ func NewAdminAuthRouter(adminUseCase d.AdminUseCase, mux *http.ServeMux, humaAPI
 	}, func(ctx context.Context, input *struct {
 		Body request.LoginRequest
 	}) (*LoginResponse, error) {
-		ipAddress, userAgent := getClientInfo(ctx)
-		result := adminUseCase.Login(ctx, input.Body.Username, input.Body.Password, ipAddress, userAgent)
+		result := adminUseCase.Login(ctx, input.Body.Username, input.Body.Password, input.Body.DeviceAddress, input.Body.IdDevice)
 		return &LoginResponse{Body: result}, nil
 	})
 
@@ -72,8 +54,7 @@ func NewAdminAuthRouter(adminUseCase d.AdminUseCase, mux *http.ServeMux, humaAPI
 	}, func(ctx context.Context, input *struct {
 		Body request.RefreshTokenRequest
 	}) (*RefreshTokenResponse, error) {
-		ipAddress, userAgent := getClientInfo(ctx)
-		result := adminUseCase.RefreshToken(ctx, input.Body.RefreshToken, ipAddress, userAgent)
+		result := adminUseCase.RefreshToken(ctx, input.Body.RefreshToken, input.Body.DeviceAddress, input.Body.IdDevice)
 		return &RefreshTokenResponse{Body: result}, nil
 	})
 
