@@ -60,6 +60,8 @@
   - [x] Conversation history integration
   - [x] LLM usage statistics tracking (tokens, timing)
   - [x] Dynamic configuration via parameters
+  - [x] Contact information fallback when no results found
+  - [x] Configurable chatbot name (Alfibot)
 - [x] **CommandHandler** - Handle `/help`, `/horarios`, `/comandos` (`handlers/command_handler.go`)
   - [x] Basic command routing
   - [x] All commands configured via RAG_CONFIGURATION parameters
@@ -140,14 +142,45 @@
 
 ### **PHASE 3: Admin Management System** ⚠️ PARTIALLY COMPLETED
 
-#### 3.1 Authentication & Sessions 🔴 NOT STARTED
-- [ ] Create admin user table
-    - See db/01_create_tables.sql and update/add the necessary fields.
-    - Also check the initial_data.sql
-- [ ] Implement JWT authentication for admin
-- [ ] Create login endpoint
-- [ ] Add session management
-- [ ] Implement role-based access control (RBAC)
+#### 3.1 Authentication & Sessions ⚠️ PARTIALLY COMPLETED
+- [x] Create admin user table (`cht_admin_users`)
+  - [x] Username, email, password hash
+  - [x] Role and permissions (JSONB array)
+  - [x] Custom claims (JSONB for extensibility)
+  - [x] Account locking after failed attempts
+  - [x] Last login tracking
+- [x] Create refresh tokens table (`cht_refresh_tokens`)
+  - [x] Token rotation with token families
+  - [x] Security breach detection on token reuse
+  - [x] User agent and IP tracking
+  - [x] Revocation support
+- [x] Create API keys table (`cht_api_keys`)
+  - [x] External API authentication
+  - [x] Custom claims support
+  - [x] Rate limiting configuration
+  - [x] IP whitelisting
+- [x] Create auth logs table (`cht_auth_logs`)
+  - [x] Audit trail for all auth events
+- [x] Implement JWT token service (`internal/jwttoken/`)
+  - [x] Access token + refresh token generation
+  - [x] Custom claims support (extensible for admins and APIs)
+  - [x] Token validation and parsing
+  - [x] Configurable expiration times
+- [x] Create repository layer (`repository/admin_repository.go`)
+  - [x] All database operations following Go standards
+  - [x] Returns (value, error) pattern
+- [x] Create use case layer (`usecase/admin_usecase.go`)
+  - [x] Login with password verification
+  - [x] Refresh token rotation
+  - [x] Logout with token revocation
+  - [x] Admin user creation
+  - [x] Token validation
+  - [x] Returns Result[T] pattern
+- [ ] Create login endpoint (POST `/admin/auth/login`)
+- [ ] Create refresh token endpoint (POST `/admin/auth/refresh`)
+- [ ] Create logout endpoint (POST `/admin/auth/logout`)
+- [ ] Create JWT middleware for route protection
+- [ ] Test complete authentication flow
 
 #### 3.2 WhatsApp Session Management ⚠️ PARTIALLY COMPLETED
 - [x] **GET** `/admin/whatsapp/qr-code` - Get QR for scanning
@@ -246,10 +279,13 @@
 - [x] `cht_conversations` - Conversation tracking
 - [x] `cht_conversation_messages` - Message history with LLM stats
 - [x] `cht_users` - WhatsApp users (students/professors)
+- [x] `cht_admin_users` - Admin users with roles and permissions
+- [x] `cht_refresh_tokens` - JWT refresh tokens with rotation
+- [x] `cht_api_keys` - External API keys with custom claims
+- [x] `cht_auth_logs` - Authentication audit trail
 - [x] Removed obsolete tables:
   - [x] `cht_messages` - Replaced by conversation system
   - [x] `cht_message_statistics` - Merged into conversation_messages
-- [ ] `cht_api_keys` - External API keys
 - [ ] `cht_api_usage` - API usage tracking
 - [ ] `cht_scheduled_tasks` - Background jobs
 - [ ] `cht_notifications` - Admin notifications
@@ -270,6 +306,17 @@
 - [x] `sp_update_user_whatsapp` - Update user WhatsApp
 - [x] `fn_get_user_by_identity` - Get user by cédula
 - [x] `fn_get_user_by_whatsapp` - Get user by WhatsApp number
+- [x] `sp_create_admin_user` - Create admin user
+- [x] `sp_update_admin_login` - Update login timestamp and IP
+- [x] `sp_increment_failed_attempts` - Increment failed login attempts
+- [x] `sp_store_refresh_token` - Store refresh token
+- [x] `sp_revoke_refresh_token` - Revoke single token
+- [x] `sp_revoke_token_family` - Revoke token family on breach
+- [x] `sp_cleanup_expired_tokens` - Remove expired tokens
+- [x] `sp_log_auth_event` - Log authentication events
+- [x] `fn_get_admin_by_username` - Get admin by username
+- [x] `fn_get_admin_by_id` - Get admin by ID
+- [x] `fn_get_refresh_token` - Get refresh token with admin info
 - [ ] `sp_track_api_usage` - Log API calls
 - [ ] `sp_get_user_statistics` - User activity stats
 - [ ] `sp_get_daily_metrics` - Daily analytics
@@ -480,7 +527,21 @@
 - ✅ AcademicOK API validation (student/professor detection)
 - ✅ Auto-registration with role assignment
 
-**Overall Progress:** ~65% of MVP complete
+**User Management:**
+- ✅ Database schema for users, conversations, messages
+- ✅ Repository and use case layers
+- ✅ AcademicOK API validation (student/professor detection)
+- ✅ Auto-registration with role assignment
+
+**Admin Authentication (NEW):**
+- ✅ Complete database schema (admin_users, refresh_tokens, api_keys, auth_logs)
+- ✅ JWT token service with custom claims
+- ✅ Token rotation and security breach detection
+- ✅ Repository and use case layers
+- ⏳ Admin endpoints (login, refresh, logout)
+- ⏳ JWT middleware for route protection
+
+**Overall Progress:** ~72% of MVP complete
 
 ---
 
@@ -501,29 +562,33 @@
    - Usage tracking (tokens, timing)
 
 **IMMEDIATE (Now):**
-1. **Test Complete System End-to-End**
-   - Apply database migrations (db/06_cleanup_and_stats.sql)
-   - Configure LLM_CONFIG with Groq API key
-   - Apply RAG_CONFIGURATION parameters
-   - Test user registration flow
-   - Test RAG queries with conversation history
-   - Verify LLM statistics tracking
+1. **Complete Admin Authentication (PHASE 3.1)** 🔄 IN PROGRESS
+   - ✅ Database schema and procedures
+   - ✅ JWT token service with custom claims
+   - ✅ Repository and use case layers
+   - ⏳ Create login/refresh/logout endpoints
+   - ⏳ Implement JWT middleware for route protection
+   - ⏳ Test authentication flow end-to-end
 
-2. **Code Quality & Documentation**
-   - Update API documentation
-   - Add usage examples
-   - Performance testing
+2. **Test Complete System End-to-End**
+   - Apply database migrations (db/07_admin_authentication.sql)
+   - Configure JWT secrets in environment
+   - Test admin user creation
+   - Test login/refresh/logout flows
+   - Test protected routes with JWT middleware
+   - Verify token rotation and security features
 
 **SHORT TERM (Next 2 Weeks):**
-3. **Admin Authentication (PHASE 3.1)**
-   - Create admin user table
-   - Implement JWT authentication
-   - Add RBAC for admin endpoints
+3. **Admin Panel Endpoints (PHASE 3.2-3.7)**
+   - Protect existing admin routes with JWT middleware
+   - User management endpoints
+   - Analytics dashboard
+   - Conversation monitoring
 
-4. **Analytics Dashboard (PHASE 3.6)**
-   - Message statistics
-   - Token usage tracking
-   - User activity metrics
+4. **Code Quality & Documentation**
+   - Update API documentation
+   - Add authentication usage examples
+   - Performance testing
 
 **MEDIUM TERM (Next Month):**
 6. **External API (PHASE 4)**
@@ -542,11 +607,11 @@
 
 | Phase | Status | Completion | Priority |
 |-------|--------|-----------|----------|
-| **PHASE 1: WhatsApp Integration** | ✅ Complete | 95% | HIGH - MVP |
-| **PHASE 2: Enhanced RAG System** | ✅ Complete | 95% | HIGH - MVP |
-| **PHASE 3: Admin Management** | ⚠️ Partial | 40% | HIGH - MVP |
+| **PHASE 1: WhatsApp Integration** | ✅ Complete | 100% | HIGH - MVP |
+| **PHASE 2: Enhanced RAG System** | ✅ Complete | 100% | HIGH - MVP |
+| **PHASE 3: Admin Management** | ⚠️ Partial | 55% | HIGH - MVP |
 | **PHASE 4: External API** | 🔴 Not Started | 0% | MEDIUM |
-| **PHASE 5: Database Enhancements** | ✅ Complete | 85% | MEDIUM |
+| **PHASE 5: Database Enhancements** | ✅ Complete | 95% | MEDIUM |
 | **PHASE 6: Schedule & Location Intelligence** 🆕 | 🔴 Not Started | 0% | **HIGH** |
 | **PHASE 7: Background Services** | 🔴 Not Started | 0% | MEDIUM |
 | **PHASE 8: Advanced Features** | 🔴 Not Started | 0% | LOW |
@@ -585,9 +650,9 @@
 ## Priority Order
 
 **HIGH (Must have for MVP):**
-- Phase 1: WhatsApp Integration (95% complete) ✅
-- Phase 2: Enhanced RAG with LLM (95% complete) ✅
-- Phase 3: Basic Admin (40% complete) ⚠️
+- Phase 1: WhatsApp Integration (100% complete) ✅
+- Phase 2: Enhanced RAG with LLM (100% complete) ✅
+- Phase 3: Basic Admin (55% complete) ⚠️
 - Phase 10: Deployment & Operations (60% complete) ⚠️
 
 **MEDIUM (Important for v1.0):**
