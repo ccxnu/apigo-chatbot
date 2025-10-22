@@ -16,8 +16,37 @@ type TokenService struct {
 	refreshTokenExpiry time.Duration
 }
 
-// NewTokenService creates a new token service
-func NewTokenService(accessSecret, refreshSecret string, accessExpiryHours, refreshExpiryHours int) *TokenService {
+// NewTokenService creates a new token service with configuration from parameter cache
+// Falls back to defaults if JWT_CONFIG parameter is not found
+func NewTokenService(paramCache interface{}) *TokenService {
+	// Default values
+	accessSecret := "change-me-in-production-access-secret-key"
+	refreshSecret := "change-me-in-production-refresh-secret-key"
+	accessExpiryHours := 1   // 1 hour for access token
+	refreshExpiryHours := 168 // 7 days for refresh token
+
+	// Try to get configuration from parameter cache
+	if cache, ok := paramCache.(interface {
+		Get(code string) (interface{ GetDataAsMap() (map[string]interface{}, error) }, bool)
+	}); ok {
+		if param, exists := cache.Get("JWT_CONFIG"); exists {
+			if data, err := param.GetDataAsMap(); err == nil {
+				if as, ok := data["accessSecret"].(string); ok && as != "" {
+					accessSecret = as
+				}
+				if rs, ok := data["refreshSecret"].(string); ok && rs != "" {
+					refreshSecret = rs
+				}
+				if ae, ok := data["accessExpiryHours"].(float64); ok {
+					accessExpiryHours = int(ae)
+				}
+				if re, ok := data["refreshExpiryHours"].(float64); ok {
+					refreshExpiryHours = int(re)
+				}
+			}
+		}
+	}
+
 	return &TokenService{
 		accessSecret:       accessSecret,
 		refreshSecret:      refreshSecret,

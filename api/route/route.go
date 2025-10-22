@@ -11,6 +11,7 @@ import (
 	"api-chatbot/domain"
 	"api-chatbot/internal/embedding"
 	"api-chatbot/internal/httpclient"
+	"api-chatbot/internal/jwttoken"
 	"api-chatbot/repository"
 	"api-chatbot/usecase"
 )
@@ -28,12 +29,14 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	statsRepo := repository.NewChunkStatisticsRepository(dataAccess)
 	sessionRepo := repository.NewWhatsAppSessionRepository(dataAccess)
 	convRepo := repository.NewConversationRepository(dataAccess)
+	adminRepo := repository.NewAdminRepository(dataAccess)
 
 	// Initialize clients
 	httpClient := httpclient.NewHTTPClient(paramCache)
 
 	// Initialize services
 	embeddingService := embedding.NewOpenAIEmbeddingService(paramCache, httpClient)
+	tokenService := jwttoken.NewTokenService(paramCache)
 
 	// Initialize use cases
 	paramUseCase := usecase.NewParameterUseCase(paramRepo, paramCache, timeout)
@@ -42,6 +45,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	statsUseCase := usecase.NewChunkStatisticsUseCase(statsRepo, paramCache, timeout)
 	sessionUseCase := usecase.NewWhatsAppSessionUseCase(sessionRepo, paramCache, timeout)
 	convUseCase := usecase.NewConversationUseCase(convRepo, paramCache, timeout)
+	adminUseCase := usecase.NewAdminUseCase(adminRepo, tokenService, paramCache)
 
 	// Register all routes
 	// All routes are now registered via Huma which uses the ServeMux
@@ -57,4 +61,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 
 	// WhatsApp admin routes
 	NewWhatsAppAdminRouter(sessionUseCase, convUseCase, mux, humaAPI)
+
+	// Admin authentication routes
+	NewAdminAuthRouter(adminUseCase, mux, humaAPI)
 }
