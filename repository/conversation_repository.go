@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"api-chatbot/api/dal"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 const (
@@ -22,15 +22,15 @@ type conversationRepository struct {
 	dal *dal.DAL
 }
 
-func NewConversationRepository(dal *dal.DAL) domain.ConversationRepository {
+func NewConversationRepository(dal *dal.DAL) d.ConversationRepository {
 	return &conversationRepository{
 		dal: dal,
 	}
 }
 
 // GetByChatID retrieves a conversation by WhatsApp chat ID
-func (r *conversationRepository) GetByChatID(ctx context.Context, chatID string) (*domain.Conversation, error) {
-	conversations, err := dal.QueryRows[domain.Conversation](r.dal, ctx, fnGetConversationByChatID, chatID)
+func (r *conversationRepository) GetByChatID(ctx context.Context, chatID string) (*d.Conversation, error) {
+	conversations, err := dal.QueryRows[d.Conversation](r.dal, ctx, fnGetConversationByChatID, chatID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get conversation via %s: %w", fnGetConversationByChatID, err)
 	}
@@ -43,8 +43,8 @@ func (r *conversationRepository) GetByChatID(ctx context.Context, chatID string)
 }
 
 // Create creates a new conversation or returns existing one
-func (r *conversationRepository) Create(ctx context.Context, params domain.CreateConversationParams) (*domain.CreateConversationResult, error) {
-	result, err := dal.ExecProc[domain.CreateConversationResult](
+func (r *conversationRepository) Create(ctx context.Context, params d.CreateConversationParams) (*d.CreateConversationResult, error) {
+	result, err := dal.ExecProc[d.CreateConversationResult](
 		r.dal,
 		ctx,
 		spCreateConversation,
@@ -63,8 +63,8 @@ func (r *conversationRepository) Create(ctx context.Context, params domain.Creat
 }
 
 // LinkUser links a validated user to a conversation
-func (r *conversationRepository) LinkUser(ctx context.Context, params domain.LinkUserToConversationParams) (*domain.LinkUserToConversationResult, error) {
-	result, err := dal.ExecProc[domain.LinkUserToConversationResult](
+func (r *conversationRepository) LinkUser(ctx context.Context, params d.LinkUserToConversationParams) (*d.LinkUserToConversationResult, error) {
+	result, err := dal.ExecProc[d.LinkUserToConversationResult](
 		r.dal,
 		ctx,
 		spLinkUserToConversation,
@@ -80,8 +80,8 @@ func (r *conversationRepository) LinkUser(ctx context.Context, params domain.Lin
 }
 
 // GetHistory retrieves message history for a conversation
-func (r *conversationRepository) GetHistory(ctx context.Context, chatID string, limit int) ([]domain.ConversationMessage, error) {
-	messages, err := dal.QueryRows[domain.ConversationMessage](r.dal, ctx, fnGetConversationHistory, chatID, limit)
+func (r *conversationRepository) GetHistory(ctx context.Context, chatID string, limit int) ([]d.ConversationMessage, error) {
+	messages, err := dal.QueryRows[d.ConversationMessage](r.dal, ctx, fnGetConversationHistory, chatID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get conversation history via %s: %w", fnGetConversationHistory, err)
 	}
@@ -90,8 +90,8 @@ func (r *conversationRepository) GetHistory(ctx context.Context, chatID string, 
 }
 
 // CreateMessage stores a new message in a conversation
-func (r *conversationRepository) CreateMessage(ctx context.Context, params domain.CreateConversationMessageParams) (*domain.CreateConversationMessageResult, error) {
-	result, err := dal.ExecProc[domain.CreateConversationMessageResult](
+func (r *conversationRepository) CreateMessage(ctx context.Context, params d.CreateConversationMessageParams) (*d.CreateConversationMessageResult, error) {
+	result, err := dal.ExecProc[d.CreateConversationMessageResult](
 		r.dal,
 		ctx,
 		spCreateConversationMessage,

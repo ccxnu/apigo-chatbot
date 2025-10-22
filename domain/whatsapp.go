@@ -56,7 +56,7 @@ type UpdateSessionStatusResult struct {
 
 // WhatsApp Repository & UseCase Interfaces
 
-type WhatsAppSessionRepository interface{
+type WhatsAppSessionRepository interface {
 	GetBySessionName(ctx context.Context, sessionName string) (*WhatsAppSession, error)
 	UpdateStatus(ctx context.Context, params UpdateSessionStatusParams) (*UpdateSessionStatusResult, error)
 	UpdateQRCode(ctx context.Context, sessionName, qrCode string) error

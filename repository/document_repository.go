@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"api-chatbot/api/dal"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 const (
@@ -24,15 +24,15 @@ type documentRepository struct {
 	dal *dal.DAL
 }
 
-func NewDocumentRepository(dal *dal.DAL) domain.DocumentRepository {
+func NewDocumentRepository(dal *dal.DAL) d.DocumentRepository {
 	return &documentRepository{
 		dal: dal,
 	}
 }
 
 // GetAll retrieves all active documents with pagination
-func (r *documentRepository) GetAll(ctx context.Context, limit, offset int) ([]domain.Document, error) {
-	docs, err := dal.QueryRows[domain.Document](r.dal, ctx, fnGetAllDocuments, limit, offset)
+func (r *documentRepository) GetAll(ctx context.Context, limit, offset int) ([]d.Document, error) {
+	docs, err := dal.QueryRows[d.Document](r.dal, ctx, fnGetAllDocuments, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all documents via %s: %w", fnGetAllDocuments, err)
 	}
@@ -40,8 +40,8 @@ func (r *documentRepository) GetAll(ctx context.Context, limit, offset int) ([]d
 }
 
 // GetByID retrieves a single document by ID
-func (r *documentRepository) GetByID(ctx context.Context, docID int) (*domain.Document, error) {
-	docs, err := dal.QueryRows[domain.Document](r.dal, ctx, fnGetDocumentByID, docID)
+func (r *documentRepository) GetByID(ctx context.Context, docID int) (*d.Document, error) {
+	docs, err := dal.QueryRows[d.Document](r.dal, ctx, fnGetDocumentByID, docID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get document by id via %s: %w", fnGetDocumentByID, err)
 	}
@@ -54,8 +54,8 @@ func (r *documentRepository) GetByID(ctx context.Context, docID int) (*domain.Do
 }
 
 // GetByCategory retrieves documents filtered by category
-func (r *documentRepository) GetByCategory(ctx context.Context, category string, limit, offset int) ([]domain.Document, error) {
-	docs, err := dal.QueryRows[domain.Document](r.dal, ctx, fnGetDocumentsByCategory, category, limit, offset)
+func (r *documentRepository) GetByCategory(ctx context.Context, category string, limit, offset int) ([]d.Document, error) {
+	docs, err := dal.QueryRows[d.Document](r.dal, ctx, fnGetDocumentsByCategory, category, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get documents by category via %s: %w", fnGetDocumentsByCategory, err)
 	}
@@ -63,8 +63,8 @@ func (r *documentRepository) GetByCategory(ctx context.Context, category string,
 }
 
 // SearchByTitle searches documents by title pattern
-func (r *documentRepository) SearchByTitle(ctx context.Context, titlePattern string, limit int) ([]domain.Document, error) {
-	docs, err := dal.QueryRows[domain.Document](r.dal, ctx, fnSearchDocumentsByTitle, titlePattern, limit)
+func (r *documentRepository) SearchByTitle(ctx context.Context, titlePattern string, limit int) ([]d.Document, error) {
+	docs, err := dal.QueryRows[d.Document](r.dal, ctx, fnSearchDocumentsByTitle, titlePattern, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search documents by title via %s: %w", fnSearchDocumentsByTitle, err)
 	}
@@ -72,8 +72,8 @@ func (r *documentRepository) SearchByTitle(ctx context.Context, titlePattern str
 }
 
 // Create creates a new document
-func (r *documentRepository) Create(ctx context.Context, params domain.CreateDocumentParams) (*domain.CreateDocumentResult, error) {
-	result, err := dal.ExecProc[domain.CreateDocumentResult](
+func (r *documentRepository) Create(ctx context.Context, params d.CreateDocumentParams) (*d.CreateDocumentResult, error) {
+	result, err := dal.ExecProc[d.CreateDocumentResult](
 		r.dal,
 		ctx,
 		spCreateDocument,
@@ -92,8 +92,8 @@ func (r *documentRepository) Create(ctx context.Context, params domain.CreateDoc
 }
 
 // Update updates an existing document
-func (r *documentRepository) Update(ctx context.Context, params domain.UpdateDocumentParams) (*domain.UpdateDocumentResult, error) {
-	result, err := dal.ExecProc[domain.UpdateDocumentResult](
+func (r *documentRepository) Update(ctx context.Context, params d.UpdateDocumentParams) (*d.UpdateDocumentResult, error) {
+	result, err := dal.ExecProc[d.UpdateDocumentResult](
 		r.dal,
 		ctx,
 		spUpdateDocument,
@@ -113,8 +113,8 @@ func (r *documentRepository) Update(ctx context.Context, params domain.UpdateDoc
 }
 
 // Delete soft deletes a document
-func (r *documentRepository) Delete(ctx context.Context, docID int) (*domain.DeleteDocumentResult, error) {
-	result, err := dal.ExecProc[domain.DeleteDocumentResult](
+func (r *documentRepository) Delete(ctx context.Context, docID int) (*d.DeleteDocumentResult, error) {
+	result, err := dal.ExecProc[d.DeleteDocumentResult](
 		r.dal,
 		ctx,
 		spDeleteDocument,

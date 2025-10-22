@@ -9,42 +9,42 @@ import (
 
 // Conversation represents a WhatsApp conversation
 type Conversation struct {
-	ID            int       `json:"id" db:"cnv_id"`
-	UserID        *int      `json:"userId,omitempty" db:"cnv_fk_user"`
-	ChatID        string    `json:"chatId" db:"cnv_chat_id"`
-	PhoneNumber   string    `json:"phoneNumber" db:"cnv_phone_number"`
-	ContactName   *string   `json:"contactName,omitempty" db:"cnv_contact_name"`
-	IsGroup       bool      `json:"isGroup" db:"cnv_is_group"`
-	GroupName     *string   `json:"groupName,omitempty" db:"cnv_group_name"`
+	ID            int        `json:"id" db:"cnv_id"`
+	UserID        *int       `json:"userId,omitempty" db:"cnv_fk_user"`
+	ChatID        string     `json:"chatId" db:"cnv_chat_id"`
+	PhoneNumber   string     `json:"phoneNumber" db:"cnv_phone_number"`
+	ContactName   *string    `json:"contactName,omitempty" db:"cnv_contact_name"`
+	IsGroup       bool       `json:"isGroup" db:"cnv_is_group"`
+	GroupName     *string    `json:"groupName,omitempty" db:"cnv_group_name"`
 	LastMessageAt *time.Time `json:"lastMessageAt,omitempty" db:"cnv_last_message_at"`
-	MessageCount  int       `json:"messageCount" db:"cnv_message_count"`
-	Active        bool      `json:"active" db:"cnv_active"`
-	CreatedAt     time.Time `json:"createdAt" db:"cnv_created_at"`
-	UpdatedAt     time.Time `json:"updatedAt" db:"cnv_updated_at"`
+	MessageCount  int        `json:"messageCount" db:"cnv_message_count"`
+	Active        bool       `json:"active" db:"cnv_active"`
+	CreatedAt     time.Time  `json:"createdAt" db:"cnv_created_at"`
+	UpdatedAt     time.Time  `json:"updatedAt" db:"cnv_updated_at"`
 }
 
 // ConversationMessage represents a message in a conversation
 type ConversationMessage struct {
-	ID                int       `json:"id" db:"cvm_id"`
-	ConversationID    int       `json:"conversationId" db:"cvm_fk_conversation"`
-	MessageID         string    `json:"messageId" db:"cvm_message_id"`
-	FromMe            bool      `json:"fromMe" db:"cvm_from_me"`
-	SenderName        *string   `json:"senderName,omitempty" db:"cvm_sender_name"`
-	MessageType       string    `json:"messageType" db:"cvm_message_type"`
-	Body              *string   `json:"body,omitempty" db:"cvm_body"`
-	MediaURL          *string   `json:"mediaUrl,omitempty" db:"cvm_media_url"`
-	QuotedMessage     *string   `json:"quotedMessage,omitempty" db:"cvm_quoted_message"`
-	Timestamp         int64     `json:"timestamp" db:"cvm_timestamp"`
-	IsForwarded       bool      `json:"isForwarded" db:"cvm_is_forwarded"`
-	Metadata          Data      `json:"metadata,omitempty" db:"cvm_metadata"`
-	QueueTimeMs       *int      `json:"queueTimeMs,omitempty" db:"cvm_queue_time_ms"`
-	PromptTokens      *int      `json:"promptTokens,omitempty" db:"cvm_prompt_tokens"`
-	PromptTimeMs      *int      `json:"promptTimeMs,omitempty" db:"cvm_prompt_time_ms"`
-	CompletionTokens  *int      `json:"completionTokens,omitempty" db:"cvm_completion_tokens"`
-	CompletionTimeMs  *int      `json:"completionTimeMs,omitempty" db:"cvm_completion_time_ms"`
-	TotalTokens       *int      `json:"totalTokens,omitempty" db:"cvm_total_tokens"`
-	TotalTimeMs       *int      `json:"totalTimeMs,omitempty" db:"cvm_total_time_ms"`
-	CreatedAt         time.Time `json:"createdAt" db:"cvm_created_at"`
+	ID               int       `json:"id" db:"cvm_id"`
+	ConversationID   int       `json:"conversationId" db:"cvm_fk_conversation"`
+	MessageID        string    `json:"messageId" db:"cvm_message_id"`
+	FromMe           bool      `json:"fromMe" db:"cvm_from_me"`
+	SenderName       *string   `json:"senderName,omitempty" db:"cvm_sender_name"`
+	MessageType      string    `json:"messageType" db:"cvm_message_type"`
+	Body             *string   `json:"body,omitempty" db:"cvm_body"`
+	MediaURL         *string   `json:"mediaUrl,omitempty" db:"cvm_media_url"`
+	QuotedMessage    *string   `json:"quotedMessage,omitempty" db:"cvm_quoted_message"`
+	Timestamp        int64     `json:"timestamp" db:"cvm_timestamp"`
+	IsForwarded      bool      `json:"isForwarded" db:"cvm_is_forwarded"`
+	Metadata         Data      `json:"metadata,omitempty" db:"cvm_metadata"`
+	QueueTimeMs      *int      `json:"queueTimeMs,omitempty" db:"cvm_queue_time_ms"`
+	PromptTokens     *int      `json:"promptTokens,omitempty" db:"cvm_prompt_tokens"`
+	PromptTimeMs     *int      `json:"promptTimeMs,omitempty" db:"cvm_prompt_time_ms"`
+	CompletionTokens *int      `json:"completionTokens,omitempty" db:"cvm_completion_tokens"`
+	CompletionTimeMs *int      `json:"completionTimeMs,omitempty" db:"cvm_completion_time_ms"`
+	TotalTokens      *int      `json:"totalTokens,omitempty" db:"cvm_total_tokens"`
+	TotalTimeMs      *int      `json:"totalTimeMs,omitempty" db:"cvm_total_time_ms"`
+	CreatedAt        time.Time `json:"createdAt" db:"cvm_created_at"`
 }
 
 // Conversation Repository Params & Results

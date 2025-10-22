@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"api-chatbot/api/dal"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 const (
@@ -22,15 +22,15 @@ type chunkStatisticsRepository struct {
 	dal *dal.DAL
 }
 
-func NewChunkStatisticsRepository(dal *dal.DAL) domain.ChunkStatisticsRepository {
+func NewChunkStatisticsRepository(dal *dal.DAL) d.ChunkStatisticsRepository {
 	return &chunkStatisticsRepository{
 		dal: dal,
 	}
 }
 
 // GetByChunk retrieves statistics for a specific chunk
-func (r *chunkStatisticsRepository) GetByChunk(ctx context.Context, chunkID int) (*domain.ChunkStatistics, error) {
-	stats, err := dal.QueryRows[domain.ChunkStatistics](r.dal, ctx, fnGetChunkStatistics, chunkID)
+func (r *chunkStatisticsRepository) GetByChunk(ctx context.Context, chunkID int) (*d.ChunkStatistics, error) {
+	stats, err := dal.QueryRows[d.ChunkStatistics](r.dal, ctx, fnGetChunkStatistics, chunkID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chunk statistics via %s: %w", fnGetChunkStatistics, err)
 	}
@@ -43,8 +43,8 @@ func (r *chunkStatisticsRepository) GetByChunk(ctx context.Context, chunkID int)
 }
 
 // GetTopByUsage retrieves most frequently used chunks
-func (r *chunkStatisticsRepository) GetTopByUsage(ctx context.Context, limit int) ([]domain.TopChunkByUsage, error) {
-	topChunks, err := dal.QueryRows[domain.TopChunkByUsage](r.dal, ctx, fnGetTopChunksByUsage, limit)
+func (r *chunkStatisticsRepository) GetTopByUsage(ctx context.Context, limit int) ([]d.TopChunkByUsage, error) {
+	topChunks, err := dal.QueryRows[d.TopChunkByUsage](r.dal, ctx, fnGetTopChunksByUsage, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get top chunks by usage via %s: %w", fnGetTopChunksByUsage, err)
 	}
@@ -52,8 +52,8 @@ func (r *chunkStatisticsRepository) GetTopByUsage(ctx context.Context, limit int
 }
 
 // IncrementUsage increments usage count for a chunk
-func (r *chunkStatisticsRepository) IncrementUsage(ctx context.Context, chunkID int) (*domain.IncrementChunkUsageResult, error) {
-	result, err := dal.ExecProc[domain.IncrementChunkUsageResult](
+func (r *chunkStatisticsRepository) IncrementUsage(ctx context.Context, chunkID int) (*d.IncrementChunkUsageResult, error) {
+	result, err := dal.ExecProc[d.IncrementChunkUsageResult](
 		r.dal,
 		ctx,
 		spIncrementChunkUsage,
@@ -68,8 +68,8 @@ func (r *chunkStatisticsRepository) IncrementUsage(ctx context.Context, chunkID 
 }
 
 // UpdateQualityMetrics updates RAG quality metrics for a chunk
-func (r *chunkStatisticsRepository) UpdateQualityMetrics(ctx context.Context, params domain.UpdateChunkQualityMetricsParams) (*domain.UpdateChunkQualityMetricsResult, error) {
-	result, err := dal.ExecProc[domain.UpdateChunkQualityMetricsResult](
+func (r *chunkStatisticsRepository) UpdateQualityMetrics(ctx context.Context, params d.UpdateChunkQualityMetricsParams) (*d.UpdateChunkQualityMetricsResult, error) {
+	result, err := dal.ExecProc[d.UpdateChunkQualityMetricsResult](
 		r.dal,
 		ctx,
 		spUpdateChunkQualityMetrics,
@@ -90,8 +90,8 @@ func (r *chunkStatisticsRepository) UpdateQualityMetrics(ctx context.Context, pa
 }
 
 // UpdateStaleness updates staleness tracking for a chunk
-func (r *chunkStatisticsRepository) UpdateStaleness(ctx context.Context, params domain.UpdateChunkStalenessParams) (*domain.UpdateChunkStalenessResult, error) {
-	result, err := dal.ExecProc[domain.UpdateChunkStalenessResult](
+func (r *chunkStatisticsRepository) UpdateStaleness(ctx context.Context, params d.UpdateChunkStalenessParams) (*d.UpdateChunkStalenessResult, error) {
+	result, err := dal.ExecProc[d.UpdateChunkStalenessResult](
 		r.dal,
 		ctx,
 		spUpdateChunkStaleness,

@@ -60,7 +60,7 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	convResult := h.convUseCase.GetOrCreateConversation(
 		ctx,
 		msg.ChatID,
-		msg.ChatID,
+		msg.SenderName,
 		nil,
 		msg.IsGroup,
 		nil,

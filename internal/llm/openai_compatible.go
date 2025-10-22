@@ -170,13 +170,13 @@ func (p *OpenAICompatibleProvider) GenerateResponse(ctx context.Context, req Gen
 			FinishReason string `json:"finish_reason"`
 		} `json:"choices"`
 		Usage struct {
-			QueueTime         float64 `json:"queue_time"`
-			PromptTokens      int     `json:"prompt_tokens"`
-			PromptTime        float64 `json:"prompt_time"`
-			CompletionTokens  int     `json:"completion_tokens"`
-			CompletionTime    float64 `json:"completion_time"`
-			TotalTokens       int     `json:"total_tokens"`
-			TotalTime         float64 `json:"total_time"`
+			QueueTime        float64 `json:"queue_time"`
+			PromptTokens     int     `json:"prompt_tokens"`
+			PromptTime       float64 `json:"prompt_time"`
+			CompletionTokens int     `json:"completion_tokens"`
+			CompletionTime   float64 `json:"completion_time"`
+			TotalTokens      int     `json:"total_tokens"`
+			TotalTime        float64 `json:"total_time"`
 		} `json:"usage"`
 		Model string `json:"model"`
 	}

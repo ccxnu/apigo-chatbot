@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"api-chatbot/api/dal"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 const (
@@ -26,15 +26,15 @@ type parameterRepository struct {
 	dal *dal.DAL
 }
 
-func NewParameterRepository(dal *dal.DAL) domain.ParameterRepository {
+func NewParameterRepository(dal *dal.DAL) d.ParameterRepository {
 	return &parameterRepository{
 		dal: dal,
 	}
 }
 
 // GetAll retrieves all active parameters
-func (r *parameterRepository) GetAll(ctx context.Context) ([]domain.Parameter, error) {
-	params, err := dal.QueryRows[domain.Parameter](r.dal, ctx, fnGetAllParameters)
+func (r *parameterRepository) GetAll(ctx context.Context) ([]d.Parameter, error) {
+	params, err := dal.QueryRows[d.Parameter](r.dal, ctx, fnGetAllParameters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all parameters via %s: %w", fnGetAllParameters, err)
 	}
@@ -42,8 +42,8 @@ func (r *parameterRepository) GetAll(ctx context.Context) ([]domain.Parameter, e
 }
 
 // GetByCode retrieves a single parameter by code
-func (r *parameterRepository) GetByCode(ctx context.Context, code string) (*domain.Parameter, error) {
-	params, err := dal.QueryRows[domain.Parameter](r.dal, ctx, fnGetParameterByCode, code)
+func (r *parameterRepository) GetByCode(ctx context.Context, code string) (*d.Parameter, error) {
+	params, err := dal.QueryRows[d.Parameter](r.dal, ctx, fnGetParameterByCode, code)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get parameter by code via %s: %w", fnGetParameterByCode, err)
 	}
@@ -56,8 +56,8 @@ func (r *parameterRepository) GetByCode(ctx context.Context, code string) (*doma
 }
 
 // GetByCodes retrieves multiple parameters by their codes (bulk operation)
-func (r *parameterRepository) GetByCodes(ctx context.Context, codes []string) ([]domain.Parameter, error) {
-	params, err := dal.QueryRows[domain.Parameter](r.dal, ctx, fnGetParametersByCodes, codes)
+func (r *parameterRepository) GetByCodes(ctx context.Context, codes []string) ([]d.Parameter, error) {
+	params, err := dal.QueryRows[d.Parameter](r.dal, ctx, fnGetParametersByCodes, codes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get parameters by codes via %s: %w", fnGetParametersByCodes, err)
 	}
@@ -65,8 +65,8 @@ func (r *parameterRepository) GetByCodes(ctx context.Context, codes []string) ([
 }
 
 // GetByName retrieves parameters matching a name pattern
-func (r *parameterRepository) GetByName(ctx context.Context, namePattern string) ([]domain.Parameter, error) {
-	params, err := dal.QueryRows[domain.Parameter](r.dal, ctx, fnGetParametersByName, namePattern)
+func (r *parameterRepository) GetByName(ctx context.Context, namePattern string) ([]d.Parameter, error) {
+	params, err := dal.QueryRows[d.Parameter](r.dal, ctx, fnGetParametersByName, namePattern)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get parameters by name via %s: %w", fnGetParametersByName, err)
 	}
@@ -97,8 +97,8 @@ func (r *parameterRepository) GetValue(ctx context.Context, code string) (map[st
 }
 
 // AddParameter creates a new parameter
-func (r *parameterRepository) AddParameter(ctx context.Context, params domain.AddParameterParams) (*domain.AddParameterResult, error) {
-	result, err := dal.ExecProc[domain.AddParameterResult](
+func (r *parameterRepository) AddParameter(ctx context.Context, params d.AddParameterParams) (*d.AddParameterResult, error) {
+	result, err := dal.ExecProc[d.AddParameterResult](
 		r.dal,
 		ctx,
 		spCreateParameter,
@@ -116,8 +116,8 @@ func (r *parameterRepository) AddParameter(ctx context.Context, params domain.Ad
 }
 
 // UpdParameter updates an existing parameter
-func (r *parameterRepository) UpdParameter(ctx context.Context, params domain.UpdParameterParams) (*domain.UpdParameterResult, error) {
-	result, err := dal.ExecProc[domain.UpdParameterResult](
+func (r *parameterRepository) UpdParameter(ctx context.Context, params d.UpdParameterParams) (*d.UpdParameterResult, error) {
+	result, err := dal.ExecProc[d.UpdParameterResult](
 		r.dal,
 		ctx,
 		spUpdateParameter,
@@ -135,8 +135,8 @@ func (r *parameterRepository) UpdParameter(ctx context.Context, params domain.Up
 }
 
 // DelParameter soft deletes a parameter
-func (r *parameterRepository) DelParameter(ctx context.Context, code string) (*domain.DelParameterResult, error) {
-	result, err := dal.ExecProc[domain.DelParameterResult](
+func (r *parameterRepository) DelParameter(ctx context.Context, code string) (*d.DelParameterResult, error) {
+	result, err := dal.ExecProc[d.DelParameterResult](
 		r.dal,
 		ctx,
 		spDeleteParameter,

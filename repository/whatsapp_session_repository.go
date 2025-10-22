@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"api-chatbot/api/dal"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 const (
@@ -21,15 +21,15 @@ type whatsAppSessionRepository struct {
 	dal *dal.DAL
 }
 
-func NewWhatsAppSessionRepository(dal *dal.DAL) domain.WhatsAppSessionRepository {
+func NewWhatsAppSessionRepository(dal *dal.DAL) d.WhatsAppSessionRepository {
 	return &whatsAppSessionRepository{
 		dal: dal,
 	}
 }
 
 // GetBySessionName retrieves a WhatsApp session by name
-func (r *whatsAppSessionRepository) GetBySessionName(ctx context.Context, sessionName string) (*domain.WhatsAppSession, error) {
-	sessions, err := dal.QueryRows[domain.WhatsAppSession](r.dal, ctx, fnGetWhatsAppSession, sessionName)
+func (r *whatsAppSessionRepository) GetBySessionName(ctx context.Context, sessionName string) (*d.WhatsAppSession, error) {
+	sessions, err := dal.QueryRows[d.WhatsAppSession](r.dal, ctx, fnGetWhatsAppSession, sessionName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get WhatsApp session via %s: %w", fnGetWhatsAppSession, err)
 	}
@@ -42,8 +42,8 @@ func (r *whatsAppSessionRepository) GetBySessionName(ctx context.Context, sessio
 }
 
 // GetActiveSession retrieves the currently active WhatsApp session
-func (r *whatsAppSessionRepository) GetActiveSession(ctx context.Context) (*domain.WhatsAppSession, error) {
-	sessions, err := dal.QueryRows[domain.WhatsAppSession](r.dal, ctx, fnGetActiveWhatsAppSession)
+func (r *whatsAppSessionRepository) GetActiveSession(ctx context.Context) (*d.WhatsAppSession, error) {
+	sessions, err := dal.QueryRows[d.WhatsAppSession](r.dal, ctx, fnGetActiveWhatsAppSession)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active WhatsApp session via %s: %w", fnGetActiveWhatsAppSession, err)
 	}
@@ -56,8 +56,8 @@ func (r *whatsAppSessionRepository) GetActiveSession(ctx context.Context) (*doma
 }
 
 // UpdateStatus updates WhatsApp session connection status
-func (r *whatsAppSessionRepository) UpdateStatus(ctx context.Context, params domain.UpdateSessionStatusParams) (*domain.UpdateSessionStatusResult, error) {
-	result, err := dal.ExecProc[domain.UpdateSessionStatusResult](
+func (r *whatsAppSessionRepository) UpdateStatus(ctx context.Context, params d.UpdateSessionStatusParams) (*d.UpdateSessionStatusResult, error) {
+	result, err := dal.ExecProc[d.UpdateSessionStatusResult](
 		r.dal,
 		ctx,
 		spUpdateWhatsAppSessionStatus,
@@ -77,7 +77,7 @@ func (r *whatsAppSessionRepository) UpdateStatus(ctx context.Context, params dom
 
 // UpdateQRCode updates the QR code for a WhatsApp session
 func (r *whatsAppSessionRepository) UpdateQRCode(ctx context.Context, sessionName, qrCode string) error {
-	result, err := dal.ExecProc[domain.UpdateSessionStatusResult](
+	result, err := dal.ExecProc[d.UpdateSessionStatusResult](
 		r.dal,
 		ctx,
 		spUpdateWhatsAppQRCode,

@@ -291,7 +291,7 @@ func (u *chunkUseCase) updateHybridChunkStatistics(chunks []d.ChunkWithHybridSim
 		metricsChunks[i] = metrics.RetrievedChunk{
 			ChunkID:         chunk.ID,
 			SimilarityScore: chunk.CombinedScore, // Use combined score for relevance
-			Position:        i + 1,                // 1-based position
+			Position:        i + 1,               // 1-based position
 			IsRelevant:      metrics.EstimateRelevanceFromSimilarity(chunk.CombinedScore, relevanceThreshold),
 		}
 	}

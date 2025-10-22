@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"api-chatbot/api/dal"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 const (
@@ -21,15 +21,15 @@ type whatsappUserRepository struct {
 	dal *dal.DAL
 }
 
-func NewWhatsAppUserRepository(dal *dal.DAL) domain.WhatsAppUserRepository {
+func NewWhatsAppUserRepository(dal *dal.DAL) d.WhatsAppUserRepository {
 	return &whatsappUserRepository{
 		dal: dal,
 	}
 }
 
 // GetByIdentity retrieves a user by their identity number
-func (r *whatsappUserRepository) GetByIdentity(ctx context.Context, identityNumber string) (*domain.WhatsAppUser, error) {
-	users, err := dal.QueryRows[domain.WhatsAppUser](r.dal, ctx, fnGetUserByIdentity, identityNumber)
+func (r *whatsappUserRepository) GetByIdentity(ctx context.Context, identityNumber string) (*d.WhatsAppUser, error) {
+	users, err := dal.QueryRows[d.WhatsAppUser](r.dal, ctx, fnGetUserByIdentity, identityNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user via %s: %w", fnGetUserByIdentity, err)
 	}
@@ -42,8 +42,8 @@ func (r *whatsappUserRepository) GetByIdentity(ctx context.Context, identityNumb
 }
 
 // GetByWhatsApp retrieves a user by their WhatsApp number
-func (r *whatsappUserRepository) GetByWhatsApp(ctx context.Context, whatsapp string) (*domain.WhatsAppUser, error) {
-	users, err := dal.QueryRows[domain.WhatsAppUser](r.dal, ctx, fnGetUserByWhatsApp, whatsapp)
+func (r *whatsappUserRepository) GetByWhatsApp(ctx context.Context, whatsapp string) (*d.WhatsAppUser, error) {
+	users, err := dal.QueryRows[d.WhatsAppUser](r.dal, ctx, fnGetUserByWhatsApp, whatsapp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user via %s: %w", fnGetUserByWhatsApp, err)
 	}
@@ -56,8 +56,8 @@ func (r *whatsappUserRepository) GetByWhatsApp(ctx context.Context, whatsapp str
 }
 
 // Create creates a new user
-func (r *whatsappUserRepository) Create(ctx context.Context, params domain.CreateUserParams) (*domain.CreateUserResult, error) {
-	result, err := dal.ExecProc[domain.CreateUserResult](
+func (r *whatsappUserRepository) Create(ctx context.Context, params d.CreateUserParams) (*d.CreateUserResult, error) {
+	result, err := dal.ExecProc[d.CreateUserResult](
 		r.dal,
 		ctx,
 		spCreateUser,
@@ -78,7 +78,7 @@ func (r *whatsappUserRepository) Create(ctx context.Context, params domain.Creat
 }
 
 // UpdateWhatsApp updates a user's WhatsApp number
-func (r *whatsappUserRepository) UpdateWhatsApp(ctx context.Context, params domain.UpdateUserWhatsAppParams) error {
+func (r *whatsappUserRepository) UpdateWhatsApp(ctx context.Context, params d.UpdateUserWhatsAppParams) error {
 	_, err := dal.ExecProc[dal.DbResult](
 		r.dal,
 		ctx,

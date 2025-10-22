@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"api-chatbot/api/dal"
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 const (
@@ -25,15 +25,15 @@ type chunkRepository struct {
 	dal *dal.DAL
 }
 
-func NewChunkRepository(dal *dal.DAL) domain.ChunkRepository {
+func NewChunkRepository(dal *dal.DAL) d.ChunkRepository {
 	return &chunkRepository{
 		dal: dal,
 	}
 }
 
 // GetByDocument retrieves all chunks for a specific document
-func (r *chunkRepository) GetByDocument(ctx context.Context, docID int) ([]domain.Chunk, error) {
-	chunks, err := dal.QueryRows[domain.Chunk](r.dal, ctx, fnGetChunksByDocument, docID)
+func (r *chunkRepository) GetByDocument(ctx context.Context, docID int) ([]d.Chunk, error) {
+	chunks, err := dal.QueryRows[d.Chunk](r.dal, ctx, fnGetChunksByDocument, docID)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chunks by document via %s: %w", fnGetChunksByDocument, err)
@@ -44,8 +44,8 @@ func (r *chunkRepository) GetByDocument(ctx context.Context, docID int) ([]domai
 }
 
 // GetByID retrieves a single chunk by ID
-func (r *chunkRepository) GetByID(ctx context.Context, chunkID int) (*domain.Chunk, error) {
-	chunks, err := dal.QueryRows[domain.Chunk](r.dal, ctx, fnGetChunkByID, chunkID)
+func (r *chunkRepository) GetByID(ctx context.Context, chunkID int) (*d.Chunk, error) {
+	chunks, err := dal.QueryRows[d.Chunk](r.dal, ctx, fnGetChunkByID, chunkID)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chunk by id via %s: %w", fnGetChunkByID, err)
@@ -59,8 +59,8 @@ func (r *chunkRepository) GetByID(ctx context.Context, chunkID int) (*domain.Chu
 }
 
 // SimilaritySearch performs vector similarity search for RAG
-func (r *chunkRepository) SimilaritySearch(ctx context.Context, params domain.SimilaritySearchParams) ([]domain.ChunkWithSimilarity, error) {
-	chunks, err := dal.QueryRows[domain.ChunkWithSimilarity](
+func (r *chunkRepository) SimilaritySearch(ctx context.Context, params d.SimilaritySearchParams) ([]d.ChunkWithSimilarity, error) {
+	chunks, err := dal.QueryRows[d.ChunkWithSimilarity](
 		r.dal,
 		ctx,
 		fnSimilaritySearchChunks,
@@ -77,8 +77,8 @@ func (r *chunkRepository) SimilaritySearch(ctx context.Context, params domain.Si
 }
 
 // HybridSearch performs hybrid search combining vector similarity and full-text search
-func (r *chunkRepository) HybridSearch(ctx context.Context, params domain.HybridSearchParams) ([]domain.ChunkWithHybridSimilarity, error) {
-	chunks, err := dal.QueryRows[domain.ChunkWithHybridSimilarity](
+func (r *chunkRepository) HybridSearch(ctx context.Context, params d.HybridSearchParams) ([]d.ChunkWithHybridSimilarity, error) {
+	chunks, err := dal.QueryRows[d.ChunkWithHybridSimilarity](
 		r.dal,
 		ctx,
 		fnSimilaritySearchChunksHybrid,
@@ -97,8 +97,8 @@ func (r *chunkRepository) HybridSearch(ctx context.Context, params domain.Hybrid
 }
 
 // Create creates a new chunk
-func (r *chunkRepository) Create(ctx context.Context, params domain.CreateChunkParams) (*domain.CreateChunkResult, error) {
-	result, err := dal.ExecProc[domain.CreateChunkResult](
+func (r *chunkRepository) Create(ctx context.Context, params d.CreateChunkParams) (*d.CreateChunkResult, error) {
+	result, err := dal.ExecProc[d.CreateChunkResult](
 		r.dal,
 		ctx,
 		spCreateChunk,
@@ -115,8 +115,8 @@ func (r *chunkRepository) Create(ctx context.Context, params domain.CreateChunkP
 }
 
 // UpdateEmbedding updates the embedding for a chunk
-func (r *chunkRepository) UpdateEmbedding(ctx context.Context, params domain.UpdateChunkEmbeddingParams) (*domain.UpdateChunkEmbeddingResult, error) {
-	result, err := dal.ExecProc[domain.UpdateChunkEmbeddingResult](
+func (r *chunkRepository) UpdateEmbedding(ctx context.Context, params d.UpdateChunkEmbeddingParams) (*d.UpdateChunkEmbeddingResult, error) {
+	result, err := dal.ExecProc[d.UpdateChunkEmbeddingResult](
 		r.dal,
 		ctx,
 		spUpdateChunkEmbedding,
@@ -131,8 +131,8 @@ func (r *chunkRepository) UpdateEmbedding(ctx context.Context, params domain.Upd
 	return result, nil
 }
 
-func (r *chunkRepository) Delete(ctx context.Context, chunkID int) (*domain.DeleteChunkResult, error) {
-	result, err := dal.ExecProc[domain.DeleteChunkResult](
+func (r *chunkRepository) Delete(ctx context.Context, chunkID int) (*d.DeleteChunkResult, error) {
+	result, err := dal.ExecProc[d.DeleteChunkResult](
 		r.dal,
 		ctx,
 		spDeleteChunk,
@@ -147,8 +147,8 @@ func (r *chunkRepository) Delete(ctx context.Context, chunkID int) (*domain.Dele
 }
 
 // BulkCreate creates multiple chunks at once
-func (r *chunkRepository) BulkCreate(ctx context.Context, params domain.BulkCreateChunksParams) (*domain.BulkCreateChunksResult, error) {
-	result, err := dal.ExecProc[domain.BulkCreateChunksResult](
+func (r *chunkRepository) BulkCreate(ctx context.Context, params d.BulkCreateChunksParams) (*d.BulkCreateChunksResult, error) {
+	result, err := dal.ExecProc[d.BulkCreateChunksResult](
 		r.dal,
 		ctx,
 		spBulkCreateChunks,
