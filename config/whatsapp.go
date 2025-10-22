@@ -10,6 +10,7 @@ import (
 	"go.mau.fi/whatsmeow/store/sqlstore"
 
 	"api-chatbot/domain"
+	"api-chatbot/internal/llm"
 	"api-chatbot/internal/whatsapp"
 	"api-chatbot/internal/whatsapp/handlers"
 )
@@ -19,6 +20,8 @@ func InitializeWhatsAppService(
 	app Application,
 	sessionUC domain.WhatsAppSessionUseCase,
 	chunkUC domain.ChunkUseCase,
+	userUC domain.WhatsAppUserUseCase,
+	convUC domain.ConversationUseCase,
 ) (*whatsapp.Service, error) {
 	// Check if WhatsApp is enabled in parameters
 	param, exists := app.Cache.Get("WHATSAPP_CONFIG")
@@ -70,17 +73,36 @@ func InitializeWhatsAppService(
 		deviceStore = container.NewDevice()
 	}
 
+	// Create WhatsApp client first
+	waClient, err := whatsapp.NewClient(whatsapp.Config{
+		SessionName: sessionName,
+		DeviceStore: deviceStore,
+		LogLevel:    "INFO",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create WhatsApp client: %w", err)
+	}
+
+	// Initialize LLM provider from configuration
+	llmProvider, err := createLLMProvider(app.Cache)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create LLM provider: %w", err)
+	}
+
 	// Initialize all message handlers in priority order
 	messageHandlers := []whatsapp.MessageHandler{
-		// Command handler (highest priority)
-		handlers.NewCommandHandler(100),
+		// User validation handler (HIGHEST priority - runs first)
+		handlers.NewUserValidationHandler(userUC, convUC, waClient, 1000),
 
-		// RAG handler (lower priority, catches all other text)
-		handlers.NewRAGHandler(chunkUC, 50),
+		// Command handler (high priority)
+		handlers.NewCommandHandler(waClient, 100),
+
+		// RAG handler (lowest priority, catches all other text)
+		handlers.NewRAGHandler(chunkUC, convUC, llmProvider, waClient, 50),
 	}
 
 	// Create WhatsApp service
-	service, err := whatsapp.NewService(deviceStore, sessionName, sessionUC, messageHandlers)
+	service, err := whatsapp.NewServiceWithClient(waClient, sessionName, sessionUC, messageHandlers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create WhatsApp service: %w", err)
 	}
@@ -112,4 +134,56 @@ func createDeviceStore(connString string) (*sqlstore.Container, error) {
 	}
 
 	return container, nil
+}
+
+// createLLMProvider creates an LLM provider based on configuration
+func createLLMProvider(cache domain.ParameterCache) (llm.Provider, error) {
+	// Get LLM configuration from cache
+	param, exists := cache.Get("LLM_CONFIG")
+	if !exists {
+		return nil, fmt.Errorf("LLM_CONFIG parameter not found")
+	}
+
+	data, err := param.GetDataAsMap()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse LLM_CONFIG: %w", err)
+	}
+
+	// Extract configuration
+	provider, _ := data["provider"].(string)
+	apiKey, _ := data["apiKey"].(string)
+	baseURL, _ := data["baseURL"].(string)
+	model, _ := data["model"].(string)
+	temperature, _ := data["temperature"].(float64)
+	maxTokens, _ := data["maxTokens"].(float64)
+	timeout, _ := data["timeout"].(float64)
+	systemPrompt, _ := data["systemPrompt"].(string)
+
+	// Validate required fields
+	if apiKey == "" || baseURL == "" || model == "" {
+		return nil, fmt.Errorf("LLM_CONFIG missing required fields (apiKey, baseURL, model)")
+	}
+
+	// Create LLM configuration
+	config := llm.Config{
+		Provider:     provider,
+		APIKey:       apiKey,
+		BaseURL:      baseURL,
+		Model:        model,
+		Temperature:  temperature,
+		MaxTokens:    int(maxTokens),
+		Timeout:      int(timeout),
+		SystemPrompt: systemPrompt,
+	}
+
+	// Create OpenAI-compatible provider (works with Groq, OpenAI, etc.)
+	llmProvider := llm.NewOpenAICompatibleProvider(config)
+
+	slog.Info("LLM provider initialized",
+		"provider", provider,
+		"model", model,
+		"baseURL", baseURL,
+	)
+
+	return llmProvider, nil
 }

@@ -26,16 +26,16 @@ func NewConversationUseCase(
 	}
 }
 
-func (u *conversationUseCase) GetOrCreateConversation(c context.Context, params d.CreateConversationParams) d.Result[*d.Conversation] {
+func (u *conversationUseCase) GetOrCreateConversation(c context.Context, chatID, phoneNumber string, contactName *string, isGroup bool, groupName *string) d.Result[*d.Conversation] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
 	// Try to get existing conversation
-	conversation, err := u.convRepo.GetByChatID(ctx, params.ChatID)
+	conversation, err := u.convRepo.GetByChatID(ctx, chatID)
 	if err != nil {
 		logger.LogError(ctx, "Failed to fetch conversation by chat ID from database", err,
 			"operation", "GetOrCreateConversation",
-			"chatID", params.ChatID,
+			"chatID", chatID,
 		)
 		return d.Error[*d.Conversation](u.paramCache, "ERR_INTERNAL_DB")
 	}
@@ -46,11 +46,19 @@ func (u *conversationUseCase) GetOrCreateConversation(c context.Context, params 
 	}
 
 	// Create new conversation
+	params := d.CreateConversationParams{
+		ChatID:      chatID,
+		PhoneNumber: phoneNumber,
+		ContactName: contactName,
+		IsGroup:     isGroup,
+		GroupName:   groupName,
+	}
+
 	result, err := u.convRepo.Create(ctx, params)
 	if err != nil || result == nil {
 		logger.LogError(ctx, "Failed to create conversation in database", err,
 			"operation", "GetOrCreateConversation",
-			"chatID", params.ChatID,
+			"chatID", chatID,
 		)
 		return d.Error[*d.Conversation](u.paramCache, "ERR_INTERNAL_DB")
 	}
@@ -59,17 +67,17 @@ func (u *conversationUseCase) GetOrCreateConversation(c context.Context, params 
 		logger.LogWarn(ctx, "Conversation creation failed with business logic error",
 			"operation", "GetOrCreateConversation",
 			"code", result.Code,
-			"chatID", params.ChatID,
+			"chatID", chatID,
 		)
 		return d.Error[*d.Conversation](u.paramCache, result.Code)
 	}
 
 	// Get the created conversation
-	conversation, err = u.convRepo.GetByChatID(ctx, params.ChatID)
+	conversation, err = u.convRepo.GetByChatID(ctx, chatID)
 	if err != nil {
 		logger.LogError(ctx, "Failed to fetch newly created conversation from database", err,
 			"operation", "GetOrCreateConversation",
-			"chatID", params.ChatID,
+			"chatID", chatID,
 		)
 		return d.Error[*d.Conversation](u.paramCache, "ERR_INTERNAL_DB")
 	}
@@ -77,24 +85,34 @@ func (u *conversationUseCase) GetOrCreateConversation(c context.Context, params 
 	return d.Success(conversation)
 }
 
-func (u *conversationUseCase) SaveMessage(c context.Context, params d.CreateMessageParams) d.Result[d.Data] {
+func (u *conversationUseCase) StoreMessage(c context.Context, conversationID int, messageID string, fromMe bool, body string, timestamp int64) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
+
+	params := d.CreateConversationMessageParams{
+		ConversationID: conversationID,
+		MessageID:      messageID,
+		FromMe:         fromMe,
+		MessageType:    "text",
+		Body:           &body,
+		Timestamp:      timestamp,
+		IsForwarded:    false,
+	}
 
 	result, err := u.convRepo.CreateMessage(ctx, params)
 	if err != nil || result == nil {
 		logger.LogError(ctx, "Failed to save message in database", err,
-			"operation", "SaveMessage",
-			"conversationID", params.ConversationID,
+			"operation", "StoreMessage",
+			"conversationID", conversationID,
 		)
 		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !result.Success {
 		logger.LogWarn(ctx, "Message save failed with business logic error",
-			"operation", "SaveMessage",
+			"operation", "StoreMessage",
 			"code", result.Code,
-			"conversationID", params.ConversationID,
+			"conversationID", conversationID,
 		)
 		return d.Error[d.Data](u.paramCache, result.Code)
 	}
@@ -106,7 +124,7 @@ func (u *conversationUseCase) GetConversationHistory(c context.Context, chatID s
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
-	messages, err := u.convRepo.GetConversationHistory(ctx, chatID, limit)
+	messages, err := u.convRepo.GetHistory(ctx, chatID, limit)
 	if err != nil {
 		logger.LogError(ctx, "Failed to fetch conversation history from database", err,
 			"operation", "GetConversationHistory",
@@ -119,7 +137,7 @@ func (u *conversationUseCase) GetConversationHistory(c context.Context, chatID s
 	return d.Success(messages)
 }
 
-func (u *conversationUseCase) LinkUserAfterValidation(c context.Context, chatID, identityNumber string) d.Result[d.Data] {
+func (u *conversationUseCase) LinkUserToConversation(c context.Context, chatID, identityNumber string) d.Result[d.Data] {
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
@@ -128,10 +146,10 @@ func (u *conversationUseCase) LinkUserAfterValidation(c context.Context, chatID,
 		IdentityNumber: identityNumber,
 	}
 
-	result, err := u.convRepo.LinkUserToConversation(ctx, params)
+	result, err := u.convRepo.LinkUser(ctx, params)
 	if err != nil || result == nil {
 		logger.LogError(ctx, "Failed to link user to conversation in database", err,
-			"operation", "LinkUserAfterValidation",
+			"operation", "LinkUserToConversation",
 			"chatID", chatID,
 			"identityNumber", identityNumber,
 		)
@@ -140,7 +158,7 @@ func (u *conversationUseCase) LinkUserAfterValidation(c context.Context, chatID,
 
 	if !result.Success {
 		logger.LogWarn(ctx, "User linking failed with business logic error",
-			"operation", "LinkUserAfterValidation",
+			"operation", "LinkUserToConversation",
 			"code", result.Code,
 			"chatID", chatID,
 			"identityNumber", identityNumber,

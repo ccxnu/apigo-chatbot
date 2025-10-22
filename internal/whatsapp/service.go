@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types/events"
 
-	"api-chatbot/domain"
+	d "api-chatbot/domain"
 )
 
 // Service manages WhatsApp client lifecycle and event handling
 type Service struct {
 	client      *Client
 	dispatcher  *MessageDispatcher
-	sessionUC   domain.WhatsAppSessionUseCase
+	sessionUC   d.WhatsAppSessionUseCase
 	sessionName string
 }
 
@@ -23,7 +24,7 @@ type Service struct {
 func NewService(
 	deviceStore *store.Device,
 	sessionName string,
-	sessionUC domain.WhatsAppSessionUseCase,
+	sessionUC d.WhatsAppSessionUseCase,
 	handlers []MessageHandler,
 ) (*Service, error) {
 	cfg := Config{
@@ -37,6 +38,23 @@ func NewService(
 		return nil, fmt.Errorf("failed to create WhatsApp client: %w", err)
 	}
 
+	dispatcher := NewMessageDispatcher(handlers)
+
+	return &Service{
+		client:      client,
+		dispatcher:  dispatcher,
+		sessionUC:   sessionUC,
+		sessionName: sessionName,
+	}, nil
+}
+
+// NewServiceWithClient creates a new WhatsApp service with an existing client
+func NewServiceWithClient(
+	client *Client,
+	sessionName string,
+	sessionUC d.WhatsAppSessionUseCase,
+	handlers []MessageHandler,
+) (*Service, error) {
 	dispatcher := NewMessageDispatcher(handlers)
 
 	return &Service{
@@ -73,7 +91,7 @@ func (s *Service) Stop() {
 func (s *Service) GetQRChannel() <-chan string {
 	qrChan := make(chan string, 1)
 
-	s.client.WAClient.AddEventHandler(func(evt interface{}) {
+	s.client.WAClient.AddEventHandler(func(evt any) {
 		if qrEvt, ok := evt.(*events.QR); ok {
 			qrChan <- qrEvt.Codes[0]
 		}
@@ -83,7 +101,7 @@ func (s *Service) GetQRChannel() <-chan string {
 }
 
 // handleEvent processes all WhatsApp events
-func (s *Service) handleEvent(evt interface{}) {
+func (s *Service) handleEvent(evt any) {
 	switch v := evt.(type) {
 	case *events.Message:
 		s.handleIncomingMessage(v)
@@ -125,16 +143,25 @@ func (s *Service) handleQRCode(evt *events.QR) {
 		return
 	}
 
-	slog.Info("QR code received", "session", s.sessionName)
+	qrCode := evt.Codes[0]
 
-	// TODO: Update QR code in database
-	// This would require a new use case method like UpdateQRCode
+	slog.Info("QR code received - scan with WhatsApp app",
+		"session", s.sessionName,
+		"qr_length", len(qrCode),
+	)
+
+	// Save QR code to database
 	ctx := context.Background()
-	params := domain.UpdateSessionStatusParams{
-		SessionName: s.sessionName,
+	err := s.sessionUC.UpdateQRCode(ctx, s.sessionName, qrCode)
+	if err != nil {
+		slog.Error("Failed to save QR code to database",
+			"session", s.sessionName,
+			"error", err,
+		)
 	}
 
-	_ = s.sessionUC.UpdateConnectionStatus(ctx, params)
+	// Print QR code to console for easy scanning
+	printQRCodeToConsole(qrCode)
 }
 
 // handleConnected processes connection success events
@@ -147,7 +174,7 @@ func (s *Service) handleConnected() {
 	device := s.client.DeviceStore
 
 	connected := true
-	params := domain.UpdateSessionStatusParams{
+	params := d.UpdateSessionStatusParams{
 		SessionName: s.sessionName,
 		PhoneNumber: device.ID.User,
 		Connected:   connected,
@@ -169,7 +196,7 @@ func (s *Service) handleDisconnected() {
 	ctx := context.Background()
 
 	connected := false
-	params := domain.UpdateSessionStatusParams{
+	params := d.UpdateSessionStatusParams{
 		SessionName: s.sessionName,
 		Connected:   connected,
 	}
@@ -195,7 +222,7 @@ func (s *Service) handlePairSuccess(evt *events.PairSuccess) {
 
 	connected := true
 	platform := evt.Platform
-	params := domain.UpdateSessionStatusParams{
+	params := d.UpdateSessionStatusParams{
 		SessionName: s.sessionName,
 		PhoneNumber: evt.ID.User,
 		Platform:    platform,
@@ -212,8 +239,8 @@ func (s *Service) handlePairSuccess(evt *events.PairSuccess) {
 }
 
 // convertEventToMessage converts whatsmeow event to domain IncomingMessage
-func convertEventToMessage(evt *events.Message) *domain.IncomingMessage {
-	msg := &domain.IncomingMessage{
+func convertEventToMessage(evt *events.Message) *d.IncomingMessage {
+	msg := &d.IncomingMessage{
 		MessageID:   evt.Info.ID,
 		ChatID:      evt.Info.Chat.String(),
 		From:        evt.Info.Sender.String(),
@@ -261,4 +288,19 @@ func convertEventToMessage(evt *events.Message) *domain.IncomingMessage {
 	}
 
 	return msg
+}
+
+// printQRCodeToConsole displays the QR code in the terminal for easy scanning
+func printQRCodeToConsole(code string) {
+	qr, err := qrcode.New(code, qrcode.Medium)
+	if err != nil {
+		slog.Error("Failed to generate QR code", "error", err)
+		return
+	}
+
+	fmt.Println("\n========================================")
+	fmt.Println("SCAN THIS QR CODE WITH WHATSAPP:")
+	fmt.Println("========================================")
+	fmt.Println(qr.ToSmallString(false))
+	fmt.Println("========================================")
 }

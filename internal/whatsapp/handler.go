@@ -2,6 +2,7 @@ package whatsapp
 
 import (
 	"context"
+	"log/slog"
 
 	"api-chatbot/domain"
 )
@@ -42,13 +43,30 @@ func (d *MessageDispatcher) RegisterHandler(handler MessageHandler) {
 
 // Dispatch routes a message to the first matching handler
 func (d *MessageDispatcher) Dispatch(ctx context.Context, msg *domain.IncomingMessage) error {
-	for _, handler := range d.handlers {
-		if handler.Match(ctx, msg) {
+	slog.Info("Dispatching message to handlers",
+		"handlersCount", len(d.handlers),
+		"messageID", msg.MessageID,
+	)
+
+	for i, handler := range d.handlers {
+		matched := handler.Match(ctx, msg)
+		slog.Info("Handler check",
+			"handlerIndex", i,
+			"priority", handler.Priority(),
+			"matched", matched,
+		)
+
+		if matched {
+			slog.Info("Handler matched, executing",
+				"handlerIndex", i,
+				"priority", handler.Priority(),
+			)
 			return handler.Handle(ctx, msg)
 		}
 	}
 
 	// No handler matched - could use a fallback handler here
+	slog.Warn("No handler matched for message", "messageID", msg.MessageID)
 	return nil
 }
 

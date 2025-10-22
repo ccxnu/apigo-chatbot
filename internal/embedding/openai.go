@@ -96,8 +96,10 @@ func (s *OpenAIEmbeddingService) GenerateEmbedding(ctx context.Context, text str
 		return nil, fmt.Errorf("no embedding data in response")
 	}
 
+	var embedding []float32
+	embedding = openAIResp.Data[0].Embedding
 	// Since it's a single request, we return the first embedding.
-	return openAIResp.Data[0].Embedding, nil
+	return embedding, nil
 }
 
 // GenerateEmbeddings generates embeddings for multiple texts using a single batch API call.

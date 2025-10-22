@@ -9,12 +9,19 @@ import (
 
 // CommandHandler handles bot commands like /help, /horarios, etc.
 type CommandHandler struct {
+	client   WhatsAppClient
 	priority int
 }
 
+// WhatsAppClient interface for sending messages
+type WhatsAppClient interface {
+	SendText(chatID, message string) error
+}
+
 // NewCommandHandler creates a new command handler
-func NewCommandHandler(priority int) *CommandHandler {
+func NewCommandHandler(client WhatsAppClient, priority int) *CommandHandler {
 	return &CommandHandler{
+		client:   client,
 		priority: priority,
 	}
 }
@@ -23,6 +30,16 @@ func NewCommandHandler(priority int) *CommandHandler {
 func (h *CommandHandler) Match(ctx context.Context, msg *domain.IncomingMessage) bool {
 	// Skip own messages
 	if msg.FromMe {
+		return false
+	}
+
+	// ONLY respond to personal/direct messages - skip groups
+	if msg.IsGroup {
+		return false
+	}
+
+	// Skip WhatsApp status broadcasts
+	if msg.ChatID == "status@broadcast" {
 		return false
 	}
 
@@ -144,9 +161,7 @@ Escribe /help para ver los comandos disponibles, o simplemente hazme tu pregunta
 	return h.sendMessage(msg.ChatID, unknownText)
 }
 
-// sendMessage sends a text message
+// sendMessage sends a text message via WhatsApp
 func (h *CommandHandler) sendMessage(chatID, message string) error {
-	// TODO: Implement proper message sending
-	// For now, placeholder
-	return nil
+	return h.client.SendText(chatID, message)
 }

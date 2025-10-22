@@ -101,3 +101,24 @@ func (u *whatsAppSessionUseCase) UpdateConnectionStatus(c context.Context, param
 
 	return d.Success(d.Data{})
 }
+
+func (u *whatsAppSessionUseCase) UpdateQRCode(c context.Context, sessionName, qrCode string) error {
+	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
+	defer cancel()
+
+	err := u.sessionRepo.UpdateQRCode(ctx, sessionName, qrCode)
+	if err != nil {
+		logger.LogError(ctx, "Failed to update QR code in database", err,
+			"operation", "UpdateQRCode",
+			"sessionName", sessionName,
+		)
+		return err
+	}
+
+	logger.LogInfo(ctx, "QR code saved to database",
+		"operation", "UpdateQRCode",
+		"sessionName", sessionName,
+	)
+
+	return nil
+}

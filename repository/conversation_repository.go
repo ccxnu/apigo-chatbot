@@ -62,8 +62,8 @@ func (r *conversationRepository) Create(ctx context.Context, params domain.Creat
 	return result, nil
 }
 
-// LinkUserToConversation links a validated user to a conversation
-func (r *conversationRepository) LinkUserToConversation(ctx context.Context, params domain.LinkUserToConversationParams) (*domain.LinkUserToConversationResult, error) {
+// LinkUser links a validated user to a conversation
+func (r *conversationRepository) LinkUser(ctx context.Context, params domain.LinkUserToConversationParams) (*domain.LinkUserToConversationResult, error) {
 	result, err := dal.ExecProc[domain.LinkUserToConversationResult](
 		r.dal,
 		ctx,
@@ -79,8 +79,8 @@ func (r *conversationRepository) LinkUserToConversation(ctx context.Context, par
 	return result, nil
 }
 
-// GetConversationHistory retrieves message history for a conversation
-func (r *conversationRepository) GetConversationHistory(ctx context.Context, chatID string, limit int) ([]domain.ConversationMessage, error) {
+// GetHistory retrieves message history for a conversation
+func (r *conversationRepository) GetHistory(ctx context.Context, chatID string, limit int) ([]domain.ConversationMessage, error) {
 	messages, err := dal.QueryRows[domain.ConversationMessage](r.dal, ctx, fnGetConversationHistory, chatID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get conversation history via %s: %w", fnGetConversationHistory, err)
@@ -90,8 +90,8 @@ func (r *conversationRepository) GetConversationHistory(ctx context.Context, cha
 }
 
 // CreateMessage stores a new message in a conversation
-func (r *conversationRepository) CreateMessage(ctx context.Context, params domain.CreateMessageParams) (*domain.CreateMessageResult, error) {
-	result, err := dal.ExecProc[domain.CreateMessageResult](
+func (r *conversationRepository) CreateMessage(ctx context.Context, params domain.CreateConversationMessageParams) (*domain.CreateConversationMessageResult, error) {
+	result, err := dal.ExecProc[domain.CreateConversationMessageResult](
 		r.dal,
 		ctx,
 		spCreateConversationMessage,
@@ -112,11 +112,4 @@ func (r *conversationRepository) CreateMessage(ctx context.Context, params domai
 	}
 
 	return result, nil
-}
-
-// GetUserConversations retrieves all conversations for a user
-func (r *conversationRepository) GetUserConversations(ctx context.Context, userID int, limit int) ([]domain.Conversation, error) {
-	// TODO: Implement this function if needed
-	// For now, returning empty slice
-	return []domain.Conversation{}, nil
 }

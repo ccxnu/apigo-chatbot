@@ -86,9 +86,13 @@ create table if not exists public.cht_chunks (
     chk_fk_document     int not null references cht_documents(doc_id) on delete cascade,
     chk_content         text not null,
     chk_embedding       vector(1536),  -- OpenAI/Claude embedding dimension
+    chk_fts_vector      tsvector generated always as (to_tsvector('spanish'::regconfig, chk_content)) stored,
     chk_created_at      timestamp not null default current_timestamp,
     chk_updated_at      timestamp not null default current_timestamp
 );
+
+-- Create a GIN index for fast FTS searching (Crucial for speed)
+CREATE INDEX if not exists chk_fts_idx ON public.cht_chunks USING GIN (chk_fts_vector);
 
 -- =====================================================
 -- Table: cht_chunk_statistics (Conocimiento - EstadisticaChunk)

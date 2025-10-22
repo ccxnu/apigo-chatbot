@@ -106,6 +106,30 @@ func (c *Client) SendTextMessage(chatJID types.JID, text string) (types.MessageI
 	return resp.ID, nil
 }
 
+// SendText sends a text message to a chat using string chatID
+func (c *Client) SendText(chatID, text string) error {
+	if !c.IsConnected() {
+		return fmt.Errorf("not connected to WhatsApp")
+	}
+
+	// Parse chatID string to JID
+	jid, err := types.ParseJID(chatID)
+	if err != nil {
+		return fmt.Errorf("invalid chat ID: %w", err)
+	}
+
+	msg := &waE2E.Message{
+		Conversation: &text,
+	}
+
+	_, err = c.WAClient.SendMessage(context.Background(), jid, msg)
+	if err != nil {
+		return fmt.Errorf("failed to send message: %w", err)
+	}
+
+	return nil
+}
+
 // GetDeviceInfo returns information about the connected device
 func (c *Client) GetDeviceInfo() *DeviceInfo {
 	if c.WAClient.Store.ID == nil {

@@ -498,6 +498,188 @@ end;
 $$;
 
 -- =====================================================
+-- USERS SECTION
+-- =====================================================
+
+-- =====================================================
+-- Function: fn_get_user_by_identity
+-- Description: Get user by identity number
+-- =====================================================
+create or replace function fn_get_user_by_identity(
+    p_identity_number varchar
+)
+returns table (
+    usr_id int,
+    usr_identity_number varchar,
+    usr_name varchar,
+    usr_email varchar,
+    usr_phone varchar,
+    usr_rol varchar,
+    usr_details jsonb,
+    usr_whatsapp varchar,
+    usr_active boolean,
+    usr_created_at timestamp,
+    usr_updated_at timestamp
+) as $$
+begin
+    return query
+    select
+        u.usr_id,
+        u.usr_identity_number,
+        u.usr_name,
+        u.usr_email,
+        u.usr_phone,
+        u.usr_rol,
+        u.usr_details,
+        u.usr_whatsapp,
+        u.usr_active,
+        u.usr_created_at,
+        u.usr_updated_at
+    from public.cht_users u
+    where u.usr_identity_number = p_identity_number
+    and u.usr_active = true;
+end;
+$$ language plpgsql;
+
+-- =====================================================
+-- Function: fn_get_user_by_whatsapp
+-- Description: Get user by WhatsApp number
+-- =====================================================
+create or replace function fn_get_user_by_whatsapp(
+    p_whatsapp varchar
+)
+returns table (
+    usr_id int,
+    usr_identity_number varchar,
+    usr_name varchar,
+    usr_email varchar,
+    usr_phone varchar,
+    usr_rol varchar,
+    usr_details jsonb,
+    usr_whatsapp varchar,
+    usr_active boolean,
+    usr_created_at timestamp,
+    usr_updated_at timestamp
+) as $$
+begin
+    return query
+    select
+        u.usr_id,
+        u.usr_identity_number,
+        u.usr_name,
+        u.usr_email,
+        u.usr_phone,
+        u.usr_rol,
+        u.usr_details,
+        u.usr_whatsapp,
+        u.usr_active,
+        u.usr_created_at,
+        u.usr_updated_at
+    from public.cht_users u
+    where u.usr_whatsapp = p_whatsapp
+    and u.usr_active = true;
+end;
+$$ language plpgsql;
+
+-- =====================================================
+-- Procedure: sp_create_user
+-- Description: Creates a new user from WhatsApp registration
+-- Returns: success (boolean), code (varchar), usr_id (int)
+-- =====================================================
+create or replace procedure sp_create_user(
+    out success boolean,
+    out code varchar,
+    out o_usr_id int,
+    in p_identity_number varchar,
+    in p_name varchar,
+    in p_email varchar,
+    in p_phone varchar default null,
+    in p_rol varchar default 'ROLE_STUDENT',
+    in p_whatsapp varchar default null,
+    in p_details jsonb default '{}'::jsonb
+)
+language plpgsql
+as $$
+begin
+    success := true;
+    code := 'OK';
+    o_usr_id := null;
+
+    -- Check if user already exists
+    select usr_id into o_usr_id
+    from public.cht_users
+    where usr_identity_number = p_identity_number;
+
+    if o_usr_id is not null then
+        success := false;
+        code := 'ERR_USER_ALREADY_EXISTS';
+        return;
+    end if;
+
+    -- Create new user
+    insert into public.cht_users (
+        usr_identity_number,
+        usr_name,
+        usr_email,
+        usr_phone,
+        usr_rol,
+        usr_whatsapp,
+        usr_details
+    ) values (
+        p_identity_number,
+        p_name,
+        p_email,
+        p_phone,
+        p_rol,
+        p_whatsapp,
+        p_details
+    )
+    returning usr_id into o_usr_id;
+
+exception
+    when others then
+        success := false;
+        code := 'ERR_CREATE_USER';
+        o_usr_id := null;
+        raise notice 'Error creating user: %', sqlerrm;
+end;
+$$;
+
+-- =====================================================
+-- Procedure: sp_update_user_whatsapp
+-- Description: Updates user's WhatsApp number
+-- Returns: success (boolean), code (varchar)
+-- =====================================================
+create or replace procedure sp_update_user_whatsapp(
+    out success boolean,
+    out code varchar,
+    in p_identity_number varchar,
+    in p_whatsapp varchar
+)
+language plpgsql
+as $$
+begin
+    success := true;
+    code := 'OK';
+
+    update public.cht_users
+    set usr_whatsapp = p_whatsapp
+    where usr_identity_number = p_identity_number;
+
+    if not found then
+        success := false;
+        code := 'ERR_USER_NOT_FOUND';
+    end if;
+
+exception
+    when others then
+        success := false;
+        code := 'ERR_UPDATE_USER_WHATSAPP';
+        raise notice 'Error updating user WhatsApp: %', sqlerrm;
+end;
+$$;
+
+-- =====================================================
 -- Comments
 -- =====================================================
 
@@ -515,3 +697,9 @@ comment on procedure sp_link_user_to_conversation is 'Link validated user to con
 -- Messages
 comment on function fn_get_conversation_history(varchar, int) is 'Get message history for a conversation';
 comment on procedure sp_create_conversation_message is 'Create new message in conversation. Returns success, code, and cvm_id';
+
+-- Users
+comment on function fn_get_user_by_identity(varchar) is 'Get user by identity number';
+comment on function fn_get_user_by_whatsapp(varchar) is 'Get user by WhatsApp number';
+comment on procedure sp_create_user is 'Create new user from WhatsApp registration. Returns success, code, and usr_id';
+comment on procedure sp_update_user_whatsapp is 'Update user WhatsApp number. Returns success and code';
