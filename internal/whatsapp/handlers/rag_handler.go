@@ -114,21 +114,26 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	var answer string
 	var err error
 
+	var llmResponse *llm.GenerateResponse
+
 	if len(searchResult.Data) == 0 {
-		answer, err = h.generateLLMResponse(ctx, query, "", conversationHistory)
+		llmResponse, err = h.generateLLMResponse(ctx, query, "", conversationHistory)
 		if err != nil {
 			return h.sendMessage(msg.ChatID, h.getParam("RAG_NO_RESULTS_MESSAGE", "Lo siento, no encontré información relevante sobre tu consulta."))
 		}
+		answer = llmResponse.Content
 	} else {
 		contextStr := h.buildHybridContext(searchResult.Data)
-		answer, err = h.generateLLMResponse(ctx, query, contextStr, conversationHistory)
+		llmResponse, err = h.generateLLMResponse(ctx, query, contextStr, conversationHistory)
 		if err != nil {
 			logger.LogError(ctx, "LLM generation failed", err)
 			answer = h.generateSimpleAnswer(searchResult.Data)
+		} else {
+			answer = llmResponse.Content
 		}
 	}
 
-	h.storeAssistantMessage(ctx, conversation.ID, answer, timestamp+2)
+	h.storeAssistantMessage(ctx, conversation.ID, answer, timestamp+2, llmResponse)
 
 	return h.sendMessage(msg.ChatID, answer)
 }
@@ -149,9 +154,9 @@ func (h *RAGHandler) buildHybridContext(chunks []domain.ChunkWithHybridSimilarit
 	return builder.String()
 }
 
-func (h *RAGHandler) generateLLMResponse(ctx context.Context, query, ragContext string, conversationHistory []llm.Message) (string, error) {
+func (h *RAGHandler) generateLLMResponse(ctx context.Context, query, ragContext string, conversationHistory []llm.Message) (*llm.GenerateResponse, error) {
 	if h.llmProvider == nil || !h.llmProvider.IsAvailable() {
-		return "", fmt.Errorf("LLM provider not available")
+		return nil, fmt.Errorf("LLM provider not available")
 	}
 
 	systemPrompt := h.getParam("RAG_SYSTEM_PROMPT", "Eres un asistente virtual del instituto educativo.")
@@ -169,23 +174,41 @@ func (h *RAGHandler) generateLLMResponse(ctx context.Context, query, ragContext 
 
 	response, err := h.llmProvider.GenerateResponse(ctx, request)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate LLM response: %w", err)
+		return nil, fmt.Errorf("failed to generate LLM response: %w", err)
 	}
 
-	return response.Content, nil
+	return response, nil
 }
 
-func (h *RAGHandler) storeAssistantMessage(ctx context.Context, conversationID int, message string, timestamp int64) {
-	result := h.convUseCase.StoreMessage(
-		ctx,
-		conversationID,
-		fmt.Sprintf("assistant_%d", timestamp),
-		true,
-		message,
-		timestamp,
-	)
+func (h *RAGHandler) storeAssistantMessage(ctx context.Context, conversationID int, message string, timestamp int64, llmResponse *llm.GenerateResponse) {
+	if llmResponse == nil {
+		result := h.convUseCase.StoreMessage(ctx, conversationID, fmt.Sprintf("assistant_%d", timestamp), true, message, timestamp)
+		if !result.Success {
+			logger.LogWarn(ctx, "Failed to store assistant message", "error", result.Code)
+		}
+		return
+	}
+
+	params := domain.CreateConversationMessageParams{
+		ConversationID:   conversationID,
+		MessageID:        fmt.Sprintf("assistant_%d", timestamp),
+		FromMe:           true,
+		MessageType:      "text",
+		Body:             &message,
+		Timestamp:        timestamp,
+		IsForwarded:      false,
+		QueueTimeMs:      llmResponse.QueueTimeMs,
+		PromptTokens:     llmResponse.PromptTokens,
+		PromptTimeMs:     llmResponse.PromptTimeMs,
+		CompletionTokens: llmResponse.CompletionTokens,
+		CompletionTimeMs: llmResponse.CompletionTimeMs,
+		TotalTokens:      llmResponse.TotalTokens,
+		TotalTimeMs:      llmResponse.TotalTimeMs,
+	}
+
+	result := h.convUseCase.StoreMessageWithStats(ctx, params)
 	if !result.Success {
-		logger.LogWarn(ctx, "Failed to store assistant message", "error", result.Code)
+		logger.LogWarn(ctx, "Failed to store assistant message with stats", "error", result.Code)
 	}
 }
 

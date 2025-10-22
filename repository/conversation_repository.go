@@ -105,6 +105,13 @@ func (r *conversationRepository) CreateMessage(ctx context.Context, params domai
 		params.QuotedMessage,
 		params.Timestamp,
 		params.IsForwarded,
+		params.QueueTimeMs,
+		params.PromptTokens,
+		params.PromptTimeMs,
+		params.CompletionTokens,
+		params.CompletionTimeMs,
+		params.TotalTokens,
+		params.TotalTimeMs,
 	)
 
 	if err != nil {

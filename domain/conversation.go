@@ -25,19 +25,26 @@ type Conversation struct {
 
 // ConversationMessage represents a message in a conversation
 type ConversationMessage struct {
-	ID              int       `json:"id" db:"cvm_id"`
-	ConversationID  int       `json:"conversationId" db:"cvm_fk_conversation"`
-	MessageID       string    `json:"messageId" db:"cvm_message_id"`
-	FromMe          bool      `json:"fromMe" db:"cvm_from_me"`
-	SenderName      *string   `json:"senderName,omitempty" db:"cvm_sender_name"`
-	MessageType     string    `json:"messageType" db:"cvm_message_type"`
-	Body            *string   `json:"body,omitempty" db:"cvm_body"`
-	MediaURL        *string   `json:"mediaUrl,omitempty" db:"cvm_media_url"`
-	QuotedMessage   *string   `json:"quotedMessage,omitempty" db:"cvm_quoted_message"`
-	Timestamp       int64     `json:"timestamp" db:"cvm_timestamp"`
-	IsForwarded     bool      `json:"isForwarded" db:"cvm_is_forwarded"`
-	Metadata        Data      `json:"metadata,omitempty" db:"cvm_metadata"`
-	CreatedAt       time.Time `json:"createdAt" db:"cvm_created_at"`
+	ID                int       `json:"id" db:"cvm_id"`
+	ConversationID    int       `json:"conversationId" db:"cvm_fk_conversation"`
+	MessageID         string    `json:"messageId" db:"cvm_message_id"`
+	FromMe            bool      `json:"fromMe" db:"cvm_from_me"`
+	SenderName        *string   `json:"senderName,omitempty" db:"cvm_sender_name"`
+	MessageType       string    `json:"messageType" db:"cvm_message_type"`
+	Body              *string   `json:"body,omitempty" db:"cvm_body"`
+	MediaURL          *string   `json:"mediaUrl,omitempty" db:"cvm_media_url"`
+	QuotedMessage     *string   `json:"quotedMessage,omitempty" db:"cvm_quoted_message"`
+	Timestamp         int64     `json:"timestamp" db:"cvm_timestamp"`
+	IsForwarded       bool      `json:"isForwarded" db:"cvm_is_forwarded"`
+	Metadata          Data      `json:"metadata,omitempty" db:"cvm_metadata"`
+	QueueTimeMs       *int      `json:"queueTimeMs,omitempty" db:"cvm_queue_time_ms"`
+	PromptTokens      *int      `json:"promptTokens,omitempty" db:"cvm_prompt_tokens"`
+	PromptTimeMs      *int      `json:"promptTimeMs,omitempty" db:"cvm_prompt_time_ms"`
+	CompletionTokens  *int      `json:"completionTokens,omitempty" db:"cvm_completion_tokens"`
+	CompletionTimeMs  *int      `json:"completionTimeMs,omitempty" db:"cvm_completion_time_ms"`
+	TotalTokens       *int      `json:"totalTokens,omitempty" db:"cvm_total_tokens"`
+	TotalTimeMs       *int      `json:"totalTimeMs,omitempty" db:"cvm_total_time_ms"`
+	CreatedAt         time.Time `json:"createdAt" db:"cvm_created_at"`
 }
 
 // Conversation Repository Params & Results
@@ -64,16 +71,23 @@ type LinkUserToConversationResult struct {
 }
 
 type CreateConversationMessageParams struct {
-	ConversationID int
-	MessageID      string
-	FromMe         bool
-	SenderName     *string
-	MessageType    string
-	Body           *string
-	MediaURL       *string
-	QuotedMessage  *string
-	Timestamp      int64
-	IsForwarded    bool
+	ConversationID   int
+	MessageID        string
+	FromMe           bool
+	SenderName       *string
+	MessageType      string
+	Body             *string
+	MediaURL         *string
+	QuotedMessage    *string
+	Timestamp        int64
+	IsForwarded      bool
+	QueueTimeMs      *int
+	PromptTokens     *int
+	PromptTimeMs     *int
+	CompletionTokens *int
+	CompletionTimeMs *int
+	TotalTokens      *int
+	TotalTimeMs      *int
 }
 
 type CreateConversationMessageResult struct {
@@ -95,4 +109,5 @@ type ConversationUseCase interface {
 	LinkUserToConversation(ctx context.Context, chatID, identityNumber string) Result[Data]
 	GetConversationHistory(ctx context.Context, chatID string, limit int) Result[[]ConversationMessage]
 	StoreMessage(ctx context.Context, conversationID int, messageID string, fromMe bool, body string, timestamp int64) Result[Data]
+	StoreMessageWithStats(ctx context.Context, params CreateConversationMessageParams) Result[Data]
 }

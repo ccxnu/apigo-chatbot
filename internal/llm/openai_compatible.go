@@ -170,7 +170,13 @@ func (p *OpenAICompatibleProvider) GenerateResponse(ctx context.Context, req Gen
 			FinishReason string `json:"finish_reason"`
 		} `json:"choices"`
 		Usage struct {
-			TotalTokens int `json:"total_tokens"`
+			QueueTime         float64 `json:"queue_time"`
+			PromptTokens      int     `json:"prompt_tokens"`
+			PromptTime        float64 `json:"prompt_time"`
+			CompletionTokens  int     `json:"completion_tokens"`
+			CompletionTime    float64 `json:"completion_time"`
+			TotalTokens       int     `json:"total_tokens"`
+			TotalTime         float64 `json:"total_time"`
 		} `json:"usage"`
 		Model string `json:"model"`
 	}
@@ -195,19 +201,29 @@ func (p *OpenAICompatibleProvider) GenerateResponse(ctx context.Context, req Gen
 		}
 	}
 
-	// Log success
+	queueTimeMs := int(apiResponse.Usage.QueueTime * 1000)
+	promptTimeMs := int(apiResponse.Usage.PromptTime * 1000)
+	completionTimeMs := int(apiResponse.Usage.CompletionTime * 1000)
+	totalTimeMs := int(apiResponse.Usage.TotalTime * 1000)
+
 	logger.LogInfo(ctx, "LLM response received",
 		"provider", p.config.Provider,
 		"model", apiResponse.Model,
-		"tokensUsed", apiResponse.Usage.TotalTokens,
-		"finishReason", apiResponse.Choices[0].FinishReason,
+		"totalTokens", apiResponse.Usage.TotalTokens,
+		"totalTimeMs", totalTimeMs,
 	)
 
 	return &GenerateResponse{
-		Content:      apiResponse.Choices[0].Message.Content,
-		TokensUsed:   apiResponse.Usage.TotalTokens,
-		Model:        apiResponse.Model,
-		FinishReason: apiResponse.Choices[0].FinishReason,
+		Content:          apiResponse.Choices[0].Message.Content,
+		Model:            apiResponse.Model,
+		FinishReason:     apiResponse.Choices[0].FinishReason,
+		QueueTimeMs:      &queueTimeMs,
+		PromptTokens:     &apiResponse.Usage.PromptTokens,
+		PromptTimeMs:     &promptTimeMs,
+		CompletionTokens: &apiResponse.Usage.CompletionTokens,
+		CompletionTimeMs: &completionTimeMs,
+		TotalTokens:      &apiResponse.Usage.TotalTokens,
+		TotalTimeMs:      &totalTimeMs,
 	}, nil
 }
 

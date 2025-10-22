@@ -431,7 +431,14 @@ create or replace procedure sp_create_conversation_message(
     in p_media_url varchar default null,
     in p_quoted_message varchar default null,
     in p_timestamp bigint default null,
-    in p_is_forwarded boolean default false
+    in p_is_forwarded boolean default false,
+    in p_queue_time_ms int default null,
+    in p_prompt_tokens int default null,
+    in p_prompt_time_ms int default null,
+    in p_completion_tokens int default null,
+    in p_completion_time_ms int default null,
+    in p_total_tokens int default null,
+    in p_total_time_ms int default null
 )
 language plpgsql
 as $$
@@ -442,7 +449,6 @@ begin
     code := 'OK';
     o_cvm_id := null;
 
-    -- Check if conversation exists
     select exists(
         select 1
         from public.cht_conversations
@@ -455,7 +461,6 @@ begin
         return;
     end if;
 
-    -- Insert message
     insert into public.cht_conversation_messages (
         cvm_fk_conversation,
         cvm_message_id,
@@ -466,7 +471,14 @@ begin
         cvm_media_url,
         cvm_quoted_message,
         cvm_timestamp,
-        cvm_is_forwarded
+        cvm_is_forwarded,
+        cvm_queue_time_ms,
+        cvm_prompt_tokens,
+        cvm_prompt_time_ms,
+        cvm_completion_tokens,
+        cvm_completion_time_ms,
+        cvm_total_tokens,
+        cvm_total_time_ms
     ) values (
         p_conversation_id,
         p_message_id,
@@ -477,7 +489,14 @@ begin
         p_media_url,
         p_quoted_message,
         coalesce(p_timestamp, extract(epoch from current_timestamp)::bigint),
-        p_is_forwarded
+        p_is_forwarded,
+        p_queue_time_ms,
+        p_prompt_tokens,
+        p_prompt_time_ms,
+        p_completion_tokens,
+        p_completion_time_ms,
+        p_total_tokens,
+        p_total_time_ms
     )
     returning cvm_id into o_cvm_id;
 

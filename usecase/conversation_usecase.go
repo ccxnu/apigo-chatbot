@@ -168,3 +168,28 @@ func (u *conversationUseCase) LinkUserToConversation(c context.Context, chatID, 
 
 	return d.Success(d.Data{})
 }
+
+func (u *conversationUseCase) StoreMessageWithStats(c context.Context, params d.CreateConversationMessageParams) d.Result[d.Data] {
+	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
+	defer cancel()
+
+	result, err := u.convRepo.CreateMessage(ctx, params)
+	if err != nil || result == nil {
+		logger.LogError(ctx, "Failed to save message with stats in database", err,
+			"operation", "StoreMessageWithStats",
+			"conversationID", params.ConversationID,
+		)
+		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if !result.Success {
+		logger.LogWarn(ctx, "Message with stats save failed with business logic error",
+			"operation", "StoreMessageWithStats",
+			"code", result.Code,
+			"conversationID", params.ConversationID,
+		)
+		return d.Error[d.Data](u.paramCache, result.Code)
+	}
+
+	return d.Success(d.Data{"messageId": result.MessageID})
+}

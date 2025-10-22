@@ -38,19 +38,17 @@ type GenerateRequest struct {
 	ConversationHistory []Message
 }
 
-// GenerateResponse contains the LLM's response
 type GenerateResponse struct {
-	// Content is the generated text response
-	Content string
-
-	// TokensUsed indicates how many tokens were consumed
-	TokensUsed int
-
-	// Model is the specific model that generated the response
-	Model string
-
-	// FinishReason indicates why generation stopped (e.g., "stop", "length")
-	FinishReason string
+	Content          string
+	Model            string
+	FinishReason     string
+	QueueTimeMs      *int
+	PromptTokens     *int
+	PromptTimeMs     *int
+	CompletionTokens *int
+	CompletionTimeMs *int
+	TotalTokens      *int
+	TotalTimeMs      *int
 }
 
 // Message represents a conversation message
