@@ -627,7 +627,17 @@ begin
 
       if not exists (select 1 from cht_parameters where prm_code = 'RAG_SYSTEM_PROMPT') then
           insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
-          values ('RAG_CONFIGURATION', 'RAG_SYSTEM_PROMPT', '{"message": "Eres un asistente virtual del instituto educativo. Tu objetivo es ayudar a estudiantes y profesores con información académica de manera clara, precisa y amigable. Siempre basa tus respuestas en el contexto proporcionado."}'::jsonb, 'System prompt for RAG LLM interactions');
+          values ('RAG_CONFIGURATION', 'RAG_SYSTEM_PROMPT', '{"message": "Eres Alfibot, un asistente institucional del Instituto Superior Tecnológico Sudamericano de la ciudad de Loja. Tu rol es proporcionar respuestas claras, precisas y contextualmente relevantes a consultas estudiantiles basándote en la información proporcionada. SIGUE LAS SIGUIENTES REGLAS: 1. Fundamenta tus respuestas únicamente en el contexto proporcionado. 2. Las respuestas deben estar en un párrafo o máximo dos. 3. NUNCA inventes información que no esté en el contexto proporcionado. 4. Sé amable, profesional y amigable en tus respuestas. 5. Si no tienes suficiente información para responder, di: Lo siento, no tengo información sobre eso en este momento."}'::jsonb, 'System prompt for RAG LLM interactions');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_CHATBOT_NAME') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_CHATBOT_NAME', '{"name": "Alfibot"}'::jsonb, 'The name of the institutional chatbot');
+      end if;
+
+      if not exists (select 1 from cht_parameters where prm_code = 'RAG_INFORMATION_CONTACT') then
+          insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+          values ('RAG_CONFIGURATION', 'RAG_INFORMATION_CONTACT', '{"contacts": [{"name": "Emily Peña", "position": "Asesora Educativa", "email": "asistente_marketing@ists.edu.ec"}, {"name": "Carla Benítez", "position": "Secretaria General", "email": "secretaria@ists.edu.ec"}], "message": "Para más información, puedes contactar a:"}'::jsonb, 'Reference contacts when information is not found in knowledge base');
       end if;
 
       -- =====================================================

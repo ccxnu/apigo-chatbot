@@ -117,9 +117,16 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	var llmResponse *llm.GenerateResponse
 
 	if len(searchResult.Data) == 0 {
-		llmResponse, err = h.generateLLMResponse(ctx, query, "", conversationHistory)
+		// No results found - include contact information in context
+		contactInfo := h.getContactInformation()
+		llmResponse, err = h.generateLLMResponse(ctx, query, contactInfo, conversationHistory)
 		if err != nil {
-			return h.sendMessage(msg.ChatID, h.getParam("RAG_NO_RESULTS_MESSAGE", "Lo siento, no encontré información relevante sobre tu consulta."))
+			noResultsMsg := h.getParam("RAG_NO_RESULTS_MESSAGE", "Lo siento, no encontré información relevante sobre tu consulta.")
+			contactMsg := h.formatContactsForMessage()
+			if contactMsg != "" {
+				noResultsMsg += "\n\n" + contactMsg
+			}
+			return h.sendMessage(msg.ChatID, noResultsMsg)
 		}
 		answer = llmResponse.Content
 	} else {
@@ -283,4 +290,103 @@ func (h *RAGHandler) getParamFloat(code string, defaultValue float64) float64 {
 		return val
 	}
 	return defaultValue
+}
+
+// getContactInformation retrieves contact information to be used as context for LLM
+func (h *RAGHandler) getContactInformation() string {
+	param, exists := h.paramCache.Get("RAG_INFORMATION_CONTACT")
+	if !exists {
+		return ""
+	}
+
+	data, err := param.GetDataAsMap()
+	if err != nil {
+		return ""
+	}
+
+	message, _ := data["message"].(string)
+	contacts, ok := data["contacts"].([]interface{})
+	if !ok || len(contacts) == 0 {
+		return ""
+	}
+
+	var builder strings.Builder
+	builder.WriteString("## Información de contacto institucional\n\n")
+	if message != "" {
+		builder.WriteString(message)
+		builder.WriteString("\n\n")
+	}
+
+	for _, contactData := range contacts {
+		contact, ok := contactData.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		name, _ := contact["name"].(string)
+		position, _ := contact["position"].(string)
+		email, _ := contact["email"].(string)
+
+		if name != "" {
+			builder.WriteString(fmt.Sprintf("- **%s**", name))
+			if position != "" {
+				builder.WriteString(fmt.Sprintf(" (%s)", position))
+			}
+			if email != "" {
+				builder.WriteString(fmt.Sprintf("\n  Email: %s", email))
+			}
+			builder.WriteString("\n")
+		}
+	}
+
+	return builder.String()
+}
+
+// formatContactsForMessage formats contacts for direct WhatsApp message
+func (h *RAGHandler) formatContactsForMessage() string {
+	param, exists := h.paramCache.Get("RAG_INFORMATION_CONTACT")
+	if !exists {
+		return ""
+	}
+
+	data, err := param.GetDataAsMap()
+	if err != nil {
+		return ""
+	}
+
+	message, _ := data["message"].(string)
+	contacts, ok := data["contacts"].([]interface{})
+	if !ok || len(contacts) == 0 {
+		return ""
+	}
+
+	var builder strings.Builder
+	if message != "" {
+		builder.WriteString(message)
+		builder.WriteString("\n\n")
+	}
+
+	for _, contactData := range contacts {
+		contact, ok := contactData.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		name, _ := contact["name"].(string)
+		position, _ := contact["position"].(string)
+		email, _ := contact["email"].(string)
+
+		if name != "" {
+			builder.WriteString(fmt.Sprintf("👤 *%s*", name))
+			if position != "" {
+				builder.WriteString(fmt.Sprintf("\n   _%s_", position))
+			}
+			if email != "" {
+				builder.WriteString(fmt.Sprintf("\n   📧 %s", email))
+			}
+			builder.WriteString("\n\n")
+		}
+	}
+
+	return strings.TrimSpace(builder.String())
 }
