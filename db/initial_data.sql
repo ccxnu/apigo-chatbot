@@ -811,4 +811,104 @@ begin
     values
         ('ROLE_GUEST', 'FUNC_CHAT', true)
     on conflict (prm_rol, prm_funcionality) do nothing;
+
+    -- =====================================================
+    -- JWT Configuration
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'JWT_CONFIG') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'SECURITY',
+            'JWT_CONFIG',
+            '{
+                "accessSecret": "dev-super-secret-access-key-changeme-in-production",
+                "refreshSecret": "dev-super-secret-refresh-key-changeme-in-production",
+                "accessExpiryHours": 1,
+                "refreshExpiryHours": 168
+            }'::jsonb,
+            'JWT token configuration for admin authentication'
+        );
+    end if;
+
+    -- =====================================================
+    -- Admin Roles
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'ADMIN_ROLE_SUPER') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'ADMIN_ROLES',
+            'ADMIN_ROLE_SUPER',
+            '{"description": "Super Administrator - Full system access", "level": 100}'::jsonb,
+            'Super administrator role with all permissions'
+        );
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ADMIN_ROLE_ADMIN') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'ADMIN_ROLES',
+            'ADMIN_ROLE_ADMIN',
+            '{"description": "Administrator - Administrative access", "level": 80}'::jsonb,
+            'Administrator role with most permissions'
+        );
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ADMIN_ROLE_MODERATOR') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'ADMIN_ROLES',
+            'ADMIN_ROLE_MODERATOR',
+            '{"description": "Moderator - Content and user management", "level": 50}'::jsonb,
+            'Moderator role with content management permissions'
+        );
+    end if;
+
+    -- =====================================================
+    -- Admin Authentication Error Codes
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_USER_NOT_FOUND') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_USER_NOT_FOUND', '{"message": "Usuario no encontrado"}'::jsonb, 'User not found error');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_INVALID_CREDENTIALS') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_INVALID_CREDENTIALS', '{"message": "Credenciales inválidas"}'::jsonb, 'Invalid credentials error');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_ACCOUNT_LOCKED') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_ACCOUNT_LOCKED', '{"message": "Cuenta bloqueada por múltiples intentos fallidos"}'::jsonb, 'Account locked error');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_ACCOUNT_INACTIVE') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_ACCOUNT_INACTIVE', '{"message": "Cuenta inactiva"}'::jsonb, 'Account inactive error');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_INVALID_TOKEN') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_INVALID_TOKEN', '{"message": "Token inválido o expirado"}'::jsonb, 'Invalid or expired token');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_TOKEN_EXPIRED') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_TOKEN_EXPIRED', '{"message": "Token expirado"}'::jsonb, 'Token expired error');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_TOKEN_REVOKED') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_TOKEN_REVOKED', '{"message": "Token revocado por seguridad"}'::jsonb, 'Token revoked error');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_TOKEN_NOT_FOUND') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_TOKEN_NOT_FOUND', '{"message": "Token no encontrado"}'::jsonb, 'Token not found error');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_CREATE_ADMIN') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_CREATE_ADMIN', '{"message": "Error al crear usuario administrador"}'::jsonb, 'Error creating admin user');
+    end if;
+
 end $$;

@@ -190,7 +190,9 @@ RETURNS TABLE (
     adm_is_locked BOOLEAN,
     adm_failed_attempts INT,
     adm_last_login TIMESTAMP,
-    adm_created_at TIMESTAMP
+    adm_last_login_ip VARCHAR(45),
+    adm_created_at TIMESTAMP,
+    adm_updated_at TIMESTAMP
 )
 LANGUAGE plpgsql
 AS $$
@@ -200,7 +202,7 @@ BEGIN
         a.adm_id, a.adm_username, a.adm_email, a.adm_password_hash,
         a.adm_name, a.adm_role, a.adm_permissions, a.adm_claims,
         a.adm_is_active, a.adm_is_locked, a.adm_failed_attempts,
-        a.adm_last_login, a.adm_created_at
+        a.adm_last_login, a.adm_last_login_ip, a.adm_created_at, a.adm_updated_at
     FROM cht_admin_users a
     WHERE a.adm_username = p_username;
 END;
@@ -226,7 +228,9 @@ RETURNS TABLE (
     adm_is_locked BOOLEAN,
     adm_failed_attempts INT,
     adm_last_login TIMESTAMP,
-    adm_created_at TIMESTAMP
+    adm_last_login_ip VARCHAR(45),
+    adm_created_at TIMESTAMP,
+    adm_updated_at TIMESTAMP
 )
 LANGUAGE plpgsql
 AS $$
@@ -236,7 +240,7 @@ BEGIN
         a.adm_id, a.adm_username, a.adm_email, a.adm_password_hash,
         a.adm_name, a.adm_role, a.adm_permissions, a.adm_claims,
         a.adm_is_active, a.adm_is_locked, a.adm_failed_attempts,
-        a.adm_last_login, a.adm_created_at
+        a.adm_last_login, a.adm_last_login_ip, a.adm_created_at, a.adm_updated_at
     FROM cht_admin_users a
     WHERE a.adm_id = p_admin_id;
 END;
