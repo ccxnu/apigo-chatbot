@@ -116,34 +116,6 @@ create table if not exists public.cht_chunk_statistics (
 );
 
 -- =====================================================
--- Table: cht_messages (Sesiones - MensajeChat)
--- =====================================================
-create table if not exists public.cht_messages (
-    msg_id              serial primary key,
-    msg_fk_session      int not null references cht_sessions(ssn_id) on delete cascade,
-    msg_rol             varchar(50) not null references cht_parameters(prm_code),
-    msg_content         text not null,
-    msg_embedding       vector(1536),
-    msg_processed_at    timestamp not null default current_timestamp
-);
-
--- =====================================================
--- Table: cht_message_statistics (Sesiones - EstadisticaMensaje)
--- =====================================================
-create table if not exists public.cht_message_statistics (
-    mst_id                      serial primary key,
-    mst_fk_message              int unique not null references cht_messages(msg_id) on delete cascade,
-    mst_latency_ms              int,
-    mst_tokens_prompt           int,
-    mst_tokens_completion       int,
-    mst_cost_usd                decimal(10,6),
-    mst_faithfulness_score      float,
-    mst_answer_correct_rate     float,
-    mst_feedback_rating         int check (mst_feedback_rating between 1 and 5),
-    mst_created_at              timestamp not null default current_timestamp
-);
-
--- =====================================================
 -- Table: cht_logs (Sistema de Logs)
 -- =====================================================
 create table if not exists public.cht_logs (
@@ -250,14 +222,6 @@ create index if not exists idx_cht_chunks_embedding on cht_chunks using ivfflat(
 create index if not exists idx_cht_chunk_stats_usage on cht_chunk_statistics(cst_usage_count desc);
 create index if not exists idx_cht_chunk_stats_last_used on cht_chunk_statistics(cst_last_used_at desc);
 
--- Messages
-create index if not exists idx_cht_messages_session on cht_messages(msg_fk_session);
-create index if not exists idx_cht_messages_processed on cht_messages(msg_processed_at desc);
-create index if not exists idx_cht_messages_embedding on cht_messages using ivfflat(msg_embedding vector_cosine_ops) with (lists = 100);
-
--- Message Statistics
-create index if not exists idx_cht_msg_stats_message on cht_message_statistics(mst_fk_message);
-
 -- Logs
 create index if not exists idx_cht_logs_level on cht_logs(log_level);
 create index if not exists idx_cht_logs_module on cht_logs(log_module);
@@ -337,8 +301,6 @@ comment on table cht_sessions is 'Active and historical user sessions';
 comment on table cht_documents is 'Knowledge base documents';
 comment on table cht_chunks is 'Document chunks with embeddings for RAG';
 comment on table cht_chunk_statistics is 'Usage and quality metrics for chunks';
-comment on table cht_messages is 'Chat messages with AI responses';
-comment on table cht_message_statistics is 'Performance metrics for messages';
 comment on table cht_logs is 'System audit and error logs';
 comment on table cht_whatsapp_sessions is 'WhatsApp connection sessions and device information';
 comment on table cht_conversations is 'WhatsApp conversations and chat metadata';

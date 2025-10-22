@@ -13,6 +13,7 @@ type UserValidationHandler struct {
 	userUseCase domain.WhatsAppUserUseCase
 	convUseCase domain.ConversationUseCase
 	client      WhatsAppClient
+	paramCache  domain.ParameterCache
 	priority    int
 }
 
@@ -20,12 +21,14 @@ func NewUserValidationHandler(
 	userUseCase domain.WhatsAppUserUseCase,
 	convUseCase domain.ConversationUseCase,
 	client WhatsAppClient,
+	paramCache domain.ParameterCache,
 	priority int,
 ) *UserValidationHandler {
 	return &UserValidationHandler{
 		userUseCase: userUseCase,
 		convUseCase: convUseCase,
 		client:      client,
+		paramCache:  paramCache,
 		priority:    priority,
 	}
 }
@@ -133,6 +136,13 @@ func (h *UserValidationHandler) registerUser(ctx context.Context, msg *domain.In
 
 	welcomeMessage := h.buildWelcomeMessage(instituteData, user)
 
+	err := h.client.SendText(msg.ChatID, welcomeMessage)
+	if err != nil {
+		return err
+	}
+
+	helpMessage := h.getParam("MESSAGE_HELP", "👋 *Bienvenido al Asistente del Instituto*\n\nEscribe /help para más información.")
+
 	slog.Info("User registered successfully",
 		"cedula", cedula,
 		"name", user.Name,
@@ -140,7 +150,7 @@ func (h *UserValidationHandler) registerUser(ctx context.Context, msg *domain.In
 		"whatsapp", msg.From,
 	)
 
-	return h.client.SendText(msg.ChatID, welcomeMessage)
+	return h.client.SendText(msg.ChatID, helpMessage)
 }
 
 func (h *UserValidationHandler) handleExternalUser(chatID string) error {
@@ -177,12 +187,20 @@ func (h *UserValidationHandler) buildWelcomeMessage(instituteData *domain.Instit
 
 	return fmt.Sprintf(`%s ¡Bienvenido, %s!
 
-Has sido registrado exitosamente como %s.
+Has sido registrado exitosamente como %s.`, roleEmoji, user.Name, roleText)
+}
 
-Ahora puedes:
-• Hacer preguntas sobre el instituto
-• Consultar horarios con /horarios
-• Ver ayuda con /help
-
-¿En qué puedo ayudarte hoy?`, roleEmoji, user.Name, roleText)
+func (h *UserValidationHandler) getParam(code, defaultValue string) string {
+	param, exists := h.paramCache.Get(code)
+	if !exists {
+		return defaultValue
+	}
+	data, err := param.GetDataAsMap()
+	if err != nil {
+		return defaultValue
+	}
+	if msg, ok := data["message"].(string); ok {
+		return msg
+	}
+	return defaultValue
 }

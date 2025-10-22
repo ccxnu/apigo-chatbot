@@ -83,8 +83,8 @@ func InitializeWhatsAppService(
 	}
 
 	messageHandlers := []whatsapp.MessageHandler{
-		handlers.NewUserValidationHandler(userUC, convUC, waClient, 1000),
-		handlers.NewCommandHandler(waClient, 100),
+		handlers.NewUserValidationHandler(userUC, convUC, waClient, app.Cache, 1000),
+		handlers.NewCommandHandler(waClient, app.Cache, 100),
 		handlers.NewRAGHandler(chunkUC, convUC, llmProvider, waClient, app.Cache, 50),
 	}
 
