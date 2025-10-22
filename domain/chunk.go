@@ -27,6 +27,18 @@ type ChunkWithSimilarity struct {
 	DocCategory     string  `json:"docCategory" db:"doc_category"`
 }
 
+// ChunkWithHybridSimilarity extends ChunkWithSimilarity for hybrid search results
+type ChunkWithHybridSimilarity struct {
+	ID              int     `json:"id" db:"chk_id"`
+	DocumentID      int     `json:"documentId" db:"chk_fk_document"`
+	Content         string  `json:"content" db:"chk_content"`
+	SimilarityScore float64 `json:"similarityScore" db:"similarity_score"`
+	KeywordScore    float64 `json:"keywordScore" db:"keyword_score"`
+	CombinedScore   float64 `json:"combinedScore" db:"combined_score"`
+	DocTitle        string  `json:"docTitle" db:"doc_title"`
+	DocCategory     string  `json:"docCategory" db:"doc_category"`
+}
+
 // Chunk Repository Params & Results
 type CreateChunkParams struct {
 	DocumentID int
@@ -64,9 +76,17 @@ type BulkCreateChunksResult struct {
 }
 
 type SimilaritySearchParams struct {
-	QueryEmbedding []float32
+	QueryEmbedding pgvector.Vector
 	Limit          int
 	MinSimilarity  float64
+}
+
+type HybridSearchParams struct {
+	QueryEmbedding pgvector.Vector
+	QueryText      string
+	Limit          int
+	MinSimilarity  float64
+	KeywordWeight  float64
 }
 
 // Chunk Repository & UseCase Interfaces
@@ -74,6 +94,7 @@ type ChunkRepository interface {
 	GetByDocument(ctx context.Context, docID int) ([]Chunk, error)
 	GetByID(ctx context.Context, chunkID int) (*Chunk, error)
 	SimilaritySearch(ctx context.Context, params SimilaritySearchParams) ([]ChunkWithSimilarity, error)
+	HybridSearch(ctx context.Context, params HybridSearchParams) ([]ChunkWithHybridSimilarity, error)
 	Create(ctx context.Context, params CreateChunkParams) (*CreateChunkResult, error)
 	UpdateEmbedding(ctx context.Context, params UpdateChunkEmbeddingParams) (*UpdateChunkEmbeddingResult, error)
 	Delete(ctx context.Context, chunkID int) (*DeleteChunkResult, error)
@@ -84,6 +105,7 @@ type ChunkUseCase interface {
 	GetByDocument(ctx context.Context, docID int) Result[[]Chunk]
 	GetByID(ctx context.Context, chunkID int) Result[*Chunk]
 	SimilaritySearch(ctx context.Context, queryText string, limit int, minSimilarity float64) Result[[]ChunkWithSimilarity]
+	HybridSearch(ctx context.Context, queryText string, limit int, minSimilarity float64, keywordWeight float64) Result[[]ChunkWithHybridSimilarity]
 	Create(ctx context.Context, documentID int, content string) Result[Data]
 	UpdateContent(ctx context.Context, chunkID int, content string) Result[Data]
 	Delete(ctx context.Context, chunkID int) Result[Data]

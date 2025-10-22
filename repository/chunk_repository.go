@@ -10,9 +10,10 @@ import (
 
 const (
 	// Functions (Read-only)
-	fnGetChunksByDocument    = "fn_get_chunks_by_document"
-	fnGetChunkByID           = "fn_get_chunk_by_id"
-	fnSimilaritySearchChunks = "fn_similarity_search_chunks"
+	fnGetChunksByDocument          = "fn_get_chunks_by_document"
+	fnGetChunkByID                 = "fn_get_chunk_by_id"
+	fnSimilaritySearchChunks       = "fn_similarity_search_chunks"
+	fnSimilaritySearchChunksHybrid = "fn_similarity_search_chunks_hybrid"
 	// Stored Procedures (Writes)
 	spCreateChunk          = "sp_create_chunk"
 	spUpdateChunkEmbedding = "sp_update_chunk_embedding"
@@ -70,6 +71,26 @@ func (r *chunkRepository) SimilaritySearch(ctx context.Context, params domain.Si
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform similarity search via %s: %w", fnSimilaritySearchChunks, err)
+	}
+
+	return chunks, nil
+}
+
+// HybridSearch performs hybrid search combining vector similarity and full-text search
+func (r *chunkRepository) HybridSearch(ctx context.Context, params domain.HybridSearchParams) ([]domain.ChunkWithHybridSimilarity, error) {
+	chunks, err := dal.QueryRows[domain.ChunkWithHybridSimilarity](
+		r.dal,
+		ctx,
+		fnSimilaritySearchChunksHybrid,
+		params.QueryEmbedding,
+		params.QueryText,
+		params.Limit,
+		params.MinSimilarity,
+		params.KeywordWeight,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform hybrid search via %s: %w", fnSimilaritySearchChunksHybrid, err)
 	}
 
 	return chunks, nil

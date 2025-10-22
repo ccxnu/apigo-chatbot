@@ -414,6 +414,73 @@ end;
 $$ language plpgsql;
 
 -- =====================================================
+-- Function: fn_similarity_search_chunks_hybrid
+-- Description: Vector similarity search for RAG
+-- Returns chunks ordered by cosine similarity and full-text-search
+-- =====================================================
+create or replace function fn_similarity_search_chunks_hybrid(
+    p_query_embedding vector(1536),
+    p_query_text text, -- New parameter for the raw text query
+    p_limit int default 5,
+    p_min_similarity float default 0.2, -- Lower the default to capture more results for re-ranking
+    p_keyword_weight float default 0.15 -- Weight for the FTS score (Tune this value)
+)
+returns table (
+    chk_id int,
+    chk_fk_document int,
+    chk_content text,
+    similarity_score float,
+    keyword_score float,        -- New score
+    combined_score float,       -- New combined score
+    doc_title varchar,
+    doc_category varchar
+) as $$
+declare
+    v_tsquery tsquery;
+begin
+    -- Convert the text query into a tsquery object
+    -- plainto_tsquery is simpler and safer than to_tsquery for user input
+    v_tsquery := plainto_tsquery('spanish', p_query_text);
+
+    return query
+    with ranked_chunks as (
+        select
+            c.chk_id,
+            c.chk_fk_document,
+            c.chk_content,
+            -- Cosine Similarity
+            (1 - (c.chk_embedding <=> p_query_embedding)) as semantic_score,
+            -- FTS Rank (higher is better) - cast to double precision
+            ts_rank(c.chk_fts_vector, v_tsquery)::double precision as keyword_rank,
+            d.doc_title,
+            d.doc_category
+        from public.cht_chunks c
+        inner join public.cht_documents d on c.chk_fk_document = d.doc_id
+        where d.doc_active = true
+          and c.chk_embedding is not null
+          -- The OR condition is the key to Hybrid Search:
+          -- 1. Match if similarity is above a (low) threshold, OR
+          -- 2. Match if a keyword exists in the document
+          and ((1 - (c.chk_embedding <=> p_query_embedding)) >= p_min_similarity OR c.chk_fts_vector @@ v_tsquery)
+    )
+    select
+        rc.chk_id,
+        rc.chk_fk_document,
+        rc.chk_content,
+        rc.semantic_score,
+        rc.keyword_rank,
+        -- The Combined Score for final ordering (Tune p_keyword_weight)
+        (rc.semantic_score * (1 - p_keyword_weight)) + (rc.keyword_rank * p_keyword_weight) as combined_score,
+        rc.doc_title,
+        rc.doc_category
+    from ranked_chunks rc
+    -- ORDER BY the new Combined Score (DESC, because higher is better)
+    order by combined_score desc
+    limit p_limit;
+end;
+$$ language plpgsql;
+
+-- =====================================================
 -- Procedure: sp_create_chunk
 -- Description: Creates a new chunk with optional embedding
 -- Returns: success (boolean), code (varchar), chk_id (int)
@@ -583,16 +650,12 @@ language plpgsql
 as $$
 declare
     v_doc_exists boolean;
-    v_content text;
-    v_embedding vector(1536);
-    i_index int;
-    v_new_chk_id int;
 begin
     success := true;
     code := 'OK';
     o_chunks_created := 0;
 
-    -- Validate document exists
+    -- 1. Validate document exists
     select exists(
         select 1
         from public.cht_documents
@@ -606,41 +669,44 @@ begin
         return;
     end if;
 
-    -- Loop through contents and create chunks
-    for i_index in 1..array_length(p_contents, 1)
-    loop
-        v_content := p_contents[i_index];
+    -- Check for array length mismatch (optional, but good practice)
+    if array_length(p_contents, 1) != array_length(p_embeddings, 1) then
+        success := false;
+        code := 'ERR_ARRAY_LENGTH_MISMATCH';
+        raise notice 'Error: p_contents array length does not match p_embeddings array length.';
+        return;
+    end if;
 
-        -- Get embedding if provided
-        if p_embeddings is not null and array_length(p_embeddings, 1) >= i_index then
-            v_embedding := p_embeddings[i_index];
-        else
-            v_embedding := null;
-        end if;
-
-        -- Insert chunk
+    -- 2. Bulk Insert Chunks and corresponding Statistics using a CTE
+    -- This single statement replaces the entire loop in the original code.
+    with inserted_chunks as (
+        -- INSERT the chunk data using UNNEST to turn the arrays into rows
         insert into public.cht_chunks (
             chk_fk_document,
             chk_content,
             chk_embedding
-        ) values (
-            p_doc_id,
-            v_content,
-            v_embedding
         )
-        returning chk_id into v_new_chk_id;
+        select
+            p_doc_id,
+            content,
+            embedding
+        from unnest(p_contents, p_embeddings) as t(content, embedding)
 
-        -- Initialize statistics
-        insert into public.cht_chunk_statistics (
-            cst_fk_chunk,
-            cst_usage_count
-        ) values (
-            v_new_chk_id,
-            0
-        );
+        -- Capture the newly created chk_id for the statistics table
+        returning chk_id
+    )
+    -- INSERT the statistics records in bulk, using the IDs from the CTE
+    insert into public.cht_chunk_statistics (
+        cst_fk_chunk,
+        cst_usage_count
+    )
+    select
+        chk_id,
+        0
+    from inserted_chunks;
 
-        o_chunks_created := o_chunks_created + 1;
-    end loop;
+    -- 3. Set output parameter
+    o_chunks_created := array_length(p_contents, 1);
 
 exception
     when others then

@@ -23,6 +23,14 @@ type SimilaritySearchRequest struct {
 	MinSimilarity float64 `json:"minSimilarity" validate:"omitempty,gte=0,lte=1" doc:"Minimum similarity score 0-1 (default: 0.7)"`
 }
 
+type HybridSearchRequest struct {
+	domain.Base
+	QueryText     string  `json:"queryText" validate:"required,min=1" doc:"Text query for hybrid search (converted to embedding + full-text search)"`
+	Limit         int     `json:"limit" validate:"omitempty,gte=1,lte=100" doc:"Maximum number of results (default: 10)"`
+	MinSimilarity float64 `json:"minSimilarity" validate:"omitempty,gte=0,lte=1" doc:"Minimum similarity score 0-1 (default: 0.2)"`
+	KeywordWeight float64 `json:"keywordWeight" validate:"omitempty,gte=0,lte=1" doc:"Weight for keyword/FTS score 0-1 (default: 0.15)"`
+}
+
 type CreateChunkRequest struct {
 	domain.Base
 	DocumentID int    `json:"documentId" validate:"required,gte=1" doc:"Document ID this chunk belongs to"`

@@ -77,25 +77,53 @@ func (u *chunkUseCase) GetByID(c context.Context, chunkID int) d.Result[*d.Chunk
 }
 
 func (u *chunkUseCase) SimilaritySearch(c context.Context, queryText string, limit int, minSimilarity float64) d.Result[[]d.ChunkWithSimilarity] {
-	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
-	defer cancel()
+	logger.LogInfo(c, "Starting similarity search",
+		"operation", "SimilaritySearch",
+		"queryText", queryText,
+		"queryLength", len(queryText),
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+	)
+
+	// Use longer timeout for embedding generation (OpenAI can be slow)
+	embeddingCtx, embeddingCancel := context.WithTimeout(c, 30*time.Second)
+	defer embeddingCancel()
 
 	// Generate embedding from query text
-	queryEmbedding, err := u.embeddingService.GenerateEmbedding(ctx, queryText)
+	logger.LogInfo(embeddingCtx, "Generating embedding for query",
+		"operation", "SimilaritySearch",
+		"queryText", queryText,
+	)
+	queryEmbedding, err := u.embeddingService.GenerateEmbedding(embeddingCtx, queryText)
 	if err != nil {
-		logger.LogError(ctx, "Failed to generate embedding for similarity search", err,
+		logger.LogError(embeddingCtx, "Failed to generate embedding for similarity search", err,
 			"operation", "SimilaritySearch",
 			"queryTextLength", len(queryText),
 		)
 		return d.Error[[]d.ChunkWithSimilarity](u.cache, "ERR_EMBEDDING_GENERATION")
 	}
 
+	// logger.LogInfo(embeddingCtx, "Embedding generated successfully",
+	// 	"operation", "SimilaritySearch",
+	// 	"embeddingDimensions", len(queryEmbedding),
+	// )
+
+	// Use normal timeout for database operations
+	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
+	defer cancel()
+
 	// Create params with generated embedding
 	params := d.SimilaritySearchParams{
-		QueryEmbedding: queryEmbedding,
+		QueryEmbedding: pgvector.NewVector(queryEmbedding),
 		Limit:          limit,
 		MinSimilarity:  minSimilarity,
 	}
+
+	logger.LogInfo(ctx, "Performing database similarity search",
+		"operation", "SimilaritySearch",
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+	)
 
 	chunks, err := u.chunkRepo.SimilaritySearch(ctx, params)
 	if err != nil {
@@ -107,11 +135,208 @@ func (u *chunkUseCase) SimilaritySearch(c context.Context, queryText string, lim
 		return d.Error[[]d.ChunkWithSimilarity](u.cache, "ERR_INTERNAL_DB")
 	}
 
+	logger.LogInfo(ctx, "Similarity search completed",
+		"operation", "SimilaritySearch",
+		"chunksFound", len(chunks),
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+	)
+
+	// Log details of each chunk found
+	if len(chunks) > 0 {
+		for i, chunk := range chunks {
+			logger.LogInfo(ctx, "Retrieved chunk",
+				"operation", "SimilaritySearch",
+				"position", i+1,
+				"chunkID", chunk.ID,
+				"docTitle", chunk.DocTitle,
+				"similarityScore", chunk.SimilarityScore,
+				"contentPreview", func() string {
+					if len(chunk.Content) > 100 {
+						return chunk.Content[:100] + "..."
+					}
+					return chunk.Content
+				}(),
+			)
+		}
+	} else {
+		logger.LogWarn(ctx, "No chunks found matching criteria",
+			"operation", "SimilaritySearch",
+			"queryText", queryText,
+			"limit", limit,
+			"minSimilarity", minSimilarity,
+		)
+	}
+
 	// Automatically update statistics for each retrieved chunk
 	// This happens asynchronously to not block the response
 	go u.updateChunkStatistics(chunks)
 
 	return d.Success(chunks)
+}
+
+func (u *chunkUseCase) HybridSearch(c context.Context, queryText string, limit int, minSimilarity float64, keywordWeight float64) d.Result[[]d.ChunkWithHybridSimilarity] {
+	logger.LogInfo(c, "Starting hybrid search",
+		"operation", "HybridSearch",
+		"queryText", queryText,
+		"queryLength", len(queryText),
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+		"keywordWeight", keywordWeight,
+	)
+
+	// Use longer timeout for embedding generation (OpenAI can be slow)
+	embeddingCtx, embeddingCancel := context.WithTimeout(c, 30*time.Second)
+	defer embeddingCancel()
+
+	// Generate embedding from query text
+	logger.LogInfo(embeddingCtx, "Generating embedding for hybrid search query",
+		"operation", "HybridSearch",
+		"queryText", queryText,
+	)
+	queryEmbedding, err := u.embeddingService.GenerateEmbedding(embeddingCtx, queryText)
+	if err != nil {
+		logger.LogError(embeddingCtx, "Failed to generate embedding for hybrid search", err,
+			"operation", "HybridSearch",
+			"queryTextLength", len(queryText),
+		)
+		return d.Error[[]d.ChunkWithHybridSimilarity](u.cache, "ERR_EMBEDDING_GENERATION")
+	}
+
+	// Use normal timeout for database operations
+	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
+	defer cancel()
+
+	// Create params with generated embedding and query text
+	params := d.HybridSearchParams{
+		QueryEmbedding: pgvector.NewVector(queryEmbedding),
+		QueryText:      queryText,
+		Limit:          limit,
+		MinSimilarity:  minSimilarity,
+		KeywordWeight:  keywordWeight,
+	}
+
+	logger.LogInfo(ctx, "Performing database hybrid search",
+		"operation", "HybridSearch",
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+		"keywordWeight", keywordWeight,
+	)
+
+	chunks, err := u.chunkRepo.HybridSearch(ctx, params)
+	if err != nil {
+		logger.LogError(ctx, "Failed to perform hybrid search in database", err,
+			"operation", "HybridSearch",
+			"limit", limit,
+			"minSimilarity", minSimilarity,
+			"keywordWeight", keywordWeight,
+		)
+		return d.Error[[]d.ChunkWithHybridSimilarity](u.cache, "ERR_INTERNAL_DB")
+	}
+
+	logger.LogInfo(ctx, "Hybrid search completed",
+		"operation", "HybridSearch",
+		"chunksFound", len(chunks),
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+		"keywordWeight", keywordWeight,
+	)
+
+	// Log details of each chunk found
+	if len(chunks) > 0 {
+		for i, chunk := range chunks {
+			logger.LogInfo(ctx, "Retrieved chunk",
+				"operation", "HybridSearch",
+				"position", i+1,
+				"chunkID", chunk.ID,
+				"docTitle", chunk.DocTitle,
+				"similarityScore", chunk.SimilarityScore,
+				"keywordScore", chunk.KeywordScore,
+				"combinedScore", chunk.CombinedScore,
+				"contentPreview", func() string {
+					if len(chunk.Content) > 100 {
+						return chunk.Content[:100] + "..."
+					}
+					return chunk.Content
+				}(),
+			)
+		}
+	} else {
+		logger.LogWarn(ctx, "No chunks found matching criteria",
+			"operation", "HybridSearch",
+			"queryText", queryText,
+			"limit", limit,
+			"minSimilarity", minSimilarity,
+			"keywordWeight", keywordWeight,
+		)
+	}
+
+	// Automatically update statistics for each retrieved chunk
+	// This happens asynchronously to not block the response
+	go u.updateHybridChunkStatistics(chunks)
+
+	return d.Success(chunks)
+}
+
+// updateHybridChunkStatistics updates usage statistics for hybrid search results
+func (u *chunkUseCase) updateHybridChunkStatistics(chunks []d.ChunkWithHybridSimilarity) {
+	asyncCtx, asyncCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer asyncCancel()
+
+	// Build metrics input from retrieved chunks
+	metricsChunks := make([]metrics.RetrievedChunk, len(chunks))
+	relevanceThreshold := 0.75 // Chunks with similarity >= 0.75 are considered relevant
+
+	for i, chunk := range chunks {
+		metricsChunks[i] = metrics.RetrievedChunk{
+			ChunkID:         chunk.ID,
+			SimilarityScore: chunk.CombinedScore, // Use combined score for relevance
+			Position:        i + 1,                // 1-based position
+			IsRelevant:      metrics.EstimateRelevanceFromSimilarity(chunk.CombinedScore, relevanceThreshold),
+		}
+	}
+
+	// Count total relevant chunks (those above threshold)
+	totalRelevant := 0
+	for _, mc := range metricsChunks {
+		if mc.IsRelevant {
+			totalRelevant++
+		}
+	}
+
+	// Calculate all quality metrics
+	result := u.metricsCalc.CalculateAllMetrics(metricsChunks, totalRelevant)
+
+	// Update each chunk's statistics
+	for i, chunk := range chunks {
+		chunkID := chunk.ID
+		position := i + 1
+
+		// Increment usage count
+		_, _ = u.statsRepo.IncrementUsage(asyncCtx, chunkID)
+
+		// Only update quality metrics for chunks in top positions (more accurate)
+		// Update metrics more aggressively for top 3 results
+		if position <= 3 {
+			// Calculate individual chunk metrics
+			// Use exponential moving average to smooth metrics over time
+			params := d.UpdateChunkQualityMetricsParams{
+				ChunkID: chunkID,
+			}
+
+			// For top-ranked chunks, update with calculated metrics
+			if metricsChunks[i].IsRelevant {
+				params.PrecisionAtK = &result.PrecisionAtK
+				params.RecallAtK = &result.RecallAtK
+				params.F1AtK = &result.F1AtK
+				params.MRR = &result.MRR
+				params.MAP = &result.MAP
+				params.NDCG = &result.NDCG
+
+				_, _ = u.statsRepo.UpdateQualityMetrics(asyncCtx, params)
+			}
+		}
+	}
 }
 
 // updateChunkStatistics updates usage statistics and calculates quality metrics

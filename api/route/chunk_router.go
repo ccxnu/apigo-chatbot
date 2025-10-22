@@ -22,6 +22,10 @@ type SimilaritySearchResponse struct {
 	Body d.Result[[]d.ChunkWithSimilarity]
 }
 
+type HybridSearchResponse struct {
+	Body d.Result[[]d.ChunkWithHybridSimilarity]
+}
+
 type CreateChunkResponse struct {
 	Body d.Result[d.Data]
 }
@@ -79,6 +83,20 @@ func NewChunkRouter(chunkUseCase d.ChunkUseCase, mux *http.ServeMux, humaAPI hum
 	}) (*SimilaritySearchResponse, error) {
 		result := chunkUseCase.SimilaritySearch(ctx, input.Body.QueryText, input.Body.Limit, input.Body.MinSimilarity)
 		return &SimilaritySearchResponse{Body: result}, nil
+	})
+
+	huma.Register(humaAPI, huma.Operation{
+		OperationID: "hybrid-search-chunks",
+		Method:      "POST",
+		Path:        "/api/v1/chunks/hybrid-search",
+		Summary:     "Hybrid search (vector + full-text)",
+		Description: "Performs hybrid search combining semantic similarity (embeddings) and keyword matching (full-text search). Returns top K chunks ordered by combined score.",
+		Tags:        []string{"Chunks", "RAG"},
+	}, func(ctx context.Context, input *struct {
+		Body request.HybridSearchRequest
+	}) (*HybridSearchResponse, error) {
+		result := chunkUseCase.HybridSearch(ctx, input.Body.QueryText, input.Body.Limit, input.Body.MinSimilarity, input.Body.KeywordWeight)
+		return &HybridSearchResponse{Body: result}, nil
 	})
 
 	huma.Register(humaAPI, huma.Operation{
