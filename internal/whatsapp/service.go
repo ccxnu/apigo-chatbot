@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow/store"
@@ -18,6 +19,7 @@ type Service struct {
 	dispatcher  *MessageDispatcher
 	sessionUC   d.WhatsAppSessionUseCase
 	sessionName string
+	connectTime	int64
 }
 
 // NewService creates a new WhatsApp service
@@ -122,10 +124,21 @@ func (s *Service) handleEvent(evt any) {
 
 // handleIncomingMessage processes incoming WhatsApp messages
 func (s *Service) handleIncomingMessage(evt *events.Message) {
-	ctx := context.Background()
 
-	// Convert whatsmeow event to domain message
 	msg := convertEventToMessage(evt)
+
+	const timeThreshold = 5000
+	if !evt.Info.IsFromMe && evt.Info.Timestamp.Unix() < (s.connectTime - timeThreshold) {
+		slog.Info("Ignoring old message",
+			"messageID", evt.Info.ID,
+			"chatID", msg.ChatID,
+			"timestamp", evt.Info.Timestamp.Unix(),
+			"connectTime", s.connectTime,
+		)
+		return
+	}
+
+	ctx := context.Background()
 
 	// Dispatch to handlers
 	if err := s.dispatcher.Dispatch(ctx, msg); err != nil {
@@ -168,6 +181,7 @@ func (s *Service) handleQRCode(evt *events.QR) {
 func (s *Service) handleConnected() {
 	slog.Info("WhatsApp connected", "session", s.sessionName)
 
+	s.connectTime = time.Now().Unix()
 	ctx := context.Background()
 
 	// Get device info

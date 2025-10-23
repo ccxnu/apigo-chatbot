@@ -104,7 +104,7 @@ func (uc *whatsappUserUseCase) GetOrRegisterUser(c context.Context, whatsapp str
 
 // ValidateWithInstituteAPI validates a user's identity with the AcademicOK API
 func (uc *whatsappUserUseCase) ValidateWithInstituteAPI(c context.Context, identityNumber string) d.Result[*d.InstituteUserData] {
-	ctx, cancel := context.WithTimeout(c, uc.contextTimeout)
+	ctx, cancel := context.WithTimeout(c, 60 * uc.contextTimeout)
 	defer cancel()
 
 	// Get AcademicOK API configuration from parameters

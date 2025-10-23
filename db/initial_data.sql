@@ -469,6 +469,11 @@ begin
         values ('USER_ROLE', 'ROLE_GUEST', '{}'::jsonb, 'Limited guest access');
     end if;
 
+    if not exists (select 1 from cht_parameters where prm_code = 'ROLE_PROFESSOR') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('USER_ROLE', 'ROLE_PROFESSOR', '{}'::jsonb, 'Professor/Teacher access');
+    end if;
+
     -- =====================================================
     -- Message Roles
     -- =====================================================
@@ -810,6 +815,13 @@ begin
     insert into cht_permissions (prm_rol, prm_funcionality, prm_active)
     values
         ('ROLE_GUEST', 'FUNC_CHAT', true)
+    on conflict (prm_rol, prm_funcionality) do nothing;
+
+    -- Professor permissions
+    insert into cht_permissions (prm_rol, prm_funcionality, prm_active)
+    values
+        ('ROLE_PROFESSOR', 'FUNC_CHAT', true),
+        ('ROLE_PROFESSOR', 'FUNC_DOCUMENTS', true)
     on conflict (prm_rol, prm_funcionality) do nothing;
 
     -- =====================================================
