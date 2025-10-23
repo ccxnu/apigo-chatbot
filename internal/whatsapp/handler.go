@@ -22,13 +22,17 @@ type MessageHandler interface {
 
 // MessageDispatcher routes messages to appropriate handlers
 type MessageDispatcher struct {
-	handlers []MessageHandler
+	handlers   []MessageHandler
+	paramCache domain.ParameterCache
+	client     *Client
 }
 
 // NewMessageDispatcher creates a new message dispatcher
-func NewMessageDispatcher(handlers []MessageHandler) *MessageDispatcher {
+func NewMessageDispatcher(handlers []MessageHandler, paramCache domain.ParameterCache, client *Client) *MessageDispatcher {
 	dispatcher := &MessageDispatcher{
-		handlers: handlers,
+		handlers:   handlers,
+		paramCache: paramCache,
+		client:     client,
 	}
 	dispatcher.sortHandlers()
 	return dispatcher
@@ -43,6 +47,13 @@ func (d *MessageDispatcher) RegisterHandler(handler MessageHandler) {
 
 // Dispatch routes a message to the first matching handler
 func (d *MessageDispatcher) Dispatch(ctx context.Context, msg *domain.IncomingMessage) error {
+	// Check if chatbot is active (hot-reloadable via parameter cache)
+	if !d.isChatbotActive() {
+		slog.Info("Chatbot is deactivated, skipping message processing", "messageID", msg.MessageID)
+		d.sendDeactivatedMessage(msg.ChatID)
+		return nil
+	}
+
 	slog.Info("Dispatching message to handlers",
 		"handlersCount", len(d.handlers),
 		"messageID", msg.MessageID,
@@ -68,6 +79,53 @@ func (d *MessageDispatcher) Dispatch(ctx context.Context, msg *domain.IncomingMe
 	// No handler matched - could use a fallback handler here
 	slog.Warn("No handler matched for message", "messageID", msg.MessageID)
 	return nil
+}
+
+// isChatbotActive checks if the chatbot is enabled via parameter cache
+func (d *MessageDispatcher) isChatbotActive() bool {
+	param, exists := d.paramCache.Get("CHATBOT_ACTIVE")
+	if !exists {
+		// Default to active if parameter doesn't exist
+		return true
+	}
+
+	data, err := param.GetDataAsMap()
+	if err != nil {
+		slog.Warn("Failed to parse CHATBOT_ACTIVE parameter, defaulting to active", "error", err)
+		return true
+	}
+
+	active, ok := data["active"].(bool)
+	if !ok {
+		slog.Warn("CHATBOT_ACTIVE parameter has invalid format, defaulting to active")
+		return true
+	}
+
+	return active
+}
+
+// sendDeactivatedMessage sends a message when chatbot is deactivated
+func (d *MessageDispatcher) sendDeactivatedMessage(chatID string) {
+	if d.client == nil {
+		return
+	}
+
+	param, exists := d.paramCache.Get("CHATBOT_DEACTIVATED_MESSAGE")
+	message := "🔧 El chatbot está temporalmente desactivado por mantenimiento. Por favor, intenta más tarde."
+
+	if exists {
+		data, err := param.GetDataAsMap()
+		if err == nil {
+			if msg, ok := data["message"].(string); ok {
+				message = msg
+			}
+		}
+	}
+
+	err := d.client.SendText(chatID, message)
+	if err != nil {
+		slog.Error("Failed to send deactivated message", "error", err, "chatID", chatID)
+	}
 }
 
 // sortHandlers sorts handlers by priority (descending)

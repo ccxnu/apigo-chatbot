@@ -28,6 +28,7 @@ func NewService(
 	sessionName string,
 	sessionUC d.WhatsAppSessionUseCase,
 	handlers []MessageHandler,
+	paramCache d.ParameterCache,
 ) (*Service, error) {
 	cfg := Config{
 		SessionName: sessionName,
@@ -40,7 +41,7 @@ func NewService(
 		return nil, fmt.Errorf("failed to create WhatsApp client: %w", err)
 	}
 
-	dispatcher := NewMessageDispatcher(handlers)
+	dispatcher := NewMessageDispatcher(handlers, paramCache, client)
 
 	return &Service{
 		client:      client,
@@ -56,8 +57,9 @@ func NewServiceWithClient(
 	sessionName string,
 	sessionUC d.WhatsAppSessionUseCase,
 	handlers []MessageHandler,
+	paramCache d.ParameterCache,
 ) (*Service, error) {
-	dispatcher := NewMessageDispatcher(handlers)
+	dispatcher := NewMessageDispatcher(handlers, paramCache, client)
 
 	return &Service{
 		client:      client,

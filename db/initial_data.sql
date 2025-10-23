@@ -923,4 +923,17 @@ begin
         values ('ERROR_CODES', 'ERR_CREATE_ADMIN', '{"message": "Error al crear usuario administrador"}'::jsonb, 'Error creating admin user');
     end if;
 
+    -- =====================================================
+    -- WhatsApp Bot Control
+    -- =====================================================
+    if not exists (select 1 from cht_parameters where prm_code = 'CHATBOT_ACTIVE') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('WHATSAPP_CONFIG', 'CHATBOT_ACTIVE', '{"active": true}'::jsonb, 'Enable/disable chatbot message processing without restart');
+    end if;
+
+    if not exists (select 1 from cht_parameters where prm_code = 'CHATBOT_DEACTIVATED_MESSAGE') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('WHATSAPP_CONFIG', 'CHATBOT_DEACTIVATED_MESSAGE', '{"message": "🔧 El chatbot está temporalmente desactivado por mantenimiento. Por favor, intenta más tarde."}'::jsonb, 'Message shown when chatbot is deactivated');
+    end if;
+
 end $$;
