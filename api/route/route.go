@@ -30,6 +30,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	sessionRepo := repository.NewWhatsAppSessionRepository(dataAccess)
 	convRepo := repository.NewConversationRepository(dataAccess)
 	adminRepo := repository.NewAdminRepository(dataAccess)
+	adminConvRepo := repository.NewAdminConversationRepository(dataAccess)
 
 	// Initialize clients
 	httpClient := httpclient.NewHTTPClient(paramCache)
@@ -46,6 +47,8 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	sessionUseCase := usecase.NewWhatsAppSessionUseCase(sessionRepo, paramCache, timeout)
 	convUseCase := usecase.NewConversationUseCase(convRepo, paramCache, timeout)
 	adminUseCase := usecase.NewAdminUseCase(adminRepo, tokenService, paramCache)
+	// Note: WhatsApp client will be nil here - admin messages via WhatsApp need integration
+	adminConvUseCase := usecase.NewAdminConversationUseCase(adminConvRepo, nil, paramCache, timeout)
 
 	// Register all routes
 	// All routes are now registered via Huma which uses the ServeMux
@@ -64,4 +67,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 
 	// Admin authentication routes
 	NewAdminAuthRouter(adminUseCase, mux, humaAPI)
+
+	// Admin conversation panel routes
+	SetupAdminConversationRoutes(humaAPI, adminConvUseCase)
 }
