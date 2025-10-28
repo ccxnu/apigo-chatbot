@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"api-chatbot/api/dal"
 	"api-chatbot/domain"
 	"api-chatbot/internal/cache"
+	"api-chatbot/internal/migration"
 	"api-chatbot/repository"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,6 +30,11 @@ func App() Application {
 	app.Env = NewEnv()
 
 	app.Db = NewPostgresDatabase(app.Env)
+
+	// Run database migrations
+	if err := runMigrations(app.Env); err != nil {
+		log.Fatalf("Migration failed: %v", err)
+	}
 
 	app.Cache = cache.NewParameterCache()
 	paramRepo := repository.NewParameterRepository(dal.NewDAL(app.Db))
@@ -68,4 +75,24 @@ func (app *Application) Shutdown() {
 		}
 	}
 	app.CloseDBConnection()
+}
+
+// runMigrations executes database migrations based on configuration
+func runMigrations(env *Env) error {
+	// Build DSN for migration runner
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		env.Database.User,
+		env.Database.Password,
+		env.Database.Host,
+		env.Database.Port,
+		env.Database.Name,
+	)
+
+	migrationConfig := migration.Config{
+		AutoMigrate: env.Migration.AutoMigrate,
+		Verbose:     env.Migration.Verbose,
+		DSN:         dsn,
+	}
+
+	return migration.RunMigrations(migrationConfig)
 }

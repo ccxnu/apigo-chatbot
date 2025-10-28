@@ -217,8 +217,8 @@ func (h *RegistrationHandler) verifyOTPAndRegister(ctx context.Context, msg *dom
 			message, _ := h.paramCache.Get("ERR_INVALID_OTP")
 			if message != nil {
 				if data, err := message.GetDataAsMap(); err == nil {
-					if msg, ok := data["message"].(string); ok {
-						return h.client.SendText(msg.ChatID, msg)
+					if errorMsg, ok := data["message"].(string); ok {
+						return h.client.SendText(msg.ChatID, errorMsg)
 					}
 				}
 			}

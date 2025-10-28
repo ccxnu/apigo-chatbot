@@ -6,5 +6,9 @@
 		"PASSWORD": "lo0G4Rfaw7gtHw0wvpm4aqi4",
 		"NAME": "chatbot_db",
 		"MAX_CONNECTION": 50
+	},
+	"Migration": {
+		"AUTO_MIGRATE": true,
+		"VERBOSE": true
 	}
 }

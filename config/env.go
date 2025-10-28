@@ -9,7 +9,8 @@ import (
 // Env now only contains Database configuration from config.json
 // All other configuration is accessed directly from ParameterCache
 type Env struct {
-	Database DatabaseConfig `mapstructure:"Database"`
+	Database  DatabaseConfig  `mapstructure:"Database"`
+	Migration MigrationConfig `mapstructure:"Migration"`
 }
 
 type DatabaseConfig struct {
@@ -19,6 +20,11 @@ type DatabaseConfig struct {
 	Password      string `mapstructure:"PASSWORD"`
 	Name          string `mapstructure:"NAME"`
 	MaxConnection int    `mapstructure:"MAX_CONNECTION"`
+}
+
+type MigrationConfig struct {
+	AutoMigrate bool `mapstructure:"AUTO_MIGRATE"`
+	Verbose     bool `mapstructure:"VERBOSE"`
 }
 
 // NewEnv loads only Database configuration from config.json

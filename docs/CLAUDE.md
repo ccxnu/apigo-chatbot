@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Go-based chatbot API built with chi router and PostgreSQL. The codebase follows a clean architecture pattern with clear separation between layers (controller, usecase, repository, domain).
+This is a Go-based WhatsApp chatbot API built with Huma router and PostgreSQL. The codebase follows a clean architecture pattern with clear separation between layers (controller, usecase, repository, domain). The system uses RAG (Retrieval Augmented Generation) with vector embeddings for intelligent responses.
 
 ## Development Commands
 
@@ -80,11 +80,18 @@ The codebase follows a clean architecture with these layers:
    - `cache/`: In-memory caching implementations (thread-safe with sync.RWMutex)
    - `helper/`: Utility functions
    - `jwttoken/`: JWT token operations
+   - `whatsapp/`: WhatsApp client and message handlers
+   - `llm/`: LLM integration (Groq, OpenAI compatible)
+   - `embedding/`: Vector embedding services (OpenAI, Ollama)
+   - `httpclient/`: HTTP client for external APIs
+   - `migration/`: Database migration system (golang-migrate)
+   - `reports/`: Report generation (Excel, PDF)
 
 6. **Config** (`config/`): Configuration management
    - Reads from `config.json` using Viper
    - Database connection pooling with pgxpool
    - Centralized environment configuration
+   - Migration configuration (AUTO_MIGRATE, VERBOSE)
 
 ### Database Access Pattern
 
@@ -143,26 +150,79 @@ The parameter system uses a two-tier caching approach:
 ### Configuration
 
 The application requires a `config.json` file in the root directory with these sections:
-- `App`: Application settings (name, environment, timeout)
-- `Log`: Logging configuration
-- `Database`: PostgreSQL connection details
-- `Jwt`: JWT token secrets and expiry
-- `Email`: Email sender configuration
-- `WppConnect`: WhatsApp connector base URL
-- `Embedding`: OpenAI and Ollama embedding models
-- `Llm`: LLM service configuration
+- `Database`: PostgreSQL connection details (host, port, user, password, name)
+- `Migration`: Migration settings (AUTO_MIGRATE, VERBOSE)
+- **Parameters**: All other configuration is stored in the database `cht_parameters` table and cached at startup
 
-### Database Setup
+Important: Don't add new sections to `config.json`. Use the parameter system instead:
+```sql
+INSERT INTO cht_parameters (prm_name, prm_code, prm_data, prm_description)
+VALUES ('Config Name', 'CONFIG_CODE', '{"key": "value"}', 'Description');
+```
 
-Database schema and functions are in `db/` directory:
-- `00_database_setup.sql`: Creates database, schemas, and extensions (vector, pgcrypto, uuid-ossp)
-- `01_create_tables.sql`: Table definitions
-- `02_parameters_procedures.sql`: PostgreSQL functions and procedures for parameter operations
-- `initial_data.sql`: Seed data
+### Database Migration System
 
-The database uses two schemas:
+**IMPORTANT**: The project uses automatic database migrations with golang-migrate.
+
+**DO NOT manually execute SQL files from `db/` directory - they are legacy reference only.**
+
+Active migrations are in: `internal/migration/migrations/`
+
+Migration files follow the pattern: `{version}_{description}.{up|down}.sql`
+- Example: `000001_database_setup.up.sql`, `000001_database_setup.down.sql`
+
+#### Running Migrations
+
+**Automatic (Development)**:
+```bash
+# Set in config.json: "Migration": {"AUTO_MIGRATE": true, "VERBOSE": true}
+go build -o main cmd/main.go
+./main  # Migrations run automatically on startup
+```
+
+**Manual Control**:
+```bash
+# Build migration CLI
+go build -o migrate cmd/migrate/main.go
+
+# Check current version
+./migrate -version
+
+# Apply pending migrations
+./migrate -up
+
+# Rollback last migration
+./migrate -down
+
+# Fix dirty state (use with caution)
+./migrate -force 14
+```
+
+#### Creating New Migrations
+
+1. Find next version number: `./migrate -version` (e.g., shows 14)
+2. Create migration files:
+```bash
+touch internal/migration/migrations/000015_add_feature.up.sql
+touch internal/migration/migrations/000015_add_feature.down.sql
+```
+3. Write SQL (always use `IF NOT EXISTS` / `IF EXISTS`)
+4. Rebuild app (migrations are embedded): `go build -o main cmd/main.go`
+5. Test: `./migrate -up` then `./migrate -down` then `./migrate -up`
+
+#### Migration Version Tracking
+
+Migrations are tracked in `schema_migrations` table:
+```sql
+SELECT * FROM schema_migrations;
+-- version | dirty
+--      14 | f     (f = clean, t = needs manual fix)
+```
+
+#### Database Schemas
+
 - `public`: Application tables and functions
-- `ex`: PostgreSQL extensions (isolated to avoid naming conflicts)
+- `ex`: PostgreSQL extensions (vector, pgcrypto, uuid-ossp) - isolated to avoid conflicts
 
 ### Route Organization
 
@@ -173,9 +233,98 @@ All routes use Huma for automatic OpenAPI 3.1 documentation and validation:
 - JWT middleware available but currently commented out
 
 To add a new feature:
-1. Create domain interface and model in `domain/`
-2. Create repository implementation in `repository/`
-3. Create use case in `usecase/`
-4. Create request DTOs in `api/request/` with validation tags
-5. Create response types and Huma operations in router file (`api/route/`)
-6. Register router in `api/route/route.go`
+1. **Database First**: Create migration with tables and stored procedures
+   ```bash
+   touch internal/migration/migrations/000015_add_feature.up.sql
+   touch internal/migration/migrations/000015_add_feature.down.sql
+   ```
+2. Create domain interface and model in `domain/`
+3. Create repository implementation in `repository/` (calls PostgreSQL functions/procedures)
+4. Create use case in `usecase/`
+5. Create request DTOs in `api/request/` with validation tags
+6. Create response types and Huma operations in router file (`api/route/`)
+7. Register router in `api/route/route.go`
+8. Rebuild app: `go build -o main cmd/main.go`
+
+### SQL Naming Conventions
+
+**IMPORTANT**: Follow these strict naming conventions for all SQL code:
+
+#### Variables (PLpgSQL):
+- Input parameters: `p_` prefix (e.g., `p_user_id`, `p_status`)
+- Output parameters: `o_` prefix (e.g., `o_parameter_id`)
+  - Standard outputs: `success BOOLEAN`, `code VARCHAR`
+- Local variables: `v_` prefix (e.g., `v_mod_id`, `v_count`)
+- Records: `r_` prefix (e.g., `r_user`)
+- Counters: `i_` prefix (e.g., `i_counter`)
+- Booleans: `bl_` or `is_` prefix (e.g., `bl_exists`, `is_active`)
+- Constants: `c_` prefix (e.g., `c_default_status`)
+
+#### Functions and Procedures:
+- Stored procedures: `sp_` prefix (e.g., `sp_add_user`, `sp_update_status`)
+  - Always return: `success BOOLEAN`, `code VARCHAR` (e.g., 'OK', 'ERR_NOT_FOUND')
+- Functions: `fn_` prefix (e.g., `fn_get_parameters`, `fn_search_chunks`)
+- Views: `vw_` prefix (e.g., `vw_user_permissions`)
+- Triggers: `tr_` prefix (e.g., `tr_update_timestamp`)
+
+#### General Rules:
+- Use `snake_case` for all identifiers
+- SQL keywords in lowercase
+- Always comment code blocks
+- Scripts must be idempotent (use `IF NOT EXISTS`, `IF EXISTS`)
+- 4-space or tab indentation
+
+Example:
+```sql
+CREATE OR REPLACE PROCEDURE sp_create_user(
+    OUT o_success BOOLEAN,
+    OUT o_code VARCHAR,
+    IN p_username VARCHAR,
+    IN p_email VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_user_id INT;
+BEGIN
+    o_success := TRUE;
+    o_code := 'OK';
+
+    -- Check if user exists
+    IF EXISTS (SELECT 1 FROM cht_users WHERE usr_email = p_email) THEN
+        o_success := FALSE;
+        o_code := 'ERR_USER_EXISTS';
+        RETURN;
+    END IF;
+
+    -- Insert user
+    INSERT INTO cht_users (usr_username, usr_email)
+    VALUES (p_username, p_email)
+    RETURNING usr_id INTO v_user_id;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        o_success := FALSE;
+        o_code := 'ERR_CREATE_USER';
+END;
+$$;
+```
+
+### Documentation
+
+**Single Source of Truth**: `docs/manual_programador.typ`
+
+This Typst document contains all programmer documentation:
+- Architecture overview
+- Database schema and migration guide
+- SQL naming conventions and best practices
+- API documentation
+- Development workflows
+
+To compile:
+```bash
+typst compile docs/manual_programador.typ
+# Generates: docs/manual_programador.pdf
+```
+
+**Do not create new .md documentation files** - add content to the Typst manual instead.
