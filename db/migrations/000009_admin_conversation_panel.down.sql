@@ -1,1 +1,0 @@
--- Rollback is complex for ALTER TABLE, keeping as no-op for now

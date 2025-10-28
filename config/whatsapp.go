@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 
 	"api-chatbot/domain"
@@ -103,12 +103,13 @@ func InitializeWhatsAppService(
 }
 
 func createDeviceStore(connString string) (*sqlstore.Container, error) {
-	db, err := sql.Open("postgres", connString)
+	// Use pgx driver instead of lib/pq
+	db, err := sql.Open("pgx", connString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open device database: %w", err)
 	}
 
-	container := sqlstore.NewWithDB(db, "postgres", nil)
+	container := sqlstore.NewWithDB(db, "pgx", nil)
 
 	ctx := context.Background()
 	if err := container.Upgrade(ctx); err != nil {

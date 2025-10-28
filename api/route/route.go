@@ -12,6 +12,7 @@ import (
 	"api-chatbot/internal/embedding"
 	"api-chatbot/internal/httpclient"
 	"api-chatbot/internal/jwttoken"
+	"api-chatbot/internal/reports"
 	"api-chatbot/repository"
 	"api-chatbot/usecase"
 )
@@ -31,6 +32,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	convRepo := repository.NewConversationRepository(dataAccess)
 	adminRepo := repository.NewAdminRepository(dataAccess)
 	adminConvRepo := repository.NewAdminConversationRepository(dataAccess)
+	analyticsRepo := repository.NewAnalyticsRepository(dataAccess)
 
 	// Initialize clients
 	httpClient := httpclient.NewHTTPClient(paramCache)
@@ -38,6 +40,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	// Initialize services
 	embeddingService := embedding.NewOpenAIEmbeddingService(paramCache, httpClient)
 	tokenService := jwttoken.NewTokenService(paramCache)
+	reportGenerator := reports.NewReportGenerator("./templates/typst", "./reports")
 
 	// Initialize use cases
 	paramUseCase := usecase.NewParameterUseCase(paramRepo, paramCache, timeout)
@@ -49,6 +52,8 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 	adminUseCase := usecase.NewAdminUseCase(adminRepo, tokenService, paramCache)
 	// Note: WhatsApp client will be nil here - admin messages via WhatsApp need integration
 	adminConvUseCase := usecase.NewAdminConversationUseCase(adminConvRepo, nil, paramCache, timeout)
+	analyticsUseCase := usecase.NewAnalyticsUseCase(analyticsRepo, paramCache, timeout)
+	reportUseCase := usecase.NewReportUseCase(analyticsRepo, reportGenerator, timeout)
 
 	// Register all routes
 	// All routes are now registered via Huma which uses the ServeMux
@@ -70,4 +75,10 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 
 	// Admin conversation panel routes
 	SetupAdminConversationRoutes(humaAPI, adminConvUseCase)
+
+	// Admin analytics routes
+	RegisterAnalyticsRoutes(humaAPI, analyticsUseCase)
+
+	// Report generation routes
+	RegisterReportRoutes(humaAPI, reportUseCase)
 }
