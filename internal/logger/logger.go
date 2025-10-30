@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"api-chatbot/api/middleware"
+	"api-chatbot/internal/contextutil"
 )
 
 // LogError logs an error with context information including request ID
@@ -12,7 +12,7 @@ func LogError(ctx context.Context, msg string, err error, args ...any) {
 	logArgs := []any{"error", err.Error()}
 
 	// Add request ID if available
-	if reqID := middleware.GetRequestID(ctx); reqID != "" {
+	if reqID := contextutil.GetRequestID(ctx); reqID != "" {
 		logArgs = append(logArgs, "request_id", reqID)
 	}
 
@@ -27,7 +27,7 @@ func LogInfo(ctx context.Context, msg string, args ...any) {
 	logArgs := []any{}
 
 	// Add request ID if available
-	if reqID := middleware.GetRequestID(ctx); reqID != "" {
+	if reqID := contextutil.GetRequestID(ctx); reqID != "" {
 		logArgs = append(logArgs, "request_id", reqID)
 	}
 
@@ -42,7 +42,7 @@ func LogWarn(ctx context.Context, msg string, args ...any) {
 	logArgs := []any{}
 
 	// Add request ID if available
-	if reqID := middleware.GetRequestID(ctx); reqID != "" {
+	if reqID := contextutil.GetRequestID(ctx); reqID != "" {
 		logArgs = append(logArgs, "request_id", reqID)
 	}
 
@@ -57,7 +57,7 @@ func LogDebug(ctx context.Context, msg string, args ...any) {
 	logArgs := []any{}
 
 	// Add request ID if available
-	if reqID := middleware.GetRequestID(ctx); reqID != "" {
+	if reqID := contextutil.GetRequestID(ctx); reqID != "" {
 		logArgs = append(logArgs, "request_id", reqID)
 	}
 

@@ -215,3 +215,122 @@ type AdminUseCase interface {
 	// Token validation
 	ValidateAccessToken(ctx context.Context, token string) Result[*TokenClaims]
 }
+
+// APIUsage represents a tracked API usage record
+type APIUsage struct {
+	ID             int        `json:"id" db:"usg_id"`
+	APIKeyID       int        `json:"apiKeyId" db:"usg_api_key_id"`
+	Endpoint       string     `json:"endpoint" db:"usg_endpoint"`
+	Method         string     `json:"method" db:"usg_method"`
+	StatusCode     int        `json:"statusCode" db:"usg_status_code"`
+	TokensUsed     int        `json:"tokensUsed" db:"usg_tokens_used"`
+	RequestTimeMs  int        `json:"requestTimeMs" db:"usg_request_time_ms"`
+	IPAddress      *string    `json:"ipAddress,omitempty" db:"usg_ip_address"`
+	UserAgent      *string    `json:"userAgent,omitempty" db:"usg_user_agent"`
+	ErrorMessage   *string    `json:"errorMessage,omitempty" db:"usg_error_message"`
+	CreatedAt      time.Time  `json:"createdAt" db:"usg_created_at"`
+}
+
+// APIUsageStats represents aggregated usage statistics
+type APIUsageStats struct {
+	TotalRequests       int64  `json:"totalRequests" db:"total_requests"`
+	TotalTokens         int64  `json:"totalTokens" db:"total_tokens"`
+	AvgResponseTime     float64 `json:"avgResponseTime" db:"avg_response_time"`
+	SuccessRate         float64 `json:"successRate" db:"success_rate"`
+	RequestsByEndpoint  Data   `json:"requestsByEndpoint" db:"requests_by_endpoint"`
+	RequestsByStatus    Data   `json:"requestsByStatus" db:"requests_by_status"`
+}
+
+// CreateAPIKeyParams parameters for creating an API key
+type CreateAPIKeyParams struct {
+	Name        string
+	Value       string
+	Type        string
+	Claims      Data
+	RateLimit   int
+	AllowedIPs  []string
+	Permissions []string
+	ExpiresAt   *time.Time
+	CreatedBy   *int
+}
+
+// CreateAPIKeyResult result from creating API key
+type CreateAPIKeyResult struct {
+	dal.DbResult
+	KeyID *int `db:"key_id"`
+}
+
+// UpdateAPIKeyParams parameters for updating an API key
+type UpdateAPIKeyParams struct {
+	KeyID       int
+	Name        *string
+	RateLimit   *int
+	AllowedIPs  *[]string
+	Permissions *[]string
+	IsActive    *bool
+	ExpiresAt   *time.Time
+}
+
+// UpdateAPIKeyResult result from updating API key
+type UpdateAPIKeyResult struct {
+	dal.DbResult
+}
+
+// DeleteAPIKeyResult result from deleting API key
+type DeleteAPIKeyResult struct {
+	dal.DbResult
+}
+
+// UpdateAPIKeyLastUsedResult result from updating last used timestamp
+type UpdateAPIKeyLastUsedResult struct {
+	dal.DbResult
+}
+
+// TrackAPIUsageParams parameters for tracking API usage
+type TrackAPIUsageParams struct {
+	APIKeyID      int
+	Endpoint      string
+	Method        string
+	StatusCode    int
+	TokensUsed    int
+	RequestTimeMs int
+	IPAddress     *string
+	UserAgent     *string
+	ErrorMessage  *string
+}
+
+// TrackAPIUsageResult result from tracking API usage
+type TrackAPIUsageResult struct {
+	dal.DbResult
+	UsageID *int `db:"usage_id"`
+}
+
+// APIKeyRepository defines database operations for API keys
+type APIKeyRepository interface {
+	// API key operations
+	Create(ctx context.Context, params CreateAPIKeyParams) (*CreateAPIKeyResult, error)
+	GetByValue(ctx context.Context, keyValue string) (*APIKey, error)
+	GetByID(ctx context.Context, keyID int) (*APIKey, error)
+	GetAll(ctx context.Context) ([]APIKey, error)
+	Update(ctx context.Context, params UpdateAPIKeyParams) (*UpdateAPIKeyResult, error)
+	UpdateLastUsed(ctx context.Context, keyID int) (*UpdateAPIKeyLastUsedResult, error)
+	Delete(ctx context.Context, keyID int) (*DeleteAPIKeyResult, error)
+}
+
+// APIUsageRepository defines database operations for API usage tracking
+type APIUsageRepository interface {
+	// Usage tracking
+	Track(ctx context.Context, params TrackAPIUsageParams) (*TrackAPIUsageResult, error)
+	GetStats(ctx context.Context, keyID int, from, to *time.Time) (*APIUsageStats, error)
+}
+
+// APIKeyUseCase defines business logic for API key management
+type APIKeyUseCase interface {
+	// API key management
+	CreateAPIKey(ctx context.Context, params CreateAPIKeyParams) Result[*APIKey]
+	ValidateAPIKey(ctx context.Context, keyValue, ipAddress, endpoint string) Result[*APIKey]
+	UpdateAPIKey(ctx context.Context, params UpdateAPIKeyParams) Result[Data]
+	RevokeAPIKey(ctx context.Context, keyID int) Result[Data]
+	ListAPIKeys(ctx context.Context) Result[[]APIKey]
+	GetAPIKeyByID(ctx context.Context, keyID int) Result[*APIKey]
+}

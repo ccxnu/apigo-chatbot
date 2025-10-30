@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"api-chatbot/internal/contextutil"
 	"github.com/google/uuid"
 )
 
@@ -36,14 +36,6 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return size, err
 }
 
-// contextKey is a custom type for context keys to avoid collisions
-type contextKey string
-
-const (
-	// RequestIDKey is the context key for request ID
-	RequestIDKey contextKey = "request_id"
-)
-
 // LoggingMiddleware logs all HTTP requests and responses with structured logging
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +48,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Add request ID to context for use in handlers/use cases
-		ctx := context.WithValue(r.Context(), RequestIDKey, requestID)
+		ctx := contextutil.SetRequestID(r.Context(), requestID)
 		r = r.WithContext(ctx)
 
 		// Add request ID to response header
@@ -90,12 +82,4 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			"duration_ms", duration.Milliseconds(),
 		)
 	})
-}
-
-// GetRequestID extracts the request ID from context
-func GetRequestID(ctx context.Context) string {
-	if reqID, ok := ctx.Value(RequestIDKey).(string); ok {
-		return reqID
-	}
-	return ""
 }
