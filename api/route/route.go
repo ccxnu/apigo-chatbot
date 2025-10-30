@@ -47,8 +47,8 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 
 	// Initialize use cases
 	paramUseCase := usecase.NewParameterUseCase(paramRepo, paramCache, timeout)
-	docUseCase := usecase.NewDocumentUseCase(docRepo, paramCache, timeout)
 	chunkUseCase := usecase.NewChunkUseCase(chunkRepo, statsRepo, paramCache, embeddingService, timeout)
+	docUseCase := usecase.NewDocumentUseCase(docRepo, chunkUseCase, paramCache, timeout)
 	statsUseCase := usecase.NewChunkStatisticsUseCase(statsRepo, paramCache, timeout)
 	sessionUseCase := usecase.NewWhatsAppSessionUseCase(sessionRepo, paramCache, timeout)
 	convUseCase := usecase.NewConversationUseCase(convRepo, paramCache, timeout)

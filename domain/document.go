@@ -61,6 +61,15 @@ type DocumentRepository interface {
 	Delete(ctx context.Context, docID int) (*DeleteDocumentResult, error)
 }
 
+type UploadPDFDocumentParams struct {
+	Category     string
+	Title        string
+	Source       *string
+	FileBase64   string
+	ChunkSize    int
+	ChunkOverlap int
+}
+
 type DocumentUseCase interface {
 	GetAll(ctx context.Context, limit, offset int) Result[[]Document]
 	GetByID(ctx context.Context, docID int) Result[*Document]
@@ -69,4 +78,5 @@ type DocumentUseCase interface {
 	Create(ctx context.Context, params CreateDocumentParams) Result[Data]
 	Update(ctx context.Context, params UpdateDocumentParams) Result[Data]
 	Delete(ctx context.Context, docID int) Result[Data]
+	UploadPDF(ctx context.Context, params UploadPDFDocumentParams) Result[Data]
 }

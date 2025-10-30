@@ -40,6 +40,10 @@ type DeleteDocumentResponse struct {
 	Body d.Result[d.Data]
 }
 
+type UploadPDFDocumentResponse struct {
+	Body d.Result[d.Data]
+}
+
 func NewDocumentRouter(docUseCase d.DocumentUseCase, mux *http.ServeMux, humaAPI huma.API) {
 	// Huma documented routes with /api/v1/ prefix
 	huma.Register(humaAPI, huma.Operation{
@@ -171,5 +175,37 @@ func NewDocumentRouter(docUseCase d.DocumentUseCase, mux *http.ServeMux, humaAPI
 	}) (*DeleteDocumentResponse, error) {
 		result := docUseCase.Delete(ctx, input.Body.DocID)
 		return &DeleteDocumentResponse{Body: result}, nil
+	})
+
+	huma.Register(humaAPI, huma.Operation{
+		OperationID: "upload-pdf-document",
+		Method:      "POST",
+		Path:        "/api/v1/documents/upload-pdf",
+		Summary:     "Upload PDF document",
+		Description: "Uploads a PDF file (base64 encoded), extracts text using OCR, creates a document, and generates chunks",
+		Tags:        []string{"Documents"},
+	}, func(ctx context.Context, input *struct {
+		Body request.UploadPDFDocumentRequest
+	}) (*UploadPDFDocumentResponse, error) {
+		// Set default chunk size and overlap if not provided
+		chunkSize := 1000
+		chunkOverlap := 200
+		if input.Body.ChunkSize != nil {
+			chunkSize = *input.Body.ChunkSize
+		}
+		if input.Body.ChunkOverlap != nil {
+			chunkOverlap = *input.Body.ChunkOverlap
+		}
+
+		params := d.UploadPDFDocumentParams{
+			Category:     input.Body.Category,
+			Title:        input.Body.Title,
+			Source:       input.Body.Source,
+			FileBase64:   input.Body.FileBase64,
+			ChunkSize:    chunkSize,
+			ChunkOverlap: chunkOverlap,
+		}
+		result := docUseCase.UploadPDF(ctx, params)
+		return &UploadPDFDocumentResponse{Body: result}, nil
 	})
 }

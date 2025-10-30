@@ -8,11 +8,13 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/pgvector/pgvector-go v0.3.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/viper v1.21.0
 	go.mau.fi/whatsmeow v0.0.0-20251016095441-02c50743e601
 	golang.org/x/crypto v0.43.0
+	golang.org/x/time v0.14.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -50,6 +52,5 @@ require (
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
