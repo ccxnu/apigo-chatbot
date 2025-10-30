@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/ledongthuc/pdf"
@@ -23,15 +24,18 @@ func ExtractTextFromBase64PDF(base64Data string) (string, error) {
 		return "", fmt.Errorf("failed to extract text from PDF: %w", err)
 	}
 
+	// Clean up the extracted text (remove unwanted line breaks)
+	cleanedText := cleanPDFText(text)
+
 	// If text extraction yields very little content, it might be a scanned PDF
 	// In that case, attempt OCR (this is a simplified check)
-	if len(strings.TrimSpace(text)) < 50 {
+	if len(strings.TrimSpace(cleanedText)) < 50 {
 		// For OCR, we would need to convert PDF to images first
 		// This is a placeholder - full OCR implementation would be more complex
-		return text, nil // Return what we have for now
+		return cleanedText, nil // Return what we have for now
 	}
 
-	return text, nil
+	return cleanedText, nil
 }
 
 // extractTextFromPDF extracts text from PDF bytes using ledongthuc/pdf
@@ -64,6 +68,41 @@ func extractTextFromPDF(pdfData []byte) (string, error) {
 	}
 
 	return textBuilder.String(), nil
+}
+
+// cleanPDFText cleans up text extracted from PDF by normalizing line breaks
+func cleanPDFText(text string) string {
+	// Replace Windows line endings with Unix
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+
+	// Replace multiple spaces with single space
+	spaceRegex := regexp.MustCompile(`[ \t]+`)
+	text = spaceRegex.ReplaceAllString(text, " ")
+
+	// Handle hyphenated words at line breaks (e.g., "exam-\nple" -> "example")
+	hyphenRegex := regexp.MustCompile(`-\s*\n\s*`)
+	text = hyphenRegex.ReplaceAllString(text, "")
+
+	// Replace single line breaks with spaces (joining lines in same paragraph)
+	// But preserve double line breaks (paragraph separators)
+	text = regexp.MustCompile(`([^\n])\n([^\n])`).ReplaceAllString(text, "$1 $2")
+
+	// Normalize multiple consecutive line breaks to double line break (paragraph separator)
+	multiLineRegex := regexp.MustCompile(`\n{3,}`)
+	text = multiLineRegex.ReplaceAllString(text, "\n\n")
+
+	// Trim leading/trailing whitespace from each paragraph
+	paragraphs := strings.Split(text, "\n\n")
+	for i, para := range paragraphs {
+		paragraphs[i] = strings.TrimSpace(para)
+	}
+	text = strings.Join(paragraphs, "\n\n")
+
+	// Final cleanup: remove leading/trailing whitespace
+	text = strings.TrimSpace(text)
+
+	return text
 }
 
 // Note: OCR functionality for scanned PDFs can be added later by:
