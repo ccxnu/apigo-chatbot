@@ -12,7 +12,7 @@ type Chunk struct {
 	ID         int        `json:"id" db:"chk_id"`
 	DocumentID int        `json:"documentId" db:"chk_fk_document"`
 	Content    string     `json:"content" db:"chk_content"`
-	Embedding  *[]float32 `json:"embedding,omitempty" db:"chk_embedding"`
+	// Embedding  *[]float32 `json:"embedding,omitempty" db:"chk_embedding"`
 	CreatedAt  time.Time  `json:"createdAt" db:"chk_created_at"`
 	UpdatedAt  time.Time  `json:"updatedAt" db:"chk_updated_at"`
 }
@@ -43,7 +43,7 @@ type ChunkWithHybridSimilarity struct {
 type CreateChunkParams struct {
 	DocumentID int
 	Content    string
-	Embedding  *[]float32
+	Embedding  pgvector.Vector
 }
 
 type CreateChunkResult struct {
@@ -53,7 +53,8 @@ type CreateChunkResult struct {
 
 type UpdateChunkEmbeddingParams struct {
 	ChunkID   int
-	Embedding []float32
+	Embedding pgvector.Vector
+	Content   string
 }
 
 type UpdateChunkEmbeddingResult struct {

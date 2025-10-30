@@ -122,6 +122,7 @@ func (r *chunkRepository) UpdateEmbedding(ctx context.Context, params d.UpdateCh
 		spUpdateChunkEmbedding,
 		params.ChunkID,
 		params.Embedding,
+		params.Content,
 	)
 
 	if err != nil {

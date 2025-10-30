@@ -419,7 +419,7 @@ func (u *chunkUseCase) Create(c context.Context, documentID int, content string)
 	params := d.CreateChunkParams{
 		DocumentID: documentID,
 		Content:    content,
-		Embedding:  &embedding,
+		Embedding:  pgvector.NewVector(embedding),
 	}
 
 	result, err := u.chunkRepo.Create(ctx, params)
@@ -461,7 +461,8 @@ func (u *chunkUseCase) UpdateContent(c context.Context, chunkID int, content str
 	// Create params with generated embedding
 	params := d.UpdateChunkEmbeddingParams{
 		ChunkID:   chunkID,
-		Embedding: embedding,
+		Embedding: pgvector.NewVector(embedding),
+		Content: content,
 	}
 
 	result, err := u.chunkRepo.UpdateEmbedding(ctx, params)

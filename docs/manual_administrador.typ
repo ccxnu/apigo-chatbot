@@ -75,7 +75,7 @@
 
 Bienvenido al *Manual del Administrador del Sistema de Chatbot ISTS*. Este documento está diseñado para guiarle en el uso del panel de administración web del chatbot institucional.
 
-El panel administrativo le permite gestionar completamente el chatbot: configurar parámetros, cargar documentos para el conocimiento del bot, conectar WhatsApp, gestionar conversaciones con usuarios, y monitorear estadísticas del sistema.
+El panel administrativo le permite gestionar completamente el chatbot: configurar parámetros, cargar documentos para el conocimiento del bot, conectar WhatsApp y monitorear estadísticas del sistema.
 
 == Objetivos del Manual
 
@@ -115,8 +115,6 @@ El panel de administración está disponible en:
 *Navegadores soportados:*
 - Google Chrome 90+
 - Mozilla Firefox 88+
-- Microsoft Edge 90+
-- Safari 14+
 
 #pagebreak()
 
@@ -130,11 +128,10 @@ El panel de administración está disponible en:
 + Ingrese la URL del panel de administración
 + Espere a que cargue la página de inicio de sesión
 
-// TODO: Add screenshot of login page
-// #figure(
-//   image("images/admin_login_page.png", width: 80%),
-//   caption: [Página de inicio de sesión]
-// )
+#figure(
+  image("assets/adm_iniciar_sesion.png", width: 80%),
+  caption: [Página de inicio de sesión]
+)
 
 === Paso 2: Ingresar Credenciales
 
@@ -145,20 +142,20 @@ El panel de administración está disponible en:
 *Nota:* Las credenciales son proporcionadas por el administrador del sistema. Si no tiene credenciales, contacte al área de TI.
 
 // TODO: Add screenshot of filled login form
-// #figure(
-//   image("images/admin_login_filled.png", width: 70%),
-//   caption: [Formulario de inicio de sesión completado]
-// )
+#figure(
+  image("assets/adm_ingreso_credenciales.png", width: 50%),
+  caption: [Formulario de inicio de sesión completado]
+)
 
 === Paso 3: Acceso al Dashboard
 
 Una vez autenticado exitosamente, será redirigido automáticamente al *Panel de Control* (Dashboard).
 
 // TODO: Add screenshot of dashboard after login
-// #figure(
-//   image("images/admin_dashboard_main.png", width: 100%),
-//   caption: [Panel de control principal]
-// )
+#figure(
+  image("assets/admin_panel.png", width: 100%),
+  caption: [Panel de control principal]
+)
 
 == Recuperar Contraseña
 
@@ -170,10 +167,10 @@ Si olvidó su contraseña:
 + Siga el enlace en el correo y establezca una nueva contraseña
 
 // TODO: Add screenshot of password recovery page
-// #figure(
-//   image("images/admin_password_recovery.png", width: 70%),
-//   caption: [Página de recuperación de contraseña]
-// )
+#figure(
+  image("assets/adm_forgot_password.png", width: 50%),
+  caption: [Página de recuperación de contraseña]
+)
 
 == Cerrar Sesión
 
@@ -186,10 +183,10 @@ Para cerrar su sesión de forma segura:
 *Importante:* Siempre cierre sesión al terminar, especialmente en computadoras compartidas.
 
 // TODO: Add screenshot of user menu with logout option
-// #figure(
-//   image("images/admin_logout_menu.png", width: 50%),
-//   caption: [Menú de usuario con opción de cerrar sesión]
-// )
+#figure(
+  image("assets/adm_cerrar_sesion.png", width: 50%),
+  caption: [Menú de usuario con opción de cerrar sesión]
+)
 
 #pagebreak()
 
@@ -226,10 +223,10 @@ El menú lateral contiene las siguientes secciones principales:
 - Parámetros
 
 // TODO: Add screenshot of sidebar menu
-// #figure(
-//   image("images/admin_sidebar_menu.png", width: 40%),
-//   caption: [Menú de navegación lateral]
-// )
+#figure(
+  image("assets/adm_sidebar.png", width: 30%),
+  caption: [Menú de navegación lateral]
+)
 
 === Área de Contenido
 
@@ -244,10 +241,15 @@ El panel soporta modo claro y oscuro:
 + Su preferencia se guarda automáticamente
 
 // TODO: Add screenshot showing both light and dark themes
-// #figure(
-//   image("images/admin_theme_comparison.png", width: 100%),
-//   caption: [Comparación de tema claro y oscuro]
-// )
+#figure(
+  image("assets/adm_theme_toogle.png", width: 35%),
+  caption: [Comparación de tema claro y oscuro]
+)
+
+#figure(
+  image("assets/adm_dark_theme.png", width: 95%),
+  caption: [Tema oscuro]
+)
 
 == Colapsar el Menú Lateral
 
@@ -266,10 +268,10 @@ Para tener más espacio de trabajo:
 El Dashboard proporciona una visión general del estado del sistema con métricas clave y accesos rápidos.
 
 // TODO: Add screenshot of complete dashboard
-// #figure(
-//   image("images/admin_dashboard_full.png", width: 100%),
-//   caption: [Vista completa del panel de control]
-// )
+#figure(
+  image("assets/admin_panel.png", width: 100%),
+  caption: [Vista completa del panel de control]
+)
 
 == Secciones del Dashboard
 
@@ -316,31 +318,6 @@ Tarjetas superiores que muestran:
 //   caption: [Gráficos de actividad del sistema]
 // )
 
-=== Actividades Recientes
-
-Tabla con las últimas acciones en el sistema:
-- Usuario que realizó la acción
-- Tipo de acción (login, carga de documento, etc.)
-- Fecha y hora
-- Estado (éxito/error)
-
-== Interpretación de Métricas
-
-=== Indicadores de Tendencia
-
-- *Flecha verde hacia arriba (↑)*: Incremento positivo
-- *Flecha roja hacia abajo (↓)*: Decremento
-- *Porcentaje*: Cambio respecto al período anterior
-
-=== Alertas
-
-Si alguna métrica muestra valores críticos, aparecerá resaltada en color naranja o rojo.
-
-*Acciones recomendadas:*
-- Verificar logs del sistema
-- Revisar configuración de parámetros
-- Contactar soporte técnico si persiste
-
 #pagebreak()
 
 = Gestión de Documentos RAG
@@ -362,10 +339,10 @@ RAG (Retrieval Augmented Generation) es el sistema de conocimiento del chatbot. 
 + Se abrirá la vista de gestión de documentos
 
 // TODO: Add screenshot of RAG main page
-// #figure(
-//   image("images/admin_rag_main.png", width: 100%),
-//   caption: [Página principal de gestión RAG]
-// )
+#figure(
+  image("assets/adm_document.png", width: 100%),
+  caption: [Página principal de gestión RAG]
+)
 
 == Pestañas de RAG
 
@@ -383,10 +360,10 @@ El módulo RAG tiene tres pestañas:
 + Se abrirá un formulario de creación
 
 // TODO: Add screenshot of create document dialog
-// #figure(
-//   image("images/admin_rag_create_document.png", width: 70%),
-//   caption: [Formulario de creación de documento]
-// )
+#figure(
+  image("assets/adm_documentos.png", width: 50%),
+  caption: [Formulario de creación de documento]
+)
 
 + Complete los siguientes campos:
 
@@ -440,10 +417,10 @@ El módulo RAG tiene tres pestañas:
 *Nota importante:* Los documentos son solo contenedores organizacionales. El contenido real está en los chunks que debe agregar manualmente.
 
 // TODO: Add screenshot of delete confirmation
-// #figure(
-//   image("images/admin_rag_delete_confirmation.png", width: 60%),
-//   caption: [Confirmación de eliminación de documento]
-// )
+#figure(
+  image("assets/adm_eliminar_doc.png", width: 45%),
+  caption: [Confirmación de eliminación de documento]
+)
 
 *Buscar documentos:*
 + Use la barra de búsqueda en la parte superior
@@ -473,10 +450,10 @@ Esta pestaña muestra todos los fragmentos de texto y permite agregar nuevos.
   - Crea registro de estadísticas
 
 // TODO: Add screenshot of create chunk dialog
-// #figure(
-//   image("images/admin_rag_create_chunk.png", width: 80%),
-//   caption: [Formulario de creación de chunk]
-// )
+#figure(
+  image("assets/adm_create_chunk.png", width: 80%),
+  caption: [Formulario de creación de chunk/fragmento]
+)
 
 *Ejemplo de buen chunk:*
 ```
@@ -496,17 +473,17 @@ Contacto: matriculas@ists.edu.ec
 La tabla muestra todos los chunks existentes.
 
 // TODO: Add screenshot of chunks tab
-// #figure(
-//   image("images/admin_rag_chunks_tab.png", width: 100%),
-//   caption: [Vista de chunks indexados]
-// )
+#figure(
+  image("assets/adm_chunks.png", width: 100%),
+  caption: [Vista de chunks indexados]
+)
 
 ==== Columnas de la Tabla de Chunks
 
 - *ID*: Identificador único del chunk
 - *Documento*: Documento fuente del que proviene
 - *Contenido*: Preview del texto del chunk
-- *Tokens*: Cantidad de tokens en el chunk
+// - *Tokens*: Cantidad de tokens en el chunk
 - *Índice*: Posición del chunk en el documento original
 - *Acciones*: Ver, editar, eliminar
 
@@ -533,6 +510,11 @@ Puede editar el contenido de un chunk:
 + Haga clic en *"Guardar"*
 + El embedding se regenerará automáticamente
 
+#figure(
+  image("assets/adm_editar_chunk.png", width: 90%),
+  caption: [Editar un fragmento]
+)
+
 *Importante:* Al editar, el sistema recalcula el embedding vectorial, por lo que puede tomar unos segundos.
 
 ==== Filtrar Chunks
@@ -550,12 +532,16 @@ Puede editar el contenido de un chunk:
 === Pestaña Estadísticas
 
 Muestra métricas de uso de cada chunk:
+// #figure(
+//   image("images/admin_rag_create_chunk.png", width: 80%),
+//   caption: [Formulario de creación de chunk]
+// )
 
 // TODO: Add screenshot of statistics tab
-// #figure(
-//   image("images/admin_rag_statistics_tab.png", width: 100%),
-//   caption: [Estadísticas de uso de chunks]
-// )
+#figure(
+  image("assets/adm_estadisticas.png", width: 100%),
+  caption: [Estadísticas de uso de chunks]
+)
 
 ==== Métricas Disponibles
 
@@ -621,10 +607,10 @@ Muestra métricas de uso de cada chunk:
 El módulo WhatsApp permite conectar una cuenta de WhatsApp Business al chatbot para que pueda enviar y recibir mensajes.
 
 // TODO: Add screenshot of WhatsApp main page
-// #figure(
-//   image("images/admin_whatsapp_main.png", width: 100%),
-//   caption: [Página principal de WhatsApp]
-// )
+#figure(
+  image("assets/adm_whatsapp.png", width: 100%),
+  caption: [Página principal de WhatsApp]
+)
 
 == Conectar WhatsApp por Primera Vez
 
@@ -642,10 +628,10 @@ El módulo WhatsApp permite conectar una cuenta de WhatsApp Business al chatbot 
 + Haga clic en el botón *"Iniciar Conexión"* o *"Conectar WhatsApp"*
 
 // TODO: Add screenshot of initial WhatsApp connection page
-// #figure(
-//   image("images/admin_whatsapp_initial.png", width: 80%),
-//   caption: [Página inicial de conexión WhatsApp]
-// )
+#figure(
+  image("assets/adm_session.png", width: 80%),
+  caption: [Página inicial de conexión WhatsApp]
+)
 
 ==== Paso 2: Escanear Código QR
 
@@ -653,10 +639,10 @@ El módulo WhatsApp permite conectar una cuenta de WhatsApp Business al chatbot 
 + El código se actualiza automáticamente cada 30 segundos si no es escaneado
 
 // TODO: Add screenshot of QR code displayed
-// #figure(
-//   image("images/admin_whatsapp_qr.png", width: 70%),
-//   caption: [Código QR para vincular WhatsApp]
-// )
+#figure(
+  image("assets/adm_qrcode.png", width: 70%),
+  caption: [Código QR para vincular WhatsApp]
+)
 
 + En su teléfono móvil:
   - Abra WhatsApp Business
@@ -667,7 +653,7 @@ El módulo WhatsApp permite conectar una cuenta de WhatsApp Business al chatbot 
 
 // TODO: Add screenshot of phone scanning QR (optional, can be drawn)
 // #figure(
-//   image("images/admin_whatsapp_scan_phone.png", width: 50%),
+//   image("assets/adm_link_device.jpg", width: 30%),
 //   caption: [Escanear QR desde WhatsApp móvil]
 // )
 
@@ -682,10 +668,10 @@ El módulo WhatsApp permite conectar una cuenta de WhatsApp Business al chatbot 
   - Estado: Activo
 
 // TODO: Add screenshot of successful connection
-// #figure(
-//   image("images/admin_whatsapp_connected.png", width: 90%),
-//   caption: [WhatsApp conectado exitosamente]
-// )
+#figure(
+  image("assets/adm_link_device.jpg", width: 30%),
+  caption: [Escanear QR desde WhatsApp móvil]
+)
 
 *Importante:* Mantenga el teléfono con WhatsApp conectado a Internet para que el chatbot funcione.
 
@@ -703,10 +689,10 @@ El panel muestra el estado actual de la conexión:
 - *Error* (rojo): Problema de conexión
 
 // TODO: Add screenshot showing different connection states
-// #figure(
-//   image("images/admin_whatsapp_states.png", width: 100%),
-//   caption: [Diferentes estados de conexión]
-// )
+#figure(
+  image("assets/adm_estado_conexion.png", width: 45%),
+  caption: [Diferentes estados de conexión]
+)
 
 === Monitorear Conexión
 
@@ -725,10 +711,10 @@ Si necesita desconectar la sesión:
 + Confirme la desconexión
 
 // TODO: Add screenshot of disconnect confirmation
-// #figure(
-//   image("images/admin_whatsapp_disconnect.png", width: 60%),
-//   caption: [Confirmación de desconexión]
-// )
+#figure(
+  image("assets/adm_estado_desconectado.png", width: 45%),
+  caption: [Confirmación de desconexión]
+)
 
 *Nota:* Esto cerrará la sesión en el servidor, pero el dispositivo seguirá vinculado en WhatsApp. Para desvincular completamente, debe hacerlo desde el teléfono.
 
@@ -741,45 +727,6 @@ Si la conexión se pierde (por ejemplo, teléfono sin Internet):
 + Si el teléfono sigue vinculado, se reconectará automáticamente
 + Si no, deberá escanear un nuevo código QR
 
-== Configuración Avanzada
-
-=== Mensajes Automáticos
-
-Configure respuestas automáticas:
-
-+ Haga clic en *"Configuración"* en la sección WhatsApp
-+ Vaya a la pestaña *"Mensajes Automáticos"*
-
-*Opciones:*
-
-- *Mensaje de bienvenida*: Primer mensaje enviado a nuevos usuarios
-- *Mensaje fuera de horario*: Respuesta automática cuando está desactivado
-- *Mensaje de ausencia*: Durante mantenimiento o vacaciones
-
-// TODO: Add screenshot of automatic messages configuration
-// #figure(
-//   image("images/admin_whatsapp_auto_messages.png", width: 90%),
-//   caption: [Configuración de mensajes automáticos]
-// )
-
-*Para configurar:*
-+ Habilite la opción deseada con el interruptor
-+ Escriba el mensaje en el cuadro de texto
-+ Haga clic en *"Guardar"*
-
-=== Activar/Desactivar Bot
-
-Para pausar el bot temporalmente sin desconectar:
-
-+ Use el interruptor *"Bot Activo"* en la parte superior
-+ Estado *Activo* (verde): Bot responde automáticamente
-+ Estado *Inactivo* (gris): Bot no responde, solo recibe mensajes
-
-*Casos de uso:*
-- Mantenimiento del sistema
-- Actualización de información
-- Eventos especiales donde prefiere atención humana
-
 #pagebreak()
 
 = Gestión de Conversaciones (Chats)
@@ -789,10 +736,10 @@ Para pausar el bot temporalmente sin desconectar:
 El módulo de Chats permite ver y gestionar todas las conversaciones entre usuarios y el chatbot, con una interfaz similar a WhatsApp.
 
 // TODO: Add screenshot of chats main interface
-// #figure(
-//   image("images/admin_chats_main.png", width: 100%),
-//   caption: [Interfaz principal de gestión de chats]
-// )
+#figure(
+  image("assets/adm_chatbot.png", width: 50%),
+  caption: [Interfaz principal de gestión de chats]
+)
 
 == Estructura de la Interfaz
 
@@ -831,39 +778,10 @@ Cada conversación muestra:
 + Los resultados se filtran en tiempo real
 
 // TODO: Add screenshot of search in conversations
-// #figure(
-//   image("images/admin_chats_search.png", width: 60%),
-//   caption: [Búsqueda de conversaciones]
-// )
-
-==== Filtros de Conversaciones
-
-Use los filtros para organizar conversaciones:
-
-+ Haga clic en el botón *"Filtros"*
-+ Seleccione un filtro:
-
-*Filtros disponibles:*
-- *Todas*: Muestra todas las conversaciones
-- *No leídas*: Solo con mensajes sin leer
-- *Activas*: Conversaciones con mensajes recientes (últimas 24h)
-- *Bloqueadas*: Usuarios bloqueados
-- *Con intervención admin*: Donde un admin respondió manualmente
-
-// TODO: Add screenshot of filter options
-// #figure(
-//   image("images/admin_chats_filters.png", width: 70%),
-//   caption: [Opciones de filtrado de conversaciones]
-// )
-
-==== Ordenar Conversaciones
-
-+ Haga clic en el menú de ordenamiento
-+ Opciones:
-  - *Más recientes primero* (por defecto)
-  - *Alfabético por nombre*
-  - *Más mensajes primero*
-  - *No leídos primero*
+#figure(
+  image("assets/adm_search.png", width: 60%),
+  caption: [Búsqueda de conversaciones]
+)
 
 == Ver Conversación
 
@@ -873,10 +791,10 @@ Use los filtros para organizar conversaciones:
 + El panel derecho mostrará el historial completo de mensajes
 
 // TODO: Add screenshot of opened conversation
-// #figure(
-//   image("images/admin_chats_conversation_open.png", width: 100%),
-//   caption: [Conversación abierta con historial de mensajes]
-// )
+#figure(
+  image("assets/adm_chat_mesage.png", width: 40%),
+  caption: [Conversación abierta con historial de mensajes]
+)
 
 === Elementos del Panel de Conversación
 
@@ -898,122 +816,22 @@ En la parte superior se muestra:
 //   caption: [Cabecera de conversación con información del usuario]
 // )
 
-==== Historial de Mensajes
-
-El área central muestra todos los mensajes:
-
-*Mensajes del usuario:*
-- Alineados a la izquierda
-- Fondo gris claro / gris oscuro (modo oscuro)
-
-*Mensajes del bot/admin:*
-- Alineados a la derecha
-- Fondo verde claro / verde oscuro (modo oscuro)
-
-*Información de cada mensaje:*
-- Contenido del mensaje
-- Hora de envío
-- Estado de lectura (checks):
-  - ✓ Enviado
-  - ✓✓ Entregado
-  - ✓✓ (azul) Leído
-
-// TODO: Add screenshot of message bubbles
-// #figure(
-//   image("images/admin_chats_messages.png", width: 80%),
-//   caption: [Burbujas de mensajes en la conversación]
-// )
-
-*Agrupación por fecha:*
-Los mensajes se agrupan por día con separadores:
-- "Hoy"
-- "Ayer"
-- "DD/MM/YYYY"
-
-==== Indicadores Especiales
-
-*Mensajes del bot automático:*
-- Badge "Bot" en la esquina superior derecha del mensaje
-
-*Mensajes del administrador:*
-- Badge "Admin" con el nombre del administrador
-
-*Mensajes con error:*
-- Icono de advertencia en rojo
-- Tooltip con descripción del error
-
-== Responder Manualmente
-
-Como administrador, puede intervenir y responder manualmente a un usuario:
-
 === Enviar un Mensaje
 
 + En el área de composición (parte inferior), escriba su mensaje
 + Haga clic en el botón de enviar (icono de avión de papel) o presione Enter
 
 // TODO: Add screenshot of message composer
-// #figure(
-//   image("images/admin_chats_composer.png", width: 90%),
-//   caption: [Área de composición de mensajes]
-// )
+#figure(
+  image("assets/adm_send_mesage.png", width: 50%),
+  caption: [Área de composición de mensajes]
+)
 
 *Características del compositor:*
 - Soporte para texto con formato (negritas, cursivas)
 - Emojis (haga clic en el icono de emoji)
 - Adjuntar archivos (imágenes, documentos)
 - Mensajes de múltiples líneas (Shift + Enter para nueva línea)
-
-=== Mensajes Predefinidos (Plantillas)
-
-Para respuestas frecuentes, use plantillas:
-
-+ Haga clic en el icono de plantillas (estrella)
-+ Se mostrará una lista de mensajes predefinidos
-+ Seleccione la plantilla deseada
-+ El texto se insertará en el compositor
-+ Puede editarlo antes de enviar
-
-// TODO: Add screenshot of message templates
-// #figure(
-//   image("images/admin_chats_templates.png", width: 60%),
-//   caption: [Plantillas de mensajes predefinidos]
-// )
-
-*Plantillas comunes:*
-- "Gracias por tu consulta, te responderé en breve"
-- "Para más información sobre matrículas, visita..."
-- "Nuestro horario de atención es..."
-
-== Acciones sobre Conversaciones
-
-=== Marcar como Leída/No Leída
-
-*Desde la lista:*
-+ Haga clic derecho en la conversación
-+ Seleccione *"Marcar como leída"* o *"Marcar como no leída"*
-
-*Desde la conversación abierta:*
-+ Haga clic en el menú de opciones (tres puntos)
-+ Seleccione la opción deseada
-
-=== Fijar Conversación
-
-Para mantener conversaciones importantes en la parte superior:
-
-+ Haga clic derecho en la conversación
-+ Seleccione *"Fijar conversación"*
-+ Aparecerá un icono de pin junto al nombre
-+ La conversación permanecerá en la parte superior independientemente de la fecha
-
-*Desfijar:*
-+ Haga clic derecho nuevamente
-+ Seleccione *"Desfijar conversación"*
-
-// TODO: Add screenshot of pinned conversation
-// #figure(
-//   image("images/admin_chats_pinned.png", width: 70%),
-//   caption: [Conversación fijada en la parte superior]
-// )
 
 === Bloquear Usuario
 
@@ -1053,24 +871,6 @@ Si un usuario envía spam o contenido inapropiado:
 //   image("images/admin_chats_delete.png", width: 60%),
 //   caption: [Confirmación de eliminación de conversación]
 // )
-
-=== Exportar Conversación
-
-Para guardar el historial de una conversación:
-
-+ Abra la conversación
-+ Haga clic en el menú de opciones
-+ Seleccione *"Exportar conversación"*
-+ Elija el formato:
-  - TXT (texto plano)
-  - PDF (con formato)
-  - JSON (datos estructurados)
-+ El archivo se descargará automáticamente
-
-*Contenido exportado:*
-- Todos los mensajes con timestamps
-- Información del usuario
-- Indicadores de quién envió cada mensaje (bot/admin/usuario)
 
 == Panel de Información del Usuario
 
@@ -1116,20 +916,19 @@ Los parámetros son configuraciones del sistema que controlan el comportamiento 
 + Se mostrará la lista de todos los parámetros del sistema
 
 // TODO: Add screenshot of parameters list
-// #figure(
-//   image("images/admin_parameters_list.png", width: 100%),
-//   caption: [Lista de parámetros del sistema]
-// )
+#figure(
+  image("assets/adm_parameters.png", width: 100%),
+  caption: [Lista de parámetros del sistema]
+)
 
 == Estructura de Parámetros
 
 Cada parámetro tiene:
+- *Nombre*: Descripción legible del grupo (ej: "Temperatura del LLM")
 - *Código*: Identificador único (ej: `LLM_TEMPERATURE`)
-- *Nombre*: Descripción legible (ej: "Temperatura del LLM")
 - *Datos*: Valor del parámetro en formato JSON
 - *Descripción*: Explicación de para qué sirve
 - *Estado*: Activo o Inactivo
-- *Última modificación*: Fecha y usuario que modificó
 
 == Buscar Parámetros
 
@@ -1139,6 +938,7 @@ Cada parámetro tiene:
   - Nombre
   - Descripción
 + Use filtros para mostrar solo activos/inactivos
++ Use el filtro por nombre
 
 == Ver Detalles de un Parámetro
 
@@ -1146,10 +946,6 @@ Cada parámetro tiene:
 + Se abrirá un panel con información completa
 
 // TODO: Add screenshot of parameter details
-// #figure(
-//   image("images/admin_parameters_detail.png", width: 90%),
-//   caption: [Vista detallada de un parámetro]
-// )
 
 *Información mostrada:*
 - Todos los campos del parámetro
@@ -1163,11 +959,10 @@ Cada parámetro tiene:
 + Haga clic en el botón *"Editar"* (icono de lápiz)
 + Se abrirá un diálogo de edición
 
-// TODO: Add screenshot of edit parameter dialog
-// #figure(
-//   image("images/admin_parameters_edit.png", width: 80%),
-//   caption: [Diálogo de edición de parámetro]
-// )
+#figure(
+  image("assets/adm_param_edit.png", width: 50%),
+  caption: [Vista detallada de un parámetro]
+)
 
 *Campos editables:*
 
@@ -1205,21 +1000,21 @@ Cada parámetro tiene:
 + Complete el formulario:
 
 // TODO: Add screenshot of create parameter dialog
-// #figure(
-//   image("images/admin_parameters_create.png", width: 80%),
-//   caption: [Formulario de creación de parámetro]
-// )
+#figure(
+  image("assets/adm_create_parametro.png", width: 50%),
+  caption: [Formulario de creación de parámetro]
+)
 
 *Campos requeridos:*
+
+- *Nombre*:
+  - Descripción breve y clara
+  - Ejemplo: "Horario de Atención"
 
 - *Código*:
   - Identificador único en mayúsculas
   - Solo letras, números y guiones bajos
   - Ejemplo: `HORARIO_ATENCION`
-
-- *Nombre*:
-  - Descripción breve y clara
-  - Ejemplo: "Horario de Atención"
 
 - *Datos (JSON)*:
   - Valor inicial del parámetro
@@ -1278,14 +1073,13 @@ Si necesita desactivar temporalmente un parámetro sin eliminarlo:
 + Confirme la eliminación
 
 // TODO: Add screenshot of delete parameter confirmation
-// #figure(
-//   image("images/admin_parameters_delete.png", width: 60%),
-//   caption: [Confirmación de eliminación de parámetro]
-// )
+#figure(
+  image("assets/adm_param_eliminate.png", width: 60%),
+  caption: [Confirmación de eliminación de parámetro]
+)
 
 *Advertencia:*
 - Solo elimine parámetros personalizados
-- No elimine parámetros del sistema (aparecen con badge "Sistema")
 - La eliminación es permanente
 
 == Parámetros Importantes del Sistema
@@ -1368,6 +1162,11 @@ El sistema cachea parámetros en memoria para mayor rendimiento. Después de edi
 - Después de modificar parámetros de configuración LLM
 - Al cambiar configuración de embeddings
 - Cuando los cambios no se reflejan inmediatamente
+
+#figure(
+  image("assets/adm_refresh.png", width: 60%),
+  caption: [Recargar parámetros]
+)
 
 #pagebreak()
 
@@ -1524,49 +1323,6 @@ Para deshabilitar temporalmente un usuario sin eliminarlo:
 - No puede eliminar su propio usuario
 - No puede eliminar al último Super Admin
 
-
-== Actividad de Usuarios
-
-=== Ver Historial de Acciones
-
-+ Haga clic en un usuario
-+ En el panel de detalles, vaya a la pestaña *"Actividad"*
-+ Se mostrará el historial de acciones:
-
-*Información registrada:*
-- Fecha y hora de la acción
-- Tipo de acción (login, edición, eliminación, etc.)
-- Módulo afectado
-- Detalles específicos
-- IP desde donde se realizó
-
-// TODO: Add screenshot of user activity log
-// #figure(
-//   image("images/admin_users_activity.png", width: 90%),
-//   caption: [Registro de actividad de usuario]
-// )
-
-*Filtros disponibles:*
-- Por rango de fechas
-- Por tipo de acción
-- Por módulo del sistema
-
-=== Últimas Sesiones
-
-Ver las últimas sesiones del usuario:
-- Fecha y hora de login
-- Duración de la sesión
-- IP de origen
-- Navegador/dispositivo usado
-- Fecha de logout
-
-*Seguridad:*
-Si detecta actividad sospechosa:
-+ Restablezca inmediatamente la contraseña del usuario
-+ Desactive el usuario temporalmente
-+ Revise el registro de actividad
-+ Contacte al usuario para confirmar si fue él
-
 #pagebreak()
 
 = Estadísticas y Reportes
@@ -1577,10 +1333,10 @@ Si detecta actividad sospechosa:
 + Se mostrará el panel de analytics
 
 // TODO: Add screenshot of statistics main page
-// #figure(
-//   image("images/admin_statistics_main.png", width: 100%),
-//   caption: [Panel principal de estadísticas]
-// )
+#figure(
+  image("assets/adm_estadisticas.png", width: 100%),
+  caption: [Panel principal de estadísticas]
+)
 
 == Panel de Estadísticas
 
@@ -2255,16 +2011,12 @@ Sí, en "WhatsApp" → "Configuración" → "Mensajes Automáticos".
 == Contacto
 
 === Soporte Técnico
-- *Email:* #link("soporte-tecnico@ists.edu.ec")
+- *Email:* #link("tecnico@ists.edu.ec")
 - *Horario:* Lunes a Viernes, 8:00 AM - 6:00 PM
 
 === Capacitación
 - *Email:* #link("capacitacion@ists.edu.ec")
 - Solicite sesiones de capacitación para su equipo
-
-=== Sugerencias y Feedback
-- *Email:* #link("feedback-chatbot@ists.edu.ec")
-- Sus sugerencias nos ayudan a mejorar el sistema
 
 ---
 

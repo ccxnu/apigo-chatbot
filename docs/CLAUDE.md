@@ -262,7 +262,7 @@ To add a new feature:
 
 #### Functions and Procedures:
 - Stored procedures: `sp_` prefix (e.g., `sp_add_user`, `sp_update_status`)
-  - Always return: `success BOOLEAN`, `code VARCHAR` (e.g., 'OK', 'ERR_NOT_FOUND')
+  - Always return: `success BOOLEAN`, `code VARCHAR` at first values (e.g., 'OK', 'ERR_NOT_FOUND')
 - Functions: `fn_` prefix (e.g., `fn_get_parameters`, `fn_search_chunks`)
 - Views: `vw_` prefix (e.g., `vw_user_permissions`)
 - Triggers: `tr_` prefix (e.g., `tr_update_timestamp`)
@@ -277,8 +277,8 @@ To add a new feature:
 Example:
 ```sql
 CREATE OR REPLACE PROCEDURE sp_create_user(
-    OUT o_success BOOLEAN,
-    OUT o_code VARCHAR,
+    OUT success BOOLEAN,
+    OUT code VARCHAR,
     IN p_username VARCHAR,
     IN p_email VARCHAR
 )

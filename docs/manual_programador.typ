@@ -1852,21 +1852,21 @@ El sistema utiliza *database-first approach*: toda la lógica de datos está en 
 
 *Variables en SQL/PLpgSQL:*
 
-- **Parámetros de entrada**: Prefijo `p_` (ejemplo: `p_id_usuario`, `p_estado`)
-- **Variables de salida**: Prefijo `o_` (ejemplo: `o_id_parametro`)
-  - Especiales: `success BOOLEAN`, `code VARCHAR`
-- **Variables locales**: Prefijo `v_` (ejemplo: `v_mod_id`, `v_param_id`)
-- **Registros temporales**: Prefijo `r_` (ejemplo: `r_modulo`)
-- **Contadores**: Prefijo `i_` (ejemplo: `i_contador`)
-- **Booleanos**: Prefijo `bl_` o `is_` (ejemplo: `bl_existe`, `is_active`)
-- **Constantes**: Prefijo `c_` (ejemplo: `c_estado_activo`)
+- *Parámetros de entrada*: Prefijo `p_` (ejemplo: `p_id_usuario`, `p_estado`)
+- *Variables de salida*: Prefijo `o_` (ejemplo: `o_id_parametro`)
+   Especiales: `success BOOLEAN`, `code VARCHAR`
+- *Variables locales*: Prefijo `v_` (ejemplo: `v_mod_id`, `v_param_id`)
+- *Registros temporales*: Prefijo `r_` (ejemplo: `r_modulo`)
+- *Contadores*: Prefijo `i_` (ejemplo: `i_contador`)
+- *Booleanos*: Prefijo `bl_` o `is_` (ejemplo: `bl_existe`, `is_active`)
+- *Constantes*: Prefijo `c_` (ejemplo: `c_estado_activo`)
 
 *Funciones y Procedimientos:*
 
-- **`sp_`**: Procedimientos almacenados (ejemplo: `sp_add_usuario`)
-- **`fn_`**: Funciones (ejemplo: `fn_get_parametros`)
-- **`vw_`**: Vistas (ejemplo: `vw_usuarios_permisos`)
-- **`tr_`**: Triggers (ejemplo: `tr_update_timestamp`)
+- *`sp_`*: Procedimientos almacenados (ejemplo: `sp_add_usuario`)
+- *`fn_`*: Funciones (ejemplo: `fn_get_parametros`)
+- *`vw_`*: Vistas (ejemplo: `vw_usuarios_permisos`)
+- *`tr_`*: Triggers (ejemplo: `tr_update_timestamp`)
 
 *Convenciones:*
 - Los procedimientos siempre retornan:

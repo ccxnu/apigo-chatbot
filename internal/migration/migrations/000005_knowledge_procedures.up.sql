@@ -554,7 +554,8 @@ create or replace procedure sp_update_chunk_embedding(
     out success boolean,
     out code varchar,
     in p_chk_id int,
-    in p_embedding vector(1536)
+    in p_embedding vector(1536),
+    in p_content text
 )
 language plpgsql
 as $$
@@ -579,7 +580,8 @@ begin
 
     -- Update embedding
     update public.cht_chunks
-    set chk_embedding = p_embedding
+    set chk_embedding = p_embedding,
+		chk_content = p_content
     where chk_id = p_chk_id;
 
 exception
