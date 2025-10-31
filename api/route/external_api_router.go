@@ -36,7 +36,7 @@ func NewExternalAPIRouter(
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "chat-completions",
 		Method:      http.MethodPost,
-		Path:        "api/v1/chat/completions",
+		Path:        "/api/v1/chat/completions",
 		Summary:     "Create chat completion with RAG",
 		Description: "OpenAI-compatible chat completions endpoint with RAG support and event filtering",
 		Tags:        []string{"External API"},
