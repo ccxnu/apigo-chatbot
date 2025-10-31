@@ -5,14 +5,14 @@
 )
 
 #set page(
-  paper: "us-letter",
-  margin: (x: 1.18in, y: 1.18in),
+  paper: "a5",
+  margin: (top: 1.5cm, right: 1.5cm, bottom: 1.5cm, left: 1.5cm),
   numbering: "1",
 )
 
 #set text(
   font: "Times New Roman",
-  size: 12pt,
+  size: 9pt,
   lang: "es",
 )
 
