@@ -45,10 +45,12 @@ func main() {
 		slog.Info("WhatsApp service running")
 	}
 
-	// Global middlewares (order matters: Logging -> CORS -> Auth -> Handler)
-	handler := middleware.LoggingMiddleware(
-		middleware.CORSMiddleware(
-			middleware.AuthMiddleware(mux, app.Cache),
+	// Global middlewares (order matters: BodyLimit -> Logging -> CORS -> Auth -> Handler)
+	handler := middleware.BodyLimitMiddleware(20 * 1024 * 1024)( // 20MB limit for PDF uploads
+		middleware.LoggingMiddleware(
+			middleware.CORSMiddleware(
+				middleware.AuthMiddleware(mux, app.Cache),
+			),
 		),
 	)
 

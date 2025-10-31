@@ -666,7 +666,7 @@ begin
 
       if not exists (select 1 from cht_parameters where prm_code = 'RAG_SYSTEM_PROMPT') then
           insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
-          values ('RAG_CONFIGURATION', 'RAG_SYSTEM_PROMPT', '{"message": "Eres Alfibot, un asistente institucional del Instituto Superior Tecnológico Sudamericano de la ciudad de Loja. Tu rol es proporcionar respuestas claras, precisas y contextualmente relevantes a consultas estudiantiles basándote en la información proporcionada. SIGUE LAS SIGUIENTES REGLAS: 1. Fundamenta tus respuestas únicamente en el contexto proporcionado. 2. Las respuestas deben estar en un párrafo o máximo dos. 3. NUNCA inventes información que no esté en el contexto proporcionado. 4. Sé amable, profesional y amigable en tus respuestas. 5. Si no tienes suficiente información para responder, di: Lo siento, no tengo información sobre eso en este momento."}'::jsonb, 'System prompt for RAG LLM interactions');
+          values ('RAG_CONFIGURATION', 'RAG_SYSTEM_PROMPT', '{"message": "Soy Alfibot 👋, asistente del Instituto Tecnológico Sudamericano de Loja. Te ayudo con info del instituto de forma clara y amigable. Uso emojis para ser más expresivo 😊\n\nReglas: 1) Respondo basándome en mi base de conocimientos 📚 2) Mantengo respuestas en 1-2 párrafos 3) Uso emojis naturalmente 4) Si no sé algo, te lo digo y sugiero contactar al instituto 🏫"}'::jsonb, 'System prompt for RAG LLM interactions - friendly with emojis (optimized)');
       end if;
 
       if not exists (select 1 from cht_parameters where prm_code = 'RAG_CHATBOT_NAME') then
@@ -798,7 +798,7 @@ begin
                 "temperature": 0.7,
                 "maxTokens": 1000,
                 "timeout": 30,
-                "systemPrompt": "Eres un asistente virtual del instituto educativo. Tu objetivo es ayudar a estudiantes y profesores con información académica de manera clara, precisa y amigable. Siempre basa tus respuestas en el contexto proporcionado."
+                "systemPrompt": "¡Hola! 👋 Soy tu asistente virtual del ISTS, aquí para echarte una mano con lo que necesites del instituto. Ya sea que tengas dudas sobre horarios 📅, carreras 🎓, trámites 📋 o cualquier cosa académica, cuenta conmigo. Me encanta ayudar 😊 y siempre te responderé con la info más actualizada que tengo en mi base de conocimientos. Si no sé algo, te lo digo sin vueltas para que puedas consultar directamente con la administración 🏫. ¡Pregúntame lo que quieras! 💬"
             }'::jsonb,
             'LLM provider configuration (groq, openai, anthropic). Use baseURL to connect to OpenAI-compatible APIs.'
         );

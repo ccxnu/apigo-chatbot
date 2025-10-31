@@ -130,6 +130,52 @@ func (c *Client) SendText(chatID, text string) error {
 	return nil
 }
 
+// SendSticker sends a sticker message to a chat using a URL
+func (c *Client) SendSticker(chatID, stickerURL string) error {
+	if !c.IsConnected() {
+		return fmt.Errorf("not connected to WhatsApp")
+	}
+
+	// Parse chatID string to JID
+	jid, err := types.ParseJID(chatID)
+	if err != nil {
+		return fmt.Errorf("invalid chat ID: %w", err)
+	}
+
+	msg := &waE2E.Message{
+		StickerMessage: &waE2E.StickerMessage{
+			URL:           &stickerURL,
+			Mimetype:      stringPtr("image/webp"),
+			IsAnimated:    boolPtr(false),
+			DirectPath:    stringPtr(""),
+			MediaKey:      []byte{},
+			FileEncSHA256: []byte{},
+			FileSHA256:    []byte{},
+			FileLength:    uint64Ptr(0),
+		},
+	}
+
+	_, err = c.WAClient.SendMessage(context.Background(), jid, msg)
+	if err != nil {
+		return fmt.Errorf("failed to send sticker: %w", err)
+	}
+
+	return nil
+}
+
+// Helper functions for protobuf pointers
+func stringPtr(s string) *string {
+	return &s
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func uint64Ptr(u uint64) *uint64 {
+	return &u
+}
+
 // GetDeviceInfo returns information about the connected device
 func (c *Client) GetDeviceInfo() *DeviceInfo {
 	if c.WAClient.Store.ID == nil {
