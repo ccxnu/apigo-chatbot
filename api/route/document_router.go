@@ -178,12 +178,13 @@ func NewDocumentRouter(docUseCase d.DocumentUseCase, mux *http.ServeMux, humaAPI
 	})
 
 	huma.Register(humaAPI, huma.Operation{
-		OperationID: "upload-pdf-document",
-		Method:      "POST",
-		Path:        "/api/v1/documents/upload-pdf",
-		Summary:     "Upload PDF document",
-		Description: "Uploads a PDF file (base64 encoded), extracts text using OCR, creates a document, and generates chunks",
-		Tags:        []string{"Documents"},
+		OperationID:  "upload-pdf-document",
+		Method:       "POST",
+		Path:         "/api/v1/documents/upload-pdf",
+		Summary:      "Upload PDF document",
+		Description:  "Uploads a PDF file (base64 encoded), extracts text using OCR, creates a document, and generates chunks",
+		Tags:         []string{"Documents"},
+		MaxBodyBytes: 20 * 1024 * 1024, // 20MB limit for PDF uploads
 	}, func(ctx context.Context, input *struct {
 		Body request.UploadPDFDocumentRequest
 	}) (*UploadPDFDocumentResponse, error) {
