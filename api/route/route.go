@@ -91,7 +91,7 @@ func Setup(paramCache domain.ParameterCache, timeout time.Duration, db *pgxpool.
 
 	// External API routes (Claude-style endpoints with event filtering)
 	if llmProvider != nil {
-		NewExternalAPIRouter(chunkUseCase, embeddingService, llmProvider, paramCache, apiKeyUseCase, apiUsageRepo, mux, humaAPI)
+		NewExternalAPIRouter(chunkUseCase, embeddingService, llmProvider, paramCache, apiKeyUseCase, apiUsageRepo, convUseCase, mux, humaAPI)
 	}
 }
 

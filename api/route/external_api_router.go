@@ -29,6 +29,7 @@ func NewExternalAPIRouter(
 	cache d.ParameterCache,
 	apiKeyUseCase d.APIKeyUseCase,
 	apiUsageRepo d.APIUsageRepository,
+	conversationUseCase d.ConversationUseCase,
 	mux *http.ServeMux,
 	humaAPI huma.API,
 ) {
@@ -49,10 +50,71 @@ func NewExternalAPIRouter(
 			"operation", "ChatCompletions",
 			"model", input.Body.Model,
 			"messageCount", len(input.Body.Messages),
+			"deviceID", input.Body.IdDevice,
 		)
 
 		// Generate unique ID
 		completionID := generateCompletionID()
+
+		// Get or create conversation using device ID as chat ID
+		chatID := input.Body.IdDevice
+		convResult := conversationUseCase.GetOrCreateConversation(
+			ctx,
+			chatID,
+			input.Body.DeviceAddress, // Using device address as phone number
+			nil,                       // No contact name
+			false,                     // Not a group
+			nil,                       // No group name
+		)
+
+		if !convResult.Success {
+			logger.LogError(ctx, "Failed to get or create conversation", nil,
+				"operation", "ChatCompletions",
+				"deviceID", chatID,
+			)
+			// Continue anyway, but won't save history
+		}
+
+		var conversationID int
+		if convResult.Success && convResult.Data != nil {
+			conversationID = convResult.Data.ID
+		}
+
+		// Retrieve conversation history from database
+		var conversationHistory []llm.Message
+		if conversationID > 0 {
+			logger.LogInfo(ctx, "Attempting to retrieve conversation history",
+				"operation", "ChatCompletions",
+				"deviceID", chatID,
+				"conversationID", conversationID,
+			)
+			historyResult := conversationUseCase.GetConversationHistory(ctx, chatID, 50)
+			logger.LogInfo(ctx, "History result",
+				"operation", "ChatCompletions",
+				"success", historyResult.Success,
+				"dataLength", len(historyResult.Data),
+			)
+			if historyResult.Success && len(historyResult.Data) > 0 {
+				// Convert database messages to LLM messages
+				for _, msg := range historyResult.Data {
+					if msg.Body != nil && *msg.Body != "" {
+						role := "user"
+						if msg.FromMe || msg.SenderType == "bot" {
+							role = "assistant"
+						}
+						conversationHistory = append(conversationHistory, llm.Message{
+							Role:    role,
+							Content: *msg.Body,
+						})
+					}
+				}
+				logger.LogInfo(ctx, "Retrieved conversation history",
+					"operation", "ChatCompletions",
+					"deviceID", chatID,
+					"historyCount", len(conversationHistory),
+				)
+			}
+		}
 
 		// Extract user message (last message)
 		var userMessage string
@@ -61,6 +123,27 @@ func NewExternalAPIRouter(
 				userMessage = input.Body.Messages[i].Content
 				break
 			}
+		}
+
+		// Save user message to database
+		if conversationID > 0 && userMessage != "" {
+			userMessageID := fmt.Sprintf("msg-%s-user", completionID)
+			userParams := d.CreateConversationMessageParams{
+				ConversationID: conversationID,
+				MessageID:      userMessageID,
+				FromMe:         false,
+				SenderType:     "user",
+				MessageType:    "text",
+				Body:           &userMessage,
+				Timestamp:      time.Now().Unix(),
+				IsForwarded:    false,
+			}
+			saveResult := conversationUseCase.StoreMessageWithStats(ctx, userParams)
+			logger.LogInfo(ctx, "Saved user message",
+				"operation", "ChatCompletions",
+				"success", saveResult.Success,
+				"conversationID", conversationID,
+			)
 		}
 
 		// Prepare RAG context if enabled
@@ -126,18 +209,9 @@ func NewExternalAPIRouter(
 
 		// Build LLM request
 		llmRequest := llm.GenerateRequest{
-			UserMessage: userMessage,
-			Context:     retrievedContext,
-		}
-
-		// Add conversation history
-		for _, msg := range input.Body.Messages {
-			if msg.Role != "user" || msg.Content != userMessage {
-				llmRequest.ConversationHistory = append(llmRequest.ConversationHistory, llm.Message{
-					Role:    msg.Role,
-					Content: msg.Content,
-				})
-			}
+			UserMessage:         userMessage,
+			Context:             retrievedContext,
+			ConversationHistory: conversationHistory, // Use history from database
 		}
 
 		// Set parameters
@@ -168,6 +242,25 @@ func NewExternalAPIRouter(
 				"operation", "ChatCompletions",
 			)
 			return nil, huma.Error500InternalServerError("Failed to generate response")
+		}
+
+		// Save assistant response to database
+		if conversationID > 0 && llmResponse.Content != "" {
+			assistantMessageID := fmt.Sprintf("msg-%s-assistant", completionID)
+			assistantParams := d.CreateConversationMessageParams{
+				ConversationID:   conversationID,
+				MessageID:        assistantMessageID,
+				FromMe:           true,
+				SenderType:       "bot",
+				MessageType:      "text",
+				Body:             &llmResponse.Content,
+				Timestamp:        time.Now().Unix(),
+				IsForwarded:      false,
+				PromptTokens:     llmResponse.PromptTokens,
+				CompletionTokens: llmResponse.CompletionTokens,
+				TotalTokens:      llmResponse.TotalTokens,
+			}
+			conversationUseCase.StoreMessageWithStats(ctx, assistantParams)
 		}
 
 		// Build completion data
