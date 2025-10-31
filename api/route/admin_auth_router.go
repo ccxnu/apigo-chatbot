@@ -32,7 +32,7 @@ func NewAdminAuthRouter(adminUseCase d.AdminUseCase, mux *http.ServeMux, humaAPI
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "admin-login",
 		Method:      "POST",
-		Path:        "/admin/auth/login",
+		Path:        "/api/v1/admin/auth/login",
 		Summary:     "Admin login",
 		Description: "Authenticate admin user with username and password. Returns access token and refresh token.",
 		Tags:        []string{"Admin Authentication"},
@@ -47,7 +47,7 @@ func NewAdminAuthRouter(adminUseCase d.AdminUseCase, mux *http.ServeMux, humaAPI
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "admin-refresh-token",
 		Method:      "POST",
-		Path:        "/admin/auth/refresh",
+		Path:        "/api/v1/admin/auth/refresh",
 		Summary:     "Refresh access token",
 		Description: "Generate new access token and refresh token using valid refresh token. Implements token rotation for security.",
 		Tags:        []string{"Admin Authentication"},
@@ -62,7 +62,7 @@ func NewAdminAuthRouter(adminUseCase d.AdminUseCase, mux *http.ServeMux, humaAPI
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "admin-logout",
 		Method:      "POST",
-		Path:        "/admin/auth/logout",
+		Path:        "/api/v1/admin/auth/logout",
 		Summary:     "Admin logout",
 		Description: "Revoke refresh token and log out admin user",
 		Tags:        []string{"Admin Authentication"},
@@ -77,7 +77,7 @@ func NewAdminAuthRouter(adminUseCase d.AdminUseCase, mux *http.ServeMux, humaAPI
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "create-admin-user",
 		Method:      "POST",
-		Path:        "/admin/users/create",
+		Path:        "/api/v1/admin/users/create",
 		Summary:     "Create admin user",
 		Description: "Create a new admin user with specified role and permissions. Requires super admin privileges.",
 		Tags:        []string{"Admin Management"},

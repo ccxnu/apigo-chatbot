@@ -33,11 +33,11 @@ func NewWhatsAppAdminRouter(
 	mux *http.ServeMux,
 	humaAPI huma.API,
 ) {
-	// Huma documented routes with /admin/whatsapp/ prefix
+	// Huma documented routes with /api/v1/admin/whatsapp/ prefix
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-whatsapp-status",
 		Method:      "POST",
-		Path:        "/admin/whatsapp/status",
+		Path:        "/api/v1/admin/whatsapp/status",
 		Summary:     "Get WhatsApp connection status",
 		Description: "Retrieves the current WhatsApp session status including connection state and device info",
 		Tags:        []string{"Admin", "WhatsApp"},
@@ -51,7 +51,7 @@ func NewWhatsAppAdminRouter(
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-whatsapp-qr-code",
 		Method:      "POST",
-		Path:        "/admin/whatsapp/qr-code",
+		Path:        "/api/v1/admin/whatsapp/qr-code",
 		Summary:     "Get WhatsApp QR code",
 		Description: "Retrieves the QR code for WhatsApp authentication. Admin scans this to connect the bot.",
 		Tags:        []string{"Admin", "WhatsApp"},
@@ -65,7 +65,7 @@ func NewWhatsAppAdminRouter(
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "update-whatsapp-status",
 		Method:      "POST",
-		Path:        "/admin/whatsapp/update-status",
+		Path:        "/api/v1/admin/whatsapp/update-status",
 		Summary:     "Update WhatsApp connection status",
 		Description: "Updates WhatsApp session connection status (internal use)",
 		Tags:        []string{"Admin", "WhatsApp"},
@@ -95,7 +95,7 @@ func NewWhatsAppAdminRouter(
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-conversation-history",
 		Method:      "POST",
-		Path:        "/admin/whatsapp/conversation-history",
+		Path:        "/api/v1/admin/whatsapp/conversation-history",
 		Summary:     "Get conversation message history",
 		Description: "Retrieves message history for a specific WhatsApp conversation",
 		Tags:        []string{"Admin", "WhatsApp", "Conversations"},

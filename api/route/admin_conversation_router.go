@@ -41,11 +41,11 @@ type SetTemporaryResponse struct {
 
 func SetupAdminConversationRoutes(humaAPI huma.API, adminConvUC d.AdminConversationUseCase) {
 
-	// GET /admin/conversations - List all conversations
+	// GET /api/v1/admin/conversations - List all conversations
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-admin-conversations",
 		Method:      "POST",
-		Path:        "/admin/conversations/get-all",
+		Path:        "/api/v1/admin/conversations/get-all",
 		Summary:     "Get all conversations for admin panel",
 		Description: "Retrieves paginated list of conversations with filters (WhatsApp-like view)",
 		Tags:        []string{"Admin - Conversations"},
@@ -68,11 +68,11 @@ func SetupAdminConversationRoutes(humaAPI huma.API, adminConvUC d.AdminConversat
 		return &GetConversationsResponse{Body: result}, nil
 	})
 
-	// GET /admin/conversations/:id/messages - Get conversation messages
+	// GET /api/v1/admin/conversations/:id/messages - Get conversation messages
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "get-conversation-messages",
 		Method:      "POST",
-		Path:        "/admin/conversations/get-messages",
+		Path:        "/api/v1/admin/conversations/get-messages",
 		Summary:     "Get conversation message history",
 		Description: "Retrieves all messages for a conversation",
 		Tags:        []string{"Admin - Conversations"},
@@ -88,11 +88,11 @@ func SetupAdminConversationRoutes(humaAPI huma.API, adminConvUC d.AdminConversat
 		return &GetConversationMessagesResponse{Body: result}, nil
 	})
 
-	// POST /admin/conversations/:id/send - Admin sends a message
+	// POST /api/v1/admin/conversations/:id/send - Admin sends a message
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "send-admin-message",
 		Method:      "POST",
-		Path:        "/admin/conversations/send",
+		Path:        "/api/v1/admin/conversations/send",
 		Summary:     "Admin sends a message",
 		Description: "Admin sends a message in a conversation (also sends via WhatsApp)",
 		Tags:        []string{"Admin - Conversations"},
@@ -113,11 +113,11 @@ func SetupAdminConversationRoutes(humaAPI huma.API, adminConvUC d.AdminConversat
 		return &SendAdminMessageResponse{Body: result}, nil
 	})
 
-	// POST /admin/conversations/:id/mark-read - Mark messages as read
+	// POST /api/v1/admin/conversations/:id/mark-read - Mark messages as read
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "mark-messages-read",
 		Method:      "POST",
-		Path:        "/admin/conversations/mark-read",
+		Path:        "/api/v1/admin/conversations/mark-read",
 		Summary:     "Mark messages as read",
 		Description: "Marks all messages in a conversation as read by admin",
 		Tags:        []string{"Admin - Conversations"},
@@ -128,11 +128,11 @@ func SetupAdminConversationRoutes(humaAPI huma.API, adminConvUC d.AdminConversat
 		return &MarkMessagesReadResponse{Body: result}, nil
 	})
 
-	// POST /admin/users/:id/block - Block a user
+	// POST /api/v1/admin/users/:id/block - Block a user
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "block-user",
 		Method:      "POST",
-		Path:        "/admin/users/block",
+		Path:        "/api/v1/admin/users/block",
 		Summary:     "Block or unblock a user",
 		Description: "Blocks or unblocks a user from using the chatbot",
 		Tags:        []string{"Admin - Users"},
@@ -153,11 +153,11 @@ func SetupAdminConversationRoutes(humaAPI huma.API, adminConvUC d.AdminConversat
 		return &BlockUserResponse{Body: result}, nil
 	})
 
-	// DELETE /admin/conversations/:id - Delete a conversation
+	// DELETE /api/v1/admin/conversations/:id - Delete a conversation
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "delete-conversation",
 		Method:      "POST",
-		Path:        "/admin/conversations/delete",
+		Path:        "/api/v1/admin/conversations/delete",
 		Summary:     "Delete a conversation",
 		Description: "Soft deletes a conversation (marks as inactive)",
 		Tags:        []string{"Admin - Conversations"},
@@ -168,11 +168,11 @@ func SetupAdminConversationRoutes(humaAPI huma.API, adminConvUC d.AdminConversat
 		return &DeleteConversationResponse{Body: result}, nil
 	})
 
-	// POST /admin/conversations/:id/temporary - Set conversation as temporary
+	// POST /api/v1/admin/conversations/:id/temporary - Set conversation as temporary
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "set-conversation-temporary",
 		Method:      "POST",
-		Path:        "/admin/conversations/set-temporary",
+		Path:        "/api/v1/admin/conversations/set-temporary",
 		Summary:     "Enable/disable temporary conversation",
 		Description: "Sets conversation to auto-delete after specified hours",
 		Tags:        []string{"Admin - Conversations"},

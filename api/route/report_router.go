@@ -23,7 +23,7 @@ func RegisterReportRoutes(humaAPI huma.API, reportUseCase domain.ReportUseCase) 
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "generate-monthly-report",
 		Method:      "POST",
-		Path:        "/admin/reports/generate-monthly",
+		Path:        "/api/v1/admin/reports/generate-monthly",
 		Summary:     "Generate monthly PDF report",
 		Description: "Generates a comprehensive monthly analytics report in PDF format using Typst. The report includes cost analysis, user activity, conversation metrics, top queries, and system health.",
 		Tags:        []string{"Reports"},
@@ -45,7 +45,7 @@ func RegisterReportRoutes(humaAPI huma.API, reportUseCase domain.ReportUseCase) 
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "download-report",
 		Method:      "GET",
-		Path:        "/admin/reports/download/{filename}",
+		Path:        "/api/v1/admin/reports/download/{filename}",
 		Summary:     "Download generated report",
 		Description: "Downloads a previously generated report PDF file",
 		Tags:        []string{"Reports"},
@@ -76,7 +76,7 @@ func RegisterReportRoutes(humaAPI huma.API, reportUseCase domain.ReportUseCase) 
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "list-reports",
 		Method:      "POST",
-		Path:        "/admin/reports/list",
+		Path:        "/api/v1/admin/reports/list",
 		Summary:     "List all generated reports",
 		Description: "Returns a list of all available report files",
 		Tags:        []string{"Reports"},
