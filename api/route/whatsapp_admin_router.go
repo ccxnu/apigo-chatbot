@@ -77,13 +77,13 @@ func NewWhatsAppAdminRouter(
 		}
 		// Handle optional fields
 		if input.Body.PhoneNumber != nil {
-			params.PhoneNumber = *input.Body.PhoneNumber
+			params.PhoneNumber = input.Body.PhoneNumber
 		}
 		if input.Body.DeviceName != nil {
-			params.DeviceName = *input.Body.DeviceName
+			params.DeviceName = input.Body.DeviceName
 		}
 		if input.Body.Platform != nil {
-			params.Platform = *input.Body.Platform
+			params.Platform = input.Body.Platform
 		}
 		if input.Body.Connected != nil {
 			params.Connected = *input.Body.Connected

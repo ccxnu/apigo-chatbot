@@ -26,17 +26,17 @@ type PendingRegistration struct {
 
 // OTPVerificationResult represents the result of OTP verification
 type OTPVerificationResult struct {
-	Success        bool   `json:"success" db:"success"`
-	Code           string `json:"code" db:"code"`
-	Message        string `json:"message" db:"message"`
-	PendingID      *int   `json:"pendingId,omitempty" db:"pending_id"`
-	IdentityNumber string `json:"identityNumber,omitempty" db:"identity_number"`
-	Name           string `json:"name,omitempty" db:"name"`
-	Email          string `json:"email,omitempty" db:"email"`
-	Phone          string `json:"phone,omitempty" db:"phone"`
-	Role           string `json:"role,omitempty" db:"role"`
-	UserType       string `json:"userType,omitempty" db:"user_type"`
-	Details        Data   `json:"details,omitempty" db:"details"`
+	Success        bool    `json:"success" db:"success"`
+	Code           string  `json:"code" db:"code"`
+	Message        string  `json:"message" db:"message"`
+	PendingID      *int    `json:"pendingId,omitempty" db:"pending_id"`
+	IdentityNumber *string `json:"identityNumber,omitempty" db:"identity_number"`
+	Name           *string `json:"name,omitempty" db:"name"`
+	Email          *string `json:"email,omitempty" db:"email"`
+	Phone          *string `json:"phone,omitempty" db:"phone"`
+	Role           *string `json:"role,omitempty" db:"role"`
+	UserType       *string `json:"userType,omitempty" db:"user_type"`
+	Details        Data    `json:"details,omitempty" db:"details"`
 }
 
 // CreatePendingRegistrationParams parameters for creating pending registration

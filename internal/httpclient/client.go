@@ -50,10 +50,12 @@ func (c *httpClient) addHeaders(req domain.HTTPRequest) http.Header {
 // Do executes an HTTP request and returns a Result with the response
 func (c *httpClient) Do(ctx context.Context, req domain.HTTPRequest, result any) error {
 	var body io.Reader
+	var jsonData []byte
 
 	// Prepare request body (JSON marshaling)
 	if req.Body != nil {
-		jsonData, err := json.Marshal(req.Body)
+		var err error
+		jsonData, err = json.Marshal(req.Body)
 		if err != nil {
 			err = fmt.Errorf("Failed to marshal request data: %w", err)
 			return err
@@ -69,6 +71,17 @@ func (c *httpClient) Do(ctx context.Context, req domain.HTTPRequest, result any)
 	}
 
 	request.Header = c.addHeaders(req)
+
+	// Debug log disabled - uncomment to debug HTTP requests
+	/*
+	if len(jsonData) > 0 && req.URL != "" {
+		bodyPreview := string(jsonData)
+		if len(bodyPreview) > 1000 {
+			bodyPreview = bodyPreview[:1000] + "..."
+		}
+		fmt.Printf("\n=== HTTP Request to %s ===\n%s\n===\n\n", req.URL, bodyPreview)
+	}
+	*/
 
 	response, err := c.client.Do(request)
 

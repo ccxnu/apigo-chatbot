@@ -1,12 +1,9 @@
 package mailer
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"time"
 
 	d "api-chatbot/domain"
@@ -98,7 +95,7 @@ func (m *OTPMailer) SendOTPEmail(ctx context.Context, email, name, otpCode, user
 		userTypeText = "usuario externo"
 	}
 
-	// Build email request
+	// Build email request (matching TypeScript defaults)
 	emailReq := EmailRequest{
 		IDUser:         email,
 		IDInstitution:  0,
@@ -107,38 +104,37 @@ func (m *OTPMailer) SendOTPEmail(ctx context.Context, email, name, otpCode, user
 		ProcessDate:    currentTime.Format("2006-01-02 15:04:05"),
 		Process:        "CHATBOT_OTP_VERIFICATION",
 		Tipo:           "EMAIL",
-		Prioridad:      "ALTA",
+		Prioridad:      "MEDIA", // Changed from ALTA to match TypeScript default
 		Destinos:       []string{email},
 		Plantilla:      template,
 		ListaValsEmail: []string{name, email, otpCode, fecha, hora, userTypeText},
 		ListaVarsEmail: []string{"[nom_usuario]", "[nom_email]", "[codigo_otp]", "[fecha]", "[hora]", "[tipo_usuario]"},
 		Asunto:         subject,
-		NomEnvia:       m.senderEmail,
-		CorreoEnvia:    m.senderEmail,
-		Intentos:       1,
+		NomEnvia:       "automatizaciones@tikee.tech", // AWS SES verified email
+		CorreoEnvia:    "automatizaciones@tikee.tech", // AWS SES verified email - must match NomEnvia
+		Intentos:       0, // Changed from 1 to match TypeScript default
 	}
 
-	// Marshal request body
-	body, err := json.Marshal(emailReq)
-	if err != nil {
-		slog.Error("Failed to marshal email request", "error", err)
-		return fmt.Errorf("failed to marshal email request: %w", err)
-	}
+	// Log the request for debugging
+	slog.Debug("Sending OTP email request",
+		"email", email,
+		"destinos", emailReq.Destinos,
+		"process", emailReq.Process,
+	)
 
-	// Create HTTP request
+	// Create HTTP request - HTTPClient will marshal the body automatically
 	req := d.HTTPRequest{
 		URL:    m.tikeeURL,
 		Method: "POST",
-		Headers: map[string]string{
-			"Content-Type": "application/json",
+		AdditionalHeaders: []d.HTTPHeader{
+			{Key: "Content-Type", Value: "application/json"},
 		},
-		Body: body,
+		Body: emailReq, // Pass the struct directly, not marshaled bytes
 	}
 
 	// Send request
 	var response map[string]interface{}
-	err = m.httpClient.Do(ctx, req, &response)
-	if err != nil {
+	if err := m.httpClient.Do(ctx, req, &response); err != nil {
 		slog.Error("Failed to send OTP email via Tikee API",
 			"error", err,
 			"email", email,
@@ -146,15 +142,23 @@ func (m *OTPMailer) SendOTPEmail(ctx context.Context, email, name, otpCode, user
 		return fmt.Errorf("failed to send OTP email: %w", err)
 	}
 
+	// Log full response for debugging
+	slog.Debug("Tikee API response", "response", response)
+
 	// Check response
 	if code, ok := response["code"].(string); ok && code == "COD_ERR" {
 		errMsg := "Unknown error"
 		if msg, ok := response["message"].(string); ok {
 			errMsg = msg
 		}
+		// Also check for "info" field which may contain more details
+		if info, ok := response["info"].(string); ok && info != "" {
+			errMsg = info
+		}
 		slog.Error("Tikee API returned error",
 			"code", code,
 			"message", errMsg,
+			"fullResponse", response,
 			"email", email,
 		)
 		return fmt.Errorf("tikee API error: %s", errMsg)
@@ -178,10 +182,6 @@ func (m *OTPMailer) getDefaultOTPTemplate() string {
           <tbody>
             <tr>
               <td style="font-family:Arial;font-size:12px;color:#333333">
-                <p style="text-align:center;margin:20px">
-                    <img src="[img_ifi]" alt="Logo de la institución" border="0" width="250" height="auto">
-                </p>
-
                 <p style="text-align:justify;margin-top:30px">
                   <b style="font-family:Georgia;font-size:12pt">Saludos [nom_usuario]</b>:
                 </p>
@@ -236,60 +236,6 @@ func (m *OTPMailer) getDefaultOTPTemplate() string {
 </table>`
 }
 
-// SendOTPEmailDirect sends an OTP email using direct HTTP call (for testing or when HTTPClient is unavailable)
-func SendOTPEmailDirect(tikeeURL, senderEmail, recipientEmail, name, otpCode, userType string) error {
-	template := getDefaultTemplate()
-	subject := "Código de verificación - Chatbot ISTS"
-
-	currentTime := time.Now()
-	fecha := currentTime.Format("2006-01-02")
-	hora := currentTime.Format("15:04:05")
-
-	userTypeText := "usuario"
-	switch userType {
-	case "institute":
-		userTypeText = "miembro de la institución"
-	case "external":
-		userTypeText = "usuario externo"
-	}
-
-	emailReq := EmailRequest{
-		IDUser:         recipientEmail,
-		IDInstitution:  0,
-		IDSolution:     0,
-		IDRequest:      fmt.Sprintf("otp-%d", time.Now().Unix()),
-		ProcessDate:    currentTime.Format("2006-01-02 15:04:05"),
-		Process:        "CHATBOT_OTP_VERIFICATION",
-		Tipo:           "EMAIL",
-		Prioridad:      "ALTA",
-		Destinos:       []string{recipientEmail},
-		Plantilla:      template,
-		ListaValsEmail: []string{name, recipientEmail, otpCode, fecha, hora, userTypeText},
-		ListaVarsEmail: []string{"[nom_usuario]", "[nom_email]", "[codigo_otp]", "[fecha]", "[hora]", "[tipo_usuario]"},
-		Asunto:         subject,
-		NomEnvia:       senderEmail,
-		CorreoEnvia:    senderEmail,
-		Intentos:       1,
-	}
-
-	body, err := json.Marshal(emailReq)
-	if err != nil {
-		return fmt.Errorf("failed to marshal email request: %w", err)
-	}
-
-	resp, err := http.Post(tikeeURL, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("email API returned status %d", resp.StatusCode)
-	}
-
-	return nil
-}
-
 func getDefaultTemplate() string {
 	return `<table bgcolor="#fefefe" border="0" cellpadding="5" cellspacing="0" width="100%">
   <tbody>
@@ -299,10 +245,6 @@ func getDefaultTemplate() string {
           <tbody>
             <tr>
               <td style="font-family:Arial;font-size:12px;color:#333333">
-                <p style="text-align:center;margin:20px">
-                    <img src="[img_ifi]" alt="Logo de la institución" border="0" width="250" height="auto">
-                </p>
-
                 <p style="text-align:justify;margin-top:30px">
                   <b style="font-family:Georgia;font-size:12pt">Saludos [nom_usuario]</b>:
                 </p>
@@ -332,7 +274,7 @@ func getDefaultTemplate() string {
                   </tbody>
                 </table>
 
-                <p style="text-align:justify;background-color:#fff3cd;padding:15px;border-left:4px solid:#ffcc00;margin:20px 0">
+                <p style="text-align:justify;background-color:#fff3cd;padding:15px;border-left:4px solid:#ffcc00;margin:5px 0">
                   <b>⚠ Importante:</b> Este código expirará en 10 minutos. No compartas este código con nadie.
                 </p>
 

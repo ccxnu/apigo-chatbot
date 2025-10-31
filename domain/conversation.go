@@ -94,7 +94,7 @@ type CreateConversationMessageParams struct {
 
 type CreateConversationMessageResult struct {
 	dal.DbResult
-	MessageID int `json:"messageId" db:"o_cvm_id"`
+	MessageID *int `json:"messageId,omitempty" db:"o_cvm_id"`
 }
 
 // Conversation Repository & UseCase Interfaces

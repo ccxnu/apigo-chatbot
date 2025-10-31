@@ -5,14 +5,17 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 
 	"api-chatbot/domain"
 	"api-chatbot/internal/llm"
+	"api-chatbot/internal/mailer"
 	"api-chatbot/internal/whatsapp"
 	"api-chatbot/internal/whatsapp/handlers"
+	"api-chatbot/usecase"
 )
 
 func InitializeWhatsAppService(
@@ -20,6 +23,7 @@ func InitializeWhatsAppService(
 	sessionUC domain.WhatsAppSessionUseCase,
 	chunkUC domain.ChunkUseCase,
 	userUC domain.WhatsAppUserUseCase,
+	regUC domain.RegistrationUseCase,
 	convUC domain.ConversationUseCase,
 ) (*whatsapp.Service, error) {
 	param, exists := app.Cache.Get("WHATSAPP_CONFIG")
@@ -83,7 +87,7 @@ func InitializeWhatsAppService(
 	}
 
 	messageHandlers := []whatsapp.MessageHandler{
-		handlers.NewUserValidationHandler(userUC, convUC, waClient, app.Cache, 1000),
+		handlers.NewRegistrationHandler(regUC, userUC, convUC, waClient, app.Cache, 1000),
 		handlers.NewCommandHandler(waClient, app.Cache, 100),
 		handlers.NewRAGHandler(chunkUC, convUC, llmProvider, waClient, app.Cache, 50),
 	}
@@ -163,4 +167,58 @@ func createLLMProvider(cache domain.ParameterCache) (llm.Provider, error) {
 	)
 
 	return llmProvider, nil
+}
+
+// InitializeRegistrationUseCase creates and initializes the registration use case with OTP mailer
+func InitializeRegistrationUseCase(
+	regRepo domain.RegistrationRepository,
+	userRepo domain.WhatsAppUserRepository,
+	userUC domain.WhatsAppUserUseCase,
+	httpClient domain.HTTPClient,
+	cache domain.ParameterCache,
+	timeout time.Duration,
+) domain.RegistrationUseCase {
+	// Get email configuration from parameters
+	var tikeeURL, senderEmail string
+
+	if param, exists := cache.Get("EMAIL_CONFIG"); exists {
+		if data, err := param.GetDataAsMap(); err == nil {
+			if url, ok := data["tikeeURL"].(string); ok {
+				tikeeURL = url
+			}
+			if sender, ok := data["senderEmail"].(string); ok {
+				senderEmail = sender
+			}
+		}
+	}
+
+	// Default values if not configured
+	if tikeeURL == "" {
+		tikeeURL = "http://20.84.48.225:5056/api/emails/enviarDirecto"
+		slog.Warn("EMAIL_CONFIG.tikeeURL not found, using default", "url", tikeeURL)
+	}
+	if senderEmail == "" {
+		senderEmail = "automatizaciones@tikee.tech"
+		slog.Warn("EMAIL_CONFIG.senderEmail not found, using default (AWS SES verified)", "email", senderEmail)
+	}
+
+	// Create OTP mailer
+	otpMailer := mailer.NewOTPMailer(httpClient, tikeeURL, senderEmail, cache, timeout)
+
+	// Create registration use case
+	regUC := usecase.NewRegistrationUseCase(
+		regRepo,
+		userRepo,
+		userUC,
+		otpMailer,
+		cache,
+		timeout,
+	)
+
+	slog.Info("Registration use case initialized",
+		"tikeeURL", tikeeURL,
+		"senderEmail", senderEmail,
+	)
+
+	return regUC
 }

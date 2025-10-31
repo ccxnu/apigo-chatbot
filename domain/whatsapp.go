@@ -11,9 +11,9 @@ import (
 type WhatsAppSession struct {
 	ID          int        `json:"id" db:"wss_id"`
 	SessionName string     `json:"sessionName" db:"wss_session_name"`
-	PhoneNumber string     `json:"phoneNumber" db:"wss_phone_number"`
-	DeviceName  string     `json:"deviceName" db:"wss_device_name"`
-	Platform    string     `json:"platform" db:"wss_platform"`
+	PhoneNumber *string    `json:"phoneNumber,omitempty" db:"wss_phone_number"`
+	DeviceName  *string    `json:"deviceName,omitempty" db:"wss_device_name"`
+	Platform    *string    `json:"platform,omitempty" db:"wss_platform"`
 	QRCode      *string    `json:"qrCode,omitempty" db:"wss_qr_code"`
 	Connected   bool       `json:"connected" db:"wss_connected"`
 	LastSeen    *time.Time `json:"lastSeen,omitempty" db:"wss_last_seen"`
@@ -44,9 +44,9 @@ type IncomingMessage struct {
 
 type UpdateSessionStatusParams struct {
 	SessionName string
-	PhoneNumber string
-	DeviceName  string
-	Platform    string
+	PhoneNumber *string
+	DeviceName  *string
+	Platform    *string
 	Connected   bool
 }
 

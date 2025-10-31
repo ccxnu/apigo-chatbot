@@ -74,6 +74,10 @@ func initializeWhatsAppService(app config.Application, timeout time.Duration) *w
 	httpClient := httpclient.NewHTTPClient(app.Cache)
 	userUC := usecase.NewWhatsAppUserUseCase(userRepo, httpClient, app.Cache, timeout)
 
+	// Registration use case (for OTP-based registration)
+	regRepo := repository.NewRegistrationRepository(dataAccess)
+	regUC := config.InitializeRegistrationUseCase(regRepo, userRepo, userUC, httpClient, app.Cache, timeout)
+
 	// Conversation use case
 	convRepo := repository.NewConversationRepository(dataAccess)
 	convUC := usecase.NewConversationUseCase(convRepo, app.Cache, timeout)
@@ -85,7 +89,7 @@ func initializeWhatsAppService(app config.Application, timeout time.Duration) *w
 	chunkUC := usecase.NewChunkUseCase(chunkRepo, statsRepo, app.Cache, embeddingService, timeout)
 
 	// Initialize WhatsApp service (returns nil if disabled in config)
-	service, err := config.InitializeWhatsAppService(app, sessionUC, chunkUC, userUC, convUC)
+	service, err := config.InitializeWhatsAppService(app, sessionUC, chunkUC, userUC, regUC, convUC)
 	if err != nil {
 		slog.Error("Failed to initialize WhatsApp service", "error", err)
 		return nil

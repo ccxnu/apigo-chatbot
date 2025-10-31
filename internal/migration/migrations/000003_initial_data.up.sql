@@ -194,6 +194,46 @@ begin
         values ('ERROR_CODES', 'ERR_EXTERNAL_USER_INFO_REQUIRED', '{"message": "Usuario externo - por favor proporciona tu nombre y correo electrónico"}'::jsonb, 'External user information required');
     end if;
 
+    -- =====================================================
+    -- OTP Registration Error Codes
+    -- =====================================================
+
+    -- ERR_INVALID_OTP
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_INVALID_OTP') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_INVALID_OTP', '{"message": "❌ Código incorrecto. Por favor verifica e intenta nuevamente."}'::jsonb, 'Invalid OTP code');
+    end if;
+
+    -- ERR_OTP_EXPIRED
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_OTP_EXPIRED') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_OTP_EXPIRED', '{"message": "⏰ El código ha expirado. Escribe ''reenviar'' para generar un nuevo código."}'::jsonb, 'OTP code has expired');
+    end if;
+
+    -- ERR_MAX_ATTEMPTS
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_MAX_ATTEMPTS') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_MAX_ATTEMPTS', '{"message": "🚫 Has excedido el número máximo de intentos. Escribe ''reenviar'' para generar un nuevo código."}'::jsonb, 'Maximum OTP verification attempts exceeded');
+    end if;
+
+    -- ERR_NO_PENDING_REG
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_NO_PENDING_REG') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_NO_PENDING_REG', '{"message": "❌ No tienes un registro pendiente. Por favor envía tu cédula para iniciar el registro."}'::jsonb, 'No pending registration found');
+    end if;
+
+    -- ERR_NO_PENDING_REGISTRATION (alias for ERR_NO_PENDING_REG)
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_NO_PENDING_REGISTRATION') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_NO_PENDING_REGISTRATION', '{"message": "❌ No tienes un registro pendiente. Por favor envía tu cédula para iniciar el registro."}'::jsonb, 'No pending registration found (alias)');
+    end if;
+
+    -- ERR_IDENTITY_ALREADY_REGISTERED
+    if not exists (select 1 from cht_parameters where prm_code = 'ERR_IDENTITY_ALREADY_REGISTERED') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values ('ERROR_CODES', 'ERR_IDENTITY_ALREADY_REGISTERED', '{"message": "❌ Esta cédula ya está registrada con otro número de WhatsApp."}'::jsonb, 'Identity number already registered with different WhatsApp');
+    end if;
+
     -- ERR_UPDATE_WHATSAPP_SESSION
     if not exists (select 1 from cht_parameters where prm_code = 'ERR_UPDATE_WHATSAPP_SESSION') then
         insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
@@ -377,9 +417,21 @@ begin
             'EMAIL_CONFIGURATION',
             'EMAIL_CONFIG',
             '{
-                "sender": "noreply@example.com"
+                "senderEmail": "automatizaciones@tikee.tech",
+                "tikeeURL": "http://20.84.48.225:5056/api/emails/enviarDirecto"
             }'::jsonb,
-            'Email sender configuration'
+            'Email sender and Tikee API configuration for OTP emails (AWS SES verified)'
+        );
+    end if;
+
+    -- OTP Expiration Configuration
+    if not exists (select 1 from cht_parameters where prm_code = 'OTP_EXPIRATION_MINUTES') then
+        insert into cht_parameters (prm_name, prm_code, prm_data, prm_description)
+        values (
+            'OTP_CONFIGURATION',
+            'OTP_EXPIRATION_MINUTES',
+            '{"minutes": 10}'::jsonb,
+            'OTP code expiration time in minutes'
         );
     end if;
 
@@ -742,7 +794,7 @@ begin
                 "provider": "groq",
                 "apiKey": "YOUR_GROQ_API_KEY_HERE",
                 "baseURL": "https://api.groq.com/openai/v1",
-                "model": "llama-3.3-70b-versatile",
+                "model": "llama-3.1-8b-instant",
                 "temperature": 0.7,
                 "maxTokens": 1000,
                 "timeout": 30,

@@ -139,7 +139,7 @@ func (uc *registrationUseCase) InitiateRegistration(
 		}
 	}
 
-	otpExpiresAt := time.Now().Add(time.Duration(otpExpirationMinutes) * time.Minute)
+	otpExpiresAt := time.Now().UTC().Add(time.Duration(otpExpirationMinutes) * time.Minute)
 
 	// Create pending registration
 	createParams := d.CreatePendingRegistrationParams{
@@ -234,13 +234,13 @@ func (uc *registrationUseCase) VerifyAndRegister(
 		return d.Error[*d.WhatsAppUser](uc.paramCache, verifyResult.Code)
 	}
 
-	// Create the user
+	// Create the user - dereference pointer fields
 	createUserParams := d.CreateUserParams{
-		IdentityNumber: verifyResult.IdentityNumber,
-		Name:           verifyResult.Name,
-		Email:          verifyResult.Email,
-		Phone:          verifyResult.Phone,
-		Role:           verifyResult.Role,
+		IdentityNumber: *verifyResult.IdentityNumber,
+		Name:           *verifyResult.Name,
+		Email:          *verifyResult.Email,
+		Phone:          *verifyResult.Phone,
+		Role:           *verifyResult.Role,
 		WhatsApp:       whatsapp,
 		Details:        verifyResult.Details,
 	}
@@ -364,7 +364,7 @@ func (uc *registrationUseCase) ResendOTP(
 		}
 	}
 
-	newExpiresAt := time.Now().Add(time.Duration(otpExpirationMinutes) * time.Minute)
+	newExpiresAt := time.Now().UTC().Add(time.Duration(otpExpirationMinutes) * time.Minute)
 
 	// Update pending registration with new OTP
 	updateParams := d.CreatePendingRegistrationParams{
@@ -543,7 +543,7 @@ func (uc *registrationUseCase) CompleteExternalRegistration(
 		}
 	}
 
-	otpExpiresAt := time.Now().Add(time.Duration(otpExpirationMinutes) * time.Minute)
+	otpExpiresAt := time.Now().UTC().Add(time.Duration(otpExpirationMinutes) * time.Minute)
 
 	// Update pending registration with name, email, and OTP
 	updateParams := d.CreatePendingRegistrationParams{

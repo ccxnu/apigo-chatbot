@@ -190,9 +190,10 @@ func (s *Service) handleConnected() {
 	device := s.client.DeviceStore
 
 	connected := true
+	phoneNumber := device.ID.User
 	params := d.UpdateSessionStatusParams{
 		SessionName: s.sessionName,
-		PhoneNumber: device.ID.User,
+		PhoneNumber: &phoneNumber,
 		Connected:   connected,
 	}
 
@@ -237,11 +238,12 @@ func (s *Service) handlePairSuccess(evt *events.PairSuccess) {
 	ctx := context.Background()
 
 	connected := true
+	phoneNumber := evt.ID.User
 	platform := evt.Platform
 	params := d.UpdateSessionStatusParams{
 		SessionName: s.sessionName,
-		PhoneNumber: evt.ID.User,
-		Platform:    platform,
+		PhoneNumber: &phoneNumber,
+		Platform:    &platform,
 		Connected:   connected,
 	}
 
