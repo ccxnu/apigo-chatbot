@@ -200,6 +200,7 @@ func (h *RAGHandler) storeAssistantMessage(ctx context.Context, conversationID i
 		ConversationID:   conversationID,
 		MessageID:        fmt.Sprintf("assistant_%d", timestamp),
 		FromMe:           true,
+		SenderType:       "bot",
 		MessageType:      "text",
 		Body:             &message,
 		Timestamp:        timestamp,

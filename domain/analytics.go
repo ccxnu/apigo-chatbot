@@ -12,16 +12,16 @@ import (
 type CostAnalytics struct {
 	PeriodStart              time.Time `json:"periodStart" db:"period_start"`
 	PeriodEnd                time.Time `json:"periodEnd" db:"period_end"`
-	TotalCost                float64   `json:"totalCost" db:"total_cost"`
-	LLMCost                  float64   `json:"llmCost" db:"llm_cost"`
-	EmbeddingCost            float64   `json:"embeddingCost" db:"embedding_cost"`
-	PromptTokens             int64     `json:"promptTokens" db:"prompt_tokens"`
-	CompletionTokens         int64     `json:"completionTokens" db:"completion_tokens"`
-	TotalTokens              int64     `json:"totalTokens" db:"total_tokens"`
-	EmbeddingTokens          int64     `json:"embeddingTokens" db:"embedding_tokens"`
-	ConversationCount        int64     `json:"conversationCount" db:"conversation_count"`
-	CostPerConversation      float64   `json:"costPerConversation" db:"cost_per_conversation"`
-	AvgTokensPerConversation float64   `json:"avgTokensPerConversation" db:"avg_tokens_per_conversation"`
+	TotalCost                *float64  `json:"totalCost" db:"total_cost"`
+	LLMCost                  *float64  `json:"llmCost" db:"llm_cost"`
+	EmbeddingCost            *float64  `json:"embeddingCost" db:"embedding_cost"`
+	PromptTokens             *int64    `json:"promptTokens" db:"prompt_tokens"`
+	CompletionTokens         *int64    `json:"completionTokens" db:"completion_tokens"`
+	TotalTokens              *int64    `json:"totalTokens" db:"total_tokens"`
+	EmbeddingTokens          *int64    `json:"embeddingTokens" db:"embedding_tokens"`
+	ConversationCount        *int64    `json:"conversationCount" db:"conversation_count"`
+	CostPerConversation      *float64  `json:"costPerConversation" db:"cost_per_conversation"`
+	AvgTokensPerConversation *float64  `json:"avgTokensPerConversation" db:"avg_tokens_per_conversation"`
 }
 
 // =====================================================
@@ -37,7 +37,7 @@ type TokenUsage struct {
 	TotalTokens              int64     `json:"totalTokens" db:"total_tokens"`
 	MessageCount             int64     `json:"messageCount" db:"message_count"`
 	ConversationCount        int64     `json:"conversationCount" db:"conversation_count"`
-	AvgTokensPerMessage      float64   `json:"avgTokensPerMessage" db:"avg_tokens_per_message"`
+	AvgTokensPerMessage      *float64  `json:"avgTokensPerMessage" db:"avg_tokens_per_message"`
 }
 
 // =====================================================
@@ -45,16 +45,16 @@ type TokenUsage struct {
 // =====================================================
 
 type ActiveUsers struct {
-	Period                 string  `json:"period" db:"period"`
-	TotalUsers             int64   `json:"totalUsers" db:"total_users"`
-	ActiveUsers            int64   `json:"activeUsers" db:"active_users"`
-	NewUsers               int64   `json:"newUsers" db:"new_users"`
-	ReturningUsers         int64   `json:"returningUsers" db:"returning_users"`
-	Students               int64   `json:"students" db:"students"`
-	Professors             int64   `json:"professors" db:"professors"`
-	External               int64   `json:"external" db:"external"`
-	AvgMessagesPerUser     float64 `json:"avgMessagesPerUser" db:"avg_messages_per_user"`
-	AvgSessionsPerUser     float64 `json:"avgSessionsPerUser" db:"avg_sessions_per_user"`
+	Period                 string   `json:"period" db:"period"`
+	TotalUsers             int64    `json:"totalUsers" db:"total_users"`
+	ActiveUsers            int64    `json:"activeUsers" db:"active_users"`
+	NewUsers               int64    `json:"newUsers" db:"new_users"`
+	ReturningUsers         int64    `json:"returningUsers" db:"returning_users"`
+	Students               int64    `json:"students" db:"students"`
+	Professors             int64    `json:"professors" db:"professors"`
+	External               int64    `json:"external" db:"external"`
+	AvgMessagesPerUser     *float64 `json:"avgMessagesPerUser" db:"avg_messages_per_user"`
+	AvgSessionsPerUser     *float64 `json:"avgSessionsPerUser" db:"avg_sessions_per_user"`
 }
 
 // =====================================================
@@ -62,15 +62,15 @@ type ActiveUsers struct {
 // =====================================================
 
 type ConversationMetrics struct {
-	Period                      string  `json:"period" db:"period"`
-	TotalConversations          int64   `json:"totalConversations" db:"total_conversations"`
-	ActiveConversations         int64   `json:"activeConversations" db:"active_conversations"`
-	NewConversations            int64   `json:"newConversations" db:"new_conversations"`
-	AvgMessagesPerConversation  float64 `json:"avgMessagesPerConversation" db:"avg_messages_per_conversation"`
-	ConversationsWithAdminHelp  int64   `json:"conversationsWithAdminHelp" db:"conversations_with_admin_help"`
-	AdminInterventionRate       float64 `json:"adminInterventionRate" db:"admin_intervention_rate"`
-	BlockedConversations        int64   `json:"blockedConversations" db:"blocked_conversations"`
-	TemporaryConversations      int64   `json:"temporaryConversations" db:"temporary_conversations"`
+	Period                      string   `json:"period" db:"period"`
+	TotalConversations          int64    `json:"totalConversations" db:"total_conversations"`
+	ActiveConversations         int64    `json:"activeConversations" db:"active_conversations"`
+	NewConversations            int64    `json:"newConversations" db:"new_conversations"`
+	AvgMessagesPerConversation  *float64 `json:"avgMessagesPerConversation" db:"avg_messages_per_conversation"`
+	ConversationsWithAdminHelp  int64    `json:"conversationsWithAdminHelp" db:"conversations_with_admin_help"`
+	AdminInterventionRate       *float64 `json:"adminInterventionRate" db:"admin_intervention_rate"`
+	BlockedConversations        int64    `json:"blockedConversations" db:"blocked_conversations"`
+	TemporaryConversations      int64    `json:"temporaryConversations" db:"temporary_conversations"`
 }
 
 // =====================================================
@@ -78,14 +78,14 @@ type ConversationMetrics struct {
 // =====================================================
 
 type MessageAnalytics struct {
-	Period              string  `json:"period" db:"period"`
-	TotalMessages       int64   `json:"totalMessages" db:"total_messages"`
-	UserMessages        int64   `json:"userMessages" db:"user_messages"`
-	BotMessages         int64   `json:"botMessages" db:"bot_messages"`
-	AdminMessages       int64   `json:"adminMessages" db:"admin_messages"`
-	AvgMessagesPerDay   float64 `json:"avgMessagesPerDay" db:"avg_messages_per_day"`
-	PeakHour            int     `json:"peakHour" db:"peak_hour"`
-	PeakHourCount       int64   `json:"peakHourCount" db:"peak_hour_count"`
+	Period              string   `json:"period" db:"period"`
+	TotalMessages       int64    `json:"totalMessages" db:"total_messages"`
+	UserMessages        int64    `json:"userMessages" db:"user_messages"`
+	BotMessages         int64    `json:"botMessages" db:"bot_messages"`
+	AdminMessages       int64    `json:"adminMessages" db:"admin_messages"`
+	AvgMessagesPerDay   *float64 `json:"avgMessagesPerDay" db:"avg_messages_per_day"`
+	PeakHour            int      `json:"peakHour" db:"peak_hour"`
+	PeakHourCount       int64    `json:"peakHourCount" db:"peak_hour_count"`
 }
 
 // =====================================================
@@ -95,7 +95,7 @@ type MessageAnalytics struct {
 type TopQuery struct {
 	QueryText      string    `json:"queryText" db:"query_text"`
 	QueryCount     int64     `json:"queryCount" db:"query_count"`
-	AvgSimilarity  float64   `json:"avgSimilarity" db:"avg_similarity"`
+	AvgSimilarity  *float64  `json:"avgSimilarity" db:"avg_similarity"`
 	LastAsked      time.Time `json:"lastAsked" db:"last_asked"`
 	HasGoodAnswer  bool      `json:"hasGoodAnswer" db:"has_good_answer"`
 }
@@ -108,7 +108,7 @@ type KnowledgeUsage struct {
 	ChunkID       int       `json:"chunkId" db:"chunk_id"`
 	DocumentTitle string    `json:"documentTitle" db:"document_title"`
 	UsageCount    int64     `json:"usageCount" db:"usage_count"`
-	AvgSimilarity float64   `json:"avgSimilarity" db:"avg_similarity"`
+	AvgSimilarity *float64  `json:"avgSimilarity" db:"avg_similarity"`
 	LastUsed      time.Time `json:"lastUsed" db:"last_used"`
 }
 
@@ -117,9 +117,9 @@ type KnowledgeUsage struct {
 // =====================================================
 
 type SystemHealthMetric struct {
-	MetricName  string  `json:"metricName" db:"metric_name"`
-	MetricValue float64 `json:"metricValue" db:"metric_value"`
-	MetricUnit  string  `json:"metricUnit" db:"metric_unit"`
+	MetricName  string   `json:"metricName" db:"metric_name"`
+	MetricValue *float64 `json:"metricValue" db:"metric_value"`
+	MetricUnit  string   `json:"metricUnit" db:"metric_unit"`
 }
 
 // =====================================================
@@ -127,13 +127,13 @@ type SystemHealthMetric struct {
 // =====================================================
 
 type AnalyticsOverview struct {
-	CostThisMonth          float64   `json:"costThisMonth" db:"cost_this_month"`
+	CostThisMonth          *float64  `json:"costThisMonth" db:"cost_this_month"`
 	TokensThisMonth        int64     `json:"tokensThisMonth" db:"tokens_this_month"`
 	ActiveUsersToday       int64     `json:"activeUsersToday" db:"active_users_today"`
 	ConversationsThisMonth int64     `json:"conversationsThisMonth" db:"conversations_this_month"`
 	MessagesToday          int64     `json:"messagesToday" db:"messages_today"`
-	AvgResponseTimeMs      float64   `json:"avgResponseTimeMs" db:"avg_response_time_ms"`
-	AdminInterventionRate  float64   `json:"adminInterventionRate" db:"admin_intervention_rate"`
+	AvgResponseTimeMs      *float64  `json:"avgResponseTimeMs" db:"avg_response_time_ms"`
+	AdminInterventionRate  *float64  `json:"adminInterventionRate" db:"admin_intervention_rate"`
 	LastUpdated            time.Time `json:"lastUpdated" db:"last_updated"`
 }
 

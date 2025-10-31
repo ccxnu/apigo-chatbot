@@ -30,6 +30,7 @@ type ConversationMessage struct {
 	MessageID        string    `json:"messageId" db:"cvm_message_id"`
 	FromMe           bool      `json:"fromMe" db:"cvm_from_me"`
 	SenderName       *string   `json:"senderName,omitempty" db:"cvm_sender_name"`
+	SenderType       string    `json:"senderType" db:"cvm_sender_type"`
 	MessageType      string    `json:"messageType" db:"cvm_message_type"`
 	Body             *string   `json:"body,omitempty" db:"cvm_body"`
 	MediaURL         *string   `json:"mediaUrl,omitempty" db:"cvm_media_url"`
@@ -75,6 +76,7 @@ type CreateConversationMessageParams struct {
 	MessageID        string
 	FromMe           bool
 	SenderName       *string
+	SenderType       string
 	MessageType      string
 	Body             *string
 	MediaURL         *string

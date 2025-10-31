@@ -194,25 +194,73 @@ func PrepareMonthlyReportData(
 
 	// Cost Analytics
 	if costAnalytics != nil {
-		data.CostThisMonth = fmt.Sprintf("%.2f", costAnalytics.TotalCost)
-		data.LLMCost = fmt.Sprintf("%.2f", costAnalytics.LLMCost)
-		data.EmbeddingCost = fmt.Sprintf("%.2f", costAnalytics.EmbeddingCost)
-
-		if costAnalytics.TotalCost > 0 {
-			data.LLMCostPercent = fmt.Sprintf("%.1f", (costAnalytics.LLMCost/costAnalytics.TotalCost)*100)
-			data.EmbeddingCostPercent = fmt.Sprintf("%.1f", (costAnalytics.EmbeddingCost/costAnalytics.TotalCost)*100)
+		if costAnalytics.TotalCost != nil {
+			data.CostThisMonth = fmt.Sprintf("%.2f", *costAnalytics.TotalCost)
+		} else {
+			data.CostThisMonth = "0.00"
 		}
 
-		data.PromptTokens = formatNumber(costAnalytics.PromptTokens)
-		data.CompletionTokens = formatNumber(costAnalytics.CompletionTokens)
-		data.EmbeddingTokens = formatNumber(costAnalytics.EmbeddingTokens)
-		data.TotalTokens = formatNumber(costAnalytics.TotalTokens)
-		data.CostPerConversation = fmt.Sprintf("%.4f", costAnalytics.CostPerConversation)
-		data.AvgTokensPerConversation = fmt.Sprintf("%.0f", costAnalytics.AvgTokensPerConversation)
-		data.TokensThisMonth = formatNumber(costAnalytics.TotalTokens)
+		if costAnalytics.LLMCost != nil {
+			data.LLMCost = fmt.Sprintf("%.2f", *costAnalytics.LLMCost)
+		} else {
+			data.LLMCost = "0.00"
+		}
 
-		if activeUsers != nil && activeUsers.ActiveUsers > 0 {
-			data.CostPerActiveUser = fmt.Sprintf("%.2f", costAnalytics.TotalCost/float64(activeUsers.ActiveUsers))
+		if costAnalytics.EmbeddingCost != nil {
+			data.EmbeddingCost = fmt.Sprintf("%.2f", *costAnalytics.EmbeddingCost)
+		} else {
+			data.EmbeddingCost = "0.00"
+		}
+
+		if costAnalytics.TotalCost != nil && *costAnalytics.TotalCost > 0 {
+			if costAnalytics.LLMCost != nil {
+				data.LLMCostPercent = fmt.Sprintf("%.1f", (*costAnalytics.LLMCost/(*costAnalytics.TotalCost))*100)
+			}
+			if costAnalytics.EmbeddingCost != nil {
+				data.EmbeddingCostPercent = fmt.Sprintf("%.1f", (*costAnalytics.EmbeddingCost/(*costAnalytics.TotalCost))*100)
+			}
+		}
+
+		if costAnalytics.PromptTokens != nil {
+			data.PromptTokens = formatNumber(*costAnalytics.PromptTokens)
+		} else {
+			data.PromptTokens = "0"
+		}
+
+		if costAnalytics.CompletionTokens != nil {
+			data.CompletionTokens = formatNumber(*costAnalytics.CompletionTokens)
+		} else {
+			data.CompletionTokens = "0"
+		}
+
+		if costAnalytics.EmbeddingTokens != nil {
+			data.EmbeddingTokens = formatNumber(*costAnalytics.EmbeddingTokens)
+		} else {
+			data.EmbeddingTokens = "0"
+		}
+
+		if costAnalytics.TotalTokens != nil {
+			data.TotalTokens = formatNumber(*costAnalytics.TotalTokens)
+			data.TokensThisMonth = formatNumber(*costAnalytics.TotalTokens)
+		} else {
+			data.TotalTokens = "0"
+			data.TokensThisMonth = "0"
+		}
+
+		if costAnalytics.CostPerConversation != nil {
+			data.CostPerConversation = fmt.Sprintf("%.4f", *costAnalytics.CostPerConversation)
+		} else {
+			data.CostPerConversation = "0.0000"
+		}
+
+		if costAnalytics.AvgTokensPerConversation != nil {
+			data.AvgTokensPerConversation = fmt.Sprintf("%.0f", *costAnalytics.AvgTokensPerConversation)
+		} else {
+			data.AvgTokensPerConversation = "0"
+		}
+
+		if activeUsers != nil && activeUsers.ActiveUsers > 0 && costAnalytics.TotalCost != nil {
+			data.CostPerActiveUser = fmt.Sprintf("%.2f", *costAnalytics.TotalCost/float64(activeUsers.ActiveUsers))
 		}
 	}
 
@@ -238,8 +286,17 @@ func PrepareMonthlyReportData(
 			data.ExternalPercent = fmt.Sprintf("%.1f", (float64(activeUsers.External)/float64(total))*100)
 		}
 
-		data.AvgMessagesPerUser = fmt.Sprintf("%.1f", activeUsers.AvgMessagesPerUser)
-		data.AvgSessionsPerUser = fmt.Sprintf("%.1f", activeUsers.AvgSessionsPerUser)
+		if activeUsers.AvgMessagesPerUser != nil {
+			data.AvgMessagesPerUser = fmt.Sprintf("%.1f", *activeUsers.AvgMessagesPerUser)
+		} else {
+			data.AvgMessagesPerUser = "0.0"
+		}
+
+		if activeUsers.AvgSessionsPerUser != nil {
+			data.AvgSessionsPerUser = fmt.Sprintf("%.1f", *activeUsers.AvgSessionsPerUser)
+		} else {
+			data.AvgSessionsPerUser = "0.0"
+		}
 	}
 
 	// Conversation Metrics
@@ -247,9 +304,21 @@ func PrepareMonthlyReportData(
 		data.TotalConversations = conversationMetrics.TotalConversations
 		data.ConversationsThisMonth = conversationMetrics.NewConversations
 		data.ActiveConversations = conversationMetrics.ActiveConversations
-		data.AvgMessagesPerConversation = fmt.Sprintf("%.1f", conversationMetrics.AvgMessagesPerConversation)
+
+		if conversationMetrics.AvgMessagesPerConversation != nil {
+			data.AvgMessagesPerConversation = fmt.Sprintf("%.1f", *conversationMetrics.AvgMessagesPerConversation)
+		} else {
+			data.AvgMessagesPerConversation = "0.0"
+		}
+
 		data.ConversationsWithAdminHelp = conversationMetrics.ConversationsWithAdminHelp
-		data.AdminInterventionRate = fmt.Sprintf("%.1f", conversationMetrics.AdminInterventionRate*100)
+
+		if conversationMetrics.AdminInterventionRate != nil {
+			data.AdminInterventionRate = fmt.Sprintf("%.1f", (*conversationMetrics.AdminInterventionRate)*100)
+		} else {
+			data.AdminInterventionRate = "0.0"
+		}
+
 		data.BlockedConversations = conversationMetrics.BlockedConversations
 		data.TemporaryConversations = conversationMetrics.TemporaryConversations
 	}
@@ -260,7 +329,13 @@ func PrepareMonthlyReportData(
 		data.UserMessagesThisMonth = messageAnalytics.UserMessages
 		data.BotMessagesThisMonth = messageAnalytics.BotMessages
 		data.AdminMessagesThisMonth = messageAnalytics.AdminMessages
-		data.AvgMessagesPerDay = fmt.Sprintf("%.1f", messageAnalytics.AvgMessagesPerDay)
+
+		if messageAnalytics.AvgMessagesPerDay != nil {
+			data.AvgMessagesPerDay = fmt.Sprintf("%.1f", *messageAnalytics.AvgMessagesPerDay)
+		} else {
+			data.AvgMessagesPerDay = "0.0"
+		}
+
 		data.PeakHour = messageAnalytics.PeakHour
 		data.PeakHourCount = messageAnalytics.PeakHourCount
 	}
@@ -270,10 +345,16 @@ func PrepareMonthlyReportData(
 		if i >= 10 {
 			break
 		}
+
+		avgSimilarity := "0.00"
+		if q.AvgSimilarity != nil {
+			avgSimilarity = fmt.Sprintf("%.2f", *q.AvgSimilarity)
+		}
+
 		data.TopQueries = append(data.TopQueries, QueryData{
 			QueryText:     q.QueryText,
 			QueryCount:    q.QueryCount,
-			AvgSimilarity: fmt.Sprintf("%.2f", q.AvgSimilarity),
+			AvgSimilarity: avgSimilarity,
 			HasGoodAnswer: q.HasGoodAnswer,
 		})
 
@@ -281,7 +362,7 @@ func PrepareMonthlyReportData(
 			data.QueriesNeedingAttention = append(data.QueriesNeedingAttention, QueryData{
 				QueryText:     q.QueryText,
 				QueryCount:    q.QueryCount,
-				AvgSimilarity: fmt.Sprintf("%.2f", q.AvgSimilarity),
+				AvgSimilarity: avgSimilarity,
 				HasGoodAnswer: false,
 			})
 		}
@@ -292,10 +373,16 @@ func PrepareMonthlyReportData(
 		if i >= 10 {
 			break
 		}
+
+		avgSimilarity := "0.00"
+		if k.AvgSimilarity != nil {
+			avgSimilarity = fmt.Sprintf("%.2f", *k.AvgSimilarity)
+		}
+
 		data.TopChunks = append(data.TopChunks, ChunkData{
 			DocumentTitle: k.DocumentTitle,
 			UsageCount:    k.UsageCount,
-			AvgSimilarity: fmt.Sprintf("%.2f", k.AvgSimilarity),
+			AvgSimilarity: avgSimilarity,
 		})
 	}
 
@@ -303,13 +390,29 @@ func PrepareMonthlyReportData(
 	for _, metric := range systemHealth {
 		switch metric.MetricName {
 		case "avg_llm_response_time":
-			data.AvgLLMResponseTime = fmt.Sprintf("%.0f", metric.MetricValue)
+			if metric.MetricValue != nil {
+				data.AvgLLMResponseTime = fmt.Sprintf("%.0f", *metric.MetricValue)
+			} else {
+				data.AvgLLMResponseTime = "0"
+			}
 		case "p95_llm_response_time":
-			data.P95ResponseTime = fmt.Sprintf("%.0f", metric.MetricValue)
+			if metric.MetricValue != nil {
+				data.P95ResponseTime = fmt.Sprintf("%.0f", *metric.MetricValue)
+			} else {
+				data.P95ResponseTime = "0"
+			}
 		case "p99_llm_response_time":
-			data.P99ResponseTime = fmt.Sprintf("%.0f", metric.MetricValue)
+			if metric.MetricValue != nil {
+				data.P99ResponseTime = fmt.Sprintf("%.0f", *metric.MetricValue)
+			} else {
+				data.P99ResponseTime = "0"
+			}
 		case "errors_last_24h":
-			data.ErrorsLast24h = int64(metric.MetricValue)
+			if metric.MetricValue != nil {
+				data.ErrorsLast24h = int64(*metric.MetricValue)
+			} else {
+				data.ErrorsLast24h = 0
+			}
 		}
 	}
 

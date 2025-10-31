@@ -59,24 +59,23 @@ BEGIN
         p_start_date as period_start,
         p_end_date as period_end,
         -- Total cost
-        ROUND(
-            (SUM(COALESCE(cvm_prompt_tokens, 0))::numeric / 1000000.0 * v_prompt_price) +
-            (SUM(COALESCE(cvm_completion_tokens, 0))::numeric / 1000000.0 * v_completion_price) +
-            (COUNT(DISTINCT cvm_fk_conversation)::numeric * 0.0), -- Placeholder for embedding cost per conversation
+        COALESCE(ROUND(
+            (COALESCE(SUM(cvm_prompt_tokens), 0)::numeric / 1000000.0 * v_prompt_price) +
+            (COALESCE(SUM(cvm_completion_tokens), 0)::numeric / 1000000.0 * v_completion_price),
             2
-        ) as total_cost,
+        ), 0.0) as total_cost,
         -- LLM cost (prompt + completion)
-        ROUND(
-            (SUM(COALESCE(cvm_prompt_tokens, 0))::numeric / 1000000.0 * v_prompt_price) +
-            (SUM(COALESCE(cvm_completion_tokens, 0))::numeric / 1000000.0 * v_completion_price),
+        COALESCE(ROUND(
+            (COALESCE(SUM(cvm_prompt_tokens), 0)::numeric / 1000000.0 * v_prompt_price) +
+            (COALESCE(SUM(cvm_completion_tokens), 0)::numeric / 1000000.0 * v_completion_price),
             2
-        ) as llm_cost,
+        ), 0.0) as llm_cost,
         -- Embedding cost (placeholder - will need actual embedding count)
         ROUND(0.0, 2) as embedding_cost,
         -- Token statistics
-        SUM(COALESCE(cvm_prompt_tokens, 0))::bigint as prompt_tokens,
-        SUM(COALESCE(cvm_completion_tokens, 0))::bigint as completion_tokens,
-        SUM(COALESCE(cvm_total_tokens, 0))::bigint as total_tokens,
+        COALESCE(SUM(cvm_prompt_tokens), 0)::bigint as prompt_tokens,
+        COALESCE(SUM(cvm_completion_tokens), 0)::bigint as completion_tokens,
+        COALESCE(SUM(cvm_total_tokens), 0)::bigint as total_tokens,
         0::bigint as embedding_tokens, -- Placeholder
         -- Conversation count
         COUNT(DISTINCT cvm_fk_conversation)::bigint as conversation_count,
@@ -85,8 +84,8 @@ BEGIN
             WHEN COUNT(DISTINCT cvm_fk_conversation) > 0 THEN
                 ROUND(
                     (
-                        (SUM(COALESCE(cvm_prompt_tokens, 0))::numeric / 1000000.0 * v_prompt_price) +
-                        (SUM(COALESCE(cvm_completion_tokens, 0))::numeric / 1000000.0 * v_completion_price)
+                        (COALESCE(SUM(cvm_prompt_tokens), 0)::numeric / 1000000.0 * v_prompt_price) +
+                        (COALESCE(SUM(cvm_completion_tokens), 0)::numeric / 1000000.0 * v_completion_price)
                     ) / COUNT(DISTINCT cvm_fk_conversation)::numeric,
                     4
                 )
@@ -95,7 +94,7 @@ BEGIN
         -- Average tokens per conversation
         CASE
             WHEN COUNT(DISTINCT cvm_fk_conversation) > 0 THEN
-                ROUND(SUM(COALESCE(cvm_total_tokens, 0))::numeric / COUNT(DISTINCT cvm_fk_conversation)::numeric, 0)
+                ROUND(COALESCE(SUM(cvm_total_tokens), 0)::numeric / COUNT(DISTINCT cvm_fk_conversation)::numeric, 0)
             ELSE 0.0
         END as avg_tokens_per_conversation
     FROM cht_conversation_messages
@@ -153,12 +152,12 @@ BEGIN
             to_char(date_trunc('hour', cvm_created_at), 'YYYY-MM-DD HH24:00') as period_label,
             date_trunc('hour', cvm_created_at) as period_start,
             date_trunc('hour', cvm_created_at) + interval '1 hour' as period_end,
-            SUM(COALESCE(cvm_prompt_tokens, 0))::bigint as prompt_tokens,
-            SUM(COALESCE(cvm_completion_tokens, 0))::bigint as completion_tokens,
-            SUM(COALESCE(cvm_total_tokens, 0))::bigint as total_tokens,
+            COALESCE(SUM(cvm_prompt_tokens), 0)::bigint as prompt_tokens,
+            COALESCE(SUM(cvm_completion_tokens), 0)::bigint as completion_tokens,
+            COALESCE(SUM(cvm_total_tokens), 0)::bigint as total_tokens,
             COUNT(*)::bigint as message_count,
             COUNT(DISTINCT cvm_fk_conversation)::bigint as conversation_count,
-            ROUND(AVG(COALESCE(cvm_total_tokens, 0)), 0) as avg_tokens_per_message
+            COALESCE(ROUND(AVG(cvm_total_tokens), 0), 0.0) as avg_tokens_per_message
         FROM cht_conversation_messages
         WHERE cvm_created_at BETWEEN v_start_date AND v_end_date
             AND cvm_sender_type = 'bot'
@@ -170,12 +169,12 @@ BEGIN
             to_char(date_trunc('week', cvm_created_at), 'YYYY "Week" IW') as period_label,
             date_trunc('week', cvm_created_at) as period_start,
             date_trunc('week', cvm_created_at) + interval '1 week' as period_end,
-            SUM(COALESCE(cvm_prompt_tokens, 0))::bigint as prompt_tokens,
-            SUM(COALESCE(cvm_completion_tokens, 0))::bigint as completion_tokens,
-            SUM(COALESCE(cvm_total_tokens, 0))::bigint as total_tokens,
+            COALESCE(SUM(cvm_prompt_tokens), 0)::bigint as prompt_tokens,
+            COALESCE(SUM(cvm_completion_tokens), 0)::bigint as completion_tokens,
+            COALESCE(SUM(cvm_total_tokens), 0)::bigint as total_tokens,
             COUNT(*)::bigint as message_count,
             COUNT(DISTINCT cvm_fk_conversation)::bigint as conversation_count,
-            ROUND(AVG(COALESCE(cvm_total_tokens, 0)), 0) as avg_tokens_per_message
+            COALESCE(ROUND(AVG(cvm_total_tokens), 0), 0.0) as avg_tokens_per_message
         FROM cht_conversation_messages
         WHERE cvm_created_at BETWEEN v_start_date AND v_end_date
             AND cvm_sender_type = 'bot'
@@ -187,12 +186,12 @@ BEGIN
             to_char(date_trunc('day', cvm_created_at), 'YYYY-MM-DD') as period_label,
             date_trunc('day', cvm_created_at) as period_start,
             date_trunc('day', cvm_created_at) + interval '1 day' as period_end,
-            SUM(COALESCE(cvm_prompt_tokens, 0))::bigint as prompt_tokens,
-            SUM(COALESCE(cvm_completion_tokens, 0))::bigint as completion_tokens,
-            SUM(COALESCE(cvm_total_tokens, 0))::bigint as total_tokens,
+            COALESCE(SUM(cvm_prompt_tokens), 0)::bigint as prompt_tokens,
+            COALESCE(SUM(cvm_completion_tokens), 0)::bigint as completion_tokens,
+            COALESCE(SUM(cvm_total_tokens), 0)::bigint as total_tokens,
             COUNT(*)::bigint as message_count,
             COUNT(DISTINCT cvm_fk_conversation)::bigint as conversation_count,
-            ROUND(AVG(COALESCE(cvm_total_tokens, 0)), 0) as avg_tokens_per_message
+            COALESCE(ROUND(AVG(cvm_total_tokens), 0), 0.0) as avg_tokens_per_message
         FROM cht_conversation_messages
         WHERE cvm_created_at BETWEEN v_start_date AND v_end_date
             AND cvm_sender_type = 'bot'
@@ -282,8 +281,8 @@ BEGIN
         COUNT(DISTINCT ap.usr_id) FILTER (WHERE ap.usr_rol = 'ROLE_PROFESSOR')::bigint as professors,
         COUNT(DISTINCT ap.usr_id) FILTER (WHERE ap.usr_rol = 'ROLE_EXTERNAL')::bigint as external,
         -- Engagement metrics
-        ROUND(AVG(ms.message_count), 1) as avg_messages_per_user,
-        ROUND(AVG(ms.session_count), 1) as avg_sessions_per_user
+        COALESCE(ROUND(AVG(ms.message_count), 1), 0.0) as avg_messages_per_user,
+        COALESCE(ROUND(AVG(ms.session_count), 1), 0.0) as avg_sessions_per_user
     FROM active_in_period ap
     LEFT JOIN message_stats ms ON ms.cnv_fk_user = ap.usr_id;
 END;
@@ -349,7 +348,7 @@ BEGIN
         -- New conversations created in period
         COUNT(DISTINCT pc.cnv_id) FILTER (WHERE pc.cnv_created_at >= v_start_date)::bigint as new_conversations,
         -- Average messages
-        ROUND(AVG(pc.message_count), 1) as avg_messages_per_conversation,
+        COALESCE(ROUND(AVG(pc.message_count), 1), 0.0) as avg_messages_per_conversation,
         -- Admin intervention
         COUNT(DISTINCT pc.cnv_id) FILTER (WHERE pc.cnv_admin_intervened = true)::bigint as conversations_with_admin_help,
         CASE
@@ -480,9 +479,9 @@ BEGIN
     SELECT
         LEFT(cvm_body, 200) as query_text,
         COUNT(*)::bigint as query_count,
-        ROUND(AVG(COALESCE(cvm_rag_best_similarity, 0)), 3) as avg_similarity,
+        COALESCE(ROUND(AVG(cvm_rag_best_similarity), 3), 0.0) as avg_similarity,
         MAX(cvm_created_at) as last_asked,
-        AVG(COALESCE(cvm_rag_best_similarity, 0)) >= p_min_similarity as has_good_answer
+        COALESCE(AVG(cvm_rag_best_similarity), 0.0) >= p_min_similarity as has_good_answer
     FROM cht_conversation_messages
     WHERE cvm_created_at BETWEEN v_start_date AND v_end_date
         AND cvm_sender_type = 'user'
@@ -528,7 +527,7 @@ BEGIN
         cs.chs_chk_id as chunk_id,
         d.dct_title as document_title,
         cs.chs_access_count::bigint as usage_count,
-        ROUND(cs.chs_avg_similarity, 3) as avg_similarity,
+        COALESCE(ROUND(cs.chs_avg_similarity, 3), 0.0) as avg_similarity,
         cs.chs_last_accessed as last_used
     FROM cht_chunk_statistics cs
     INNER JOIN cht_chunks chk ON chk.chk_id = cs.chs_chk_id
@@ -554,9 +553,9 @@ BEGIN
     RETURN QUERY
     WITH response_times AS (
         SELECT
-            AVG(cvm_prompt_time_ms + cvm_completion_time_ms)::numeric as avg_llm_time,
-            PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY cvm_prompt_time_ms + cvm_completion_time_ms)::numeric as p95_llm_time,
-            PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY cvm_prompt_time_ms + cvm_completion_time_ms)::numeric as p99_llm_time
+            COALESCE(AVG(cvm_prompt_time_ms + cvm_completion_time_ms), 0.0)::numeric as avg_llm_time,
+            COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY cvm_prompt_time_ms + cvm_completion_time_ms), 0.0)::numeric as p95_llm_time,
+            COALESCE(PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY cvm_prompt_time_ms + cvm_completion_time_ms), 0.0)::numeric as p99_llm_time
         FROM cht_conversation_messages
         WHERE cvm_created_at >= CURRENT_TIMESTAMP - interval '24 hours'
             AND cvm_sender_type = 'bot'
@@ -568,11 +567,11 @@ BEGIN
         WHERE cvm_created_at >= CURRENT_TIMESTAMP - interval '24 hours'
             AND cvm_body LIKE '%error%'
     )
-    SELECT 'avg_llm_response_time'::varchar, ROUND(rt.avg_llm_time, 0), 'ms'::varchar FROM response_times rt
+    SELECT 'avg_llm_response_time'::varchar, COALESCE(ROUND(rt.avg_llm_time, 0), 0.0), 'ms'::varchar FROM response_times rt
     UNION ALL
-    SELECT 'p95_llm_response_time'::varchar, ROUND(rt.p95_llm_time, 0), 'ms'::varchar FROM response_times rt
+    SELECT 'p95_llm_response_time'::varchar, COALESCE(ROUND(rt.p95_llm_time, 0), 0.0), 'ms'::varchar FROM response_times rt
     UNION ALL
-    SELECT 'p99_llm_response_time'::varchar, ROUND(rt.p99_llm_time, 0), 'ms'::varchar FROM response_times rt
+    SELECT 'p99_llm_response_time'::varchar, COALESCE(ROUND(rt.p99_llm_time, 0), 0.0), 'ms'::varchar FROM response_times rt
     UNION ALL
     SELECT 'errors_last_24h'::varchar, ec.errors::numeric, 'count'::varchar FROM error_count ec
     UNION ALL

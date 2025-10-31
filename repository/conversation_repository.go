@@ -99,6 +99,7 @@ func (r *conversationRepository) CreateMessage(ctx context.Context, params d.Cre
 		params.MessageID,
 		params.FromMe,
 		params.SenderName,
+		params.SenderType,
 		params.MessageType,
 		params.Body,
 		params.MediaURL,
