@@ -19,10 +19,10 @@ type GetWhatsAppQRCodeRequest struct {
 type UpdateWhatsAppStatusRequest struct {
 	domain.Base
 	SessionName string  `json:"sessionName" validate:"required,min=1" doc:"WhatsApp session name"`
-	PhoneNumber *string `json:"phoneNumber" validate:"omitempty" doc:"Phone number connected to session"`
-	DeviceName  *string `json:"deviceName" validate:"omitempty" doc:"Device name"`
-	Platform    *string `json:"platform" validate:"omitempty" doc:"Platform (android/ios/web)"`
-	Connected   *bool   `json:"connected" validate:"omitempty" doc:"Connection status"`
+	PhoneNumber *string `json:"phoneNumber,omitempty" validate:"omitempty" doc:"Phone number connected to session (optional, only when connected)"`
+	DeviceName  *string `json:"deviceName,omitempty" validate:"omitempty" doc:"Device name (optional, only when connected)"`
+	Platform    *string `json:"platform,omitempty" validate:"omitempty" doc:"Platform - android/ios/web (optional, only when connected)"`
+	Connected   *bool   `json:"connected,omitempty" validate:"omitempty" doc:"Connection status (optional)"`
 }
 
 type GetConversationHistoryRequest struct {
