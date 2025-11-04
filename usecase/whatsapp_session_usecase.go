@@ -6,6 +6,7 @@ import (
 
 	d "api-chatbot/domain"
 	"api-chatbot/internal/logger"
+	"api-chatbot/internal/whatsapp"
 )
 
 type whatsAppSessionUseCase struct {
@@ -51,29 +52,21 @@ func (u *whatsAppSessionUseCase) GetSessionStatus(c context.Context, sessionName
 }
 
 func (u *whatsAppSessionUseCase) GetQRCode(c context.Context, sessionName string) d.Result[d.Data] {
-	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
-	defer cancel()
+	// Get QR code from in-memory service manager instead of database
+	manager := whatsapp.GetManager()
+	qrCode := manager.GetCurrentQR()
+	connected := manager.IsConnected()
 
-	session, err := u.sessionRepo.GetBySessionName(ctx, sessionName)
-	if err != nil {
-		logger.LogError(ctx, "Failed to fetch WhatsApp session for QR code from database", err,
-			"operation", "GetQRCode",
-			"sessionName", sessionName,
-		)
-		return d.Error[d.Data](u.paramCache, "ERR_INTERNAL_DB")
-	}
-
-	if session == nil {
-		logger.LogWarn(ctx, "WhatsApp session not found for QR code",
-			"operation", "GetQRCode",
-			"sessionName", sessionName,
-		)
-		return d.Error[d.Data](u.paramCache, "ERR_WHATSAPP_SESSION_NOT_FOUND")
-	}
+	logger.LogInfo(c, "Retrieved QR code from in-memory WhatsApp service",
+		"operation", "GetQRCode",
+		"sessionName", sessionName,
+		"hasQRCode", qrCode != "",
+		"connected", connected,
+	)
 
 	return d.Success(d.Data{
-		"qrCode":    session.QRCode,
-		"connected": session.Connected,
+		"qrCode":    qrCode,
+		"connected": connected,
 	})
 }
 

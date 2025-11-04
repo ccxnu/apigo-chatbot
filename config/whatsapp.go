@@ -102,6 +102,9 @@ func InitializeWhatsAppService(
 		return nil, fmt.Errorf("failed to start WhatsApp service: %w", err)
 	}
 
+	// Register service with global manager for QR code access
+	whatsapp.GetManager().SetService(service)
+
 	slog.Info("WhatsApp service initialized successfully", "session", sessionName)
 	return service, nil
 }

@@ -15,7 +15,6 @@ require (
 	go.mau.fi/whatsmeow v0.0.0-20251016095441-02c50743e601
 	golang.org/x/crypto v0.43.0
 	golang.org/x/time v0.14.0
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (

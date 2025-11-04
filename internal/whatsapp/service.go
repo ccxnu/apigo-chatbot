@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types/events"
 
@@ -20,6 +19,7 @@ type Service struct {
 	sessionUC   d.WhatsAppSessionUseCase
 	sessionName string
 	connectTime	int64
+	currentQR   string // In-memory QR code (not persisted to database)
 }
 
 // NewService creates a new WhatsApp service
@@ -104,6 +104,19 @@ func (s *Service) GetQRChannel() <-chan string {
 	return qrChan
 }
 
+// GetCurrentQR returns the current in-memory QR code
+func (s *Service) GetCurrentQR() string {
+	return s.currentQR
+}
+
+// IsConnected returns the current connection status
+func (s *Service) IsConnected() bool {
+	if s.client == nil || s.client.WAClient == nil {
+		return false
+	}
+	return s.client.WAClient.IsConnected()
+}
+
 // handleEvent processes all WhatsApp events
 func (s *Service) handleEvent(evt any) {
 	switch v := evt.(type) {
@@ -131,12 +144,6 @@ func (s *Service) handleIncomingMessage(evt *events.Message) {
 
 	const timeThreshold = 5000
 	if !evt.Info.IsFromMe && evt.Info.Timestamp.Unix() < (s.connectTime - timeThreshold) {
-		slog.Info("Ignoring old message",
-			"messageID", evt.Info.ID,
-			"chatID", msg.ChatID,
-			"timestamp", evt.Info.Timestamp.Unix(),
-			"connectTime", s.connectTime,
-		)
 		return
 	}
 
@@ -152,31 +159,25 @@ func (s *Service) handleIncomingMessage(evt *events.Message) {
 	}
 }
 
-// handleQRCode processes QR code events and updates database
+// handleQRCode processes QR code events (in-memory only, not saved to database)
 func (s *Service) handleQRCode(evt *events.QR) {
 	if len(evt.Codes) == 0 {
 		return
 	}
 
 	qrCode := evt.Codes[0]
+	s.currentQR = qrCode // Store in memory
 
 	slog.Info("QR code received - scan with WhatsApp app",
 		"session", s.sessionName,
 		"qr_length", len(qrCode),
 	)
 
-	// Save QR code to database
-	ctx := context.Background()
-	err := s.sessionUC.UpdateQRCode(ctx, s.sessionName, qrCode)
-	if err != nil {
-		slog.Error("Failed to save QR code to database",
-			"session", s.sessionName,
-			"error", err,
-		)
-	}
-
-	// Print QR code to console for easy scanning
-	printQRCodeToConsole(qrCode)
+	// QR codes are NOT saved to database - they are ephemeral
+	// Frontend should call GetCurrentQR() to retrieve the latest QR code
+	slog.Debug("QR code generated and stored in memory (not saved to database)",
+		"session", s.sessionName,
+	)
 }
 
 // handleConnected processes connection success events
@@ -184,6 +185,10 @@ func (s *Service) handleConnected() {
 	slog.Info("WhatsApp connected", "session", s.sessionName)
 
 	s.connectTime = time.Now().Unix()
+
+	// Clear QR code from memory once connected
+	s.currentQR = ""
+
 	ctx := context.Background()
 
 	// Get device info
@@ -212,6 +217,9 @@ func (s *Service) handleDisconnected() {
 
 	ctx := context.Background()
 
+	// Clear in-memory QR code
+	s.currentQR = ""
+
 	connected := false
 	params := d.UpdateSessionStatusParams{
 		SessionName: s.sessionName,
@@ -223,6 +231,15 @@ func (s *Service) handleDisconnected() {
 		slog.Error("Failed to update disconnection status",
 			"session", s.sessionName,
 			"code", result.Code,
+		)
+	}
+
+	// Clear QR code from database on disconnect so a fresh one is generated on reconnect
+	err := s.sessionUC.UpdateQRCode(ctx, s.sessionName, "")
+	if err != nil {
+		slog.Error("Failed to clear QR code from database",
+			"session", s.sessionName,
+			"error", err,
 		)
 	}
 }
@@ -306,19 +323,4 @@ func convertEventToMessage(evt *events.Message) *d.IncomingMessage {
 	}
 
 	return msg
-}
-
-// printQRCodeToConsole displays the QR code in the terminal for easy scanning
-func printQRCodeToConsole(code string) {
-	qr, err := qrcode.New(code, qrcode.Medium)
-	if err != nil {
-		slog.Error("Failed to generate QR code", "error", err)
-		return
-	}
-
-	fmt.Println("\n========================================")
-	fmt.Println("SCAN THIS QR CODE WITH WHATSAPP:")
-	fmt.Println("========================================")
-	fmt.Println(qr.ToSmallString(false))
-	fmt.Println("========================================")
 }

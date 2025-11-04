@@ -1,15 +1,11 @@
 package config
 
 import (
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
 
 	"api-chatbot/domain"
-
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type LogConfig struct {
@@ -107,12 +103,6 @@ func SetupLogger(cache domain.ParameterCache) (*slog.Logger, func() error) {
 	switch config.Output {
 	case "stdout":
 		writers = append(writers, os.Stdout)
-	case "file":
-		fileWriter = setupFileWriter(config)
-		writers = append(writers, fileWriter)
-	case "both":
-		fileWriter = setupFileWriter(config)
-		writers = append(writers, os.Stdout, fileWriter)
 	default:
 		writers = append(writers, os.Stdout)
 	}
@@ -157,22 +147,4 @@ func SetupLogger(cache domain.ParameterCache) (*slog.Logger, func() error) {
 	}
 
 	return logger, cleanup
-}
-
-// setupFileWriter creates a rotating file writer using lumberjack
-func setupFileWriter(config LogConfig) io.WriteCloser {
-	// Ensure log directory exists
-	logDir := filepath.Dir(config.FilePath)
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create log directory: %v\n", err)
-		return nil
-	}
-
-	return &lumberjack.Logger{
-		Filename:   config.FilePath,
-		MaxSize:    config.MaxSizeMB,
-		MaxBackups: config.MaxBackups,
-		MaxAge:     config.MaxAgeDays,
-		Compress:   true, // Compress rotated files
-	}
 }
