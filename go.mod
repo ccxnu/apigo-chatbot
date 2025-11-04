@@ -10,7 +10,6 @@ require (
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/pgvector/pgvector-go v0.3.0
-	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/viper v1.21.0
 	go.mau.fi/whatsmeow v0.0.0-20251016095441-02c50743e601
 	golang.org/x/crypto v0.43.0

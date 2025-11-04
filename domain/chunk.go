@@ -88,6 +88,7 @@ type HybridSearchParams struct {
 	Limit          int
 	MinSimilarity  float64
 	KeywordWeight  float64
+	Category       *string // Optional: filter by document category (e.g., "DOC_INDECT")
 }
 
 // Chunk Repository & UseCase Interfaces
@@ -107,6 +108,7 @@ type ChunkUseCase interface {
 	GetByID(ctx context.Context, chunkID int) Result[*Chunk]
 	SimilaritySearch(ctx context.Context, queryText string, limit int, minSimilarity float64) Result[[]ChunkWithSimilarity]
 	HybridSearch(ctx context.Context, queryText string, limit int, minSimilarity float64, keywordWeight float64) Result[[]ChunkWithHybridSimilarity]
+	HybridSearchWithCategory(ctx context.Context, queryText string, limit int, minSimilarity float64, keywordWeight float64, category *string) Result[[]ChunkWithHybridSimilarity]
 	Create(ctx context.Context, documentID int, content string) Result[Data]
 	UpdateContent(ctx context.Context, chunkID int, content string) Result[Data]
 	Delete(ctx context.Context, chunkID int) Result[Data]

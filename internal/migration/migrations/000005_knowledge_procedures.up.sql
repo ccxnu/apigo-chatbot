@@ -417,21 +417,23 @@ $$ language plpgsql;
 -- Function: fn_similarity_search_chunks_hybrid
 -- Description: Vector similarity search for RAG
 -- Returns chunks ordered by cosine similarity and full-text-search
+-- Optionally filters by document category (e.g., "DOC_INDECT")
 -- =====================================================
 create or replace function fn_similarity_search_chunks_hybrid(
     p_query_embedding vector(1536),
-    p_query_text text, -- New parameter for the raw text query
+    p_query_text text, -- Raw text query for FTS
     p_limit int default 5,
-    p_min_similarity float default 0.2, -- Lower the default to capture more results for re-ranking
-    p_keyword_weight float default 0.15 -- Weight for the FTS score (Tune this value)
+    p_min_similarity float default 0.2, -- Lower threshold for re-ranking
+    p_keyword_weight float default 0.15, -- Weight for FTS score
+    p_category varchar default null -- Optional: filter by document category
 )
 returns table (
     chk_id int,
     chk_fk_document int,
     chk_content text,
     similarity_score float,
-    keyword_score float,        -- New score
-    combined_score float,       -- New combined score
+    keyword_score float,
+    combined_score float,
     doc_title varchar,
     doc_category varchar
 ) as $$
@@ -458,6 +460,8 @@ begin
         inner join public.cht_documents d on c.chk_fk_document = d.doc_id
         where d.doc_active = true
           and c.chk_embedding is not null
+          -- Filter by category if provided (handle both null and empty string)
+          and (p_category is null or p_category = '' or d.doc_category = p_category)
           -- The OR condition is the key to Hybrid Search:
           -- 1. Match if similarity is above a (low) threshold, OR
           -- 2. Match if a keyword exists in the document

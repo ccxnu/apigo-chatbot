@@ -87,6 +87,7 @@ func (r *chunkRepository) HybridSearch(ctx context.Context, params d.HybridSearc
 		params.Limit,
 		params.MinSimilarity,
 		params.KeywordWeight,
+		params.Category, // Pass category filter (can be nil)
 	)
 
 	if err != nil {

@@ -149,12 +149,13 @@ func NewExternalAPIRouter(
 		// Prepare RAG context if enabled
 		var ragContext *d.RAGContextInfo
 		var retrievedContext string
+		var selectedCategory *string
 
 		if input.Body.RAGConfig != nil && input.Body.RAGConfig.Enabled {
 			// Set defaults
 			searchLimit := input.Body.RAGConfig.SearchLimit
 			if searchLimit == 0 {
-				searchLimit = 5
+				searchLimit = 7
 			}
 			minSimilarity := input.Body.RAGConfig.MinSimilarity
 			if minSimilarity == 0 {
@@ -165,22 +166,39 @@ func NewExternalAPIRouter(
 				keywordWeight = 0.3
 			}
 
-			// Perform hybrid search
+			// Determine category filter from EventFilter (use first one if provided)
+			if len(input.Body.RAGConfig.EventFilter) > 0 {
+				selectedCategory = &input.Body.RAGConfig.EventFilter[0]
+				logger.LogInfo(ctx, "Using category filter for RAG search",
+					"operation", "ChatCompletions",
+					"category", *selectedCategory,
+				)
+			}
+
+			// Perform hybrid search with category filter
 			logger.LogInfo(ctx, "Performing RAG search",
 				"operation", "ChatCompletions",
 				"query", userMessage,
 				"searchLimit", searchLimit,
+				"category", func() string {
+					if selectedCategory != nil {
+						return *selectedCategory
+					}
+					return "none"
+				}(),
 			)
 
-			searchResult := chunkUseCase.HybridSearch(ctx, userMessage, searchLimit, minSimilarity, keywordWeight)
+			var searchResult d.Result[[]d.ChunkWithHybridSimilarity]
+			if selectedCategory != nil {
+				// Use category-filtered search
+				searchResult = chunkUseCase.HybridSearchWithCategory(ctx, userMessage, searchLimit, minSimilarity, keywordWeight, selectedCategory)
+			} else {
+				// Use regular search
+				searchResult = chunkUseCase.HybridSearch(ctx, userMessage, searchLimit, minSimilarity, keywordWeight)
+			}
+
 			if searchResult.Success {
 				chunks := searchResult.Data
-
-				// Filter by event if specified
-				if len(input.Body.RAGConfig.EventFilter) > 0 {
-					filteredChunks := filterChunksByEvent(chunks, input.Body.RAGConfig.EventFilter)
-					chunks = filteredChunks
-				}
 
 				// Build RAG context
 				ragContext = &d.RAGContextInfo{
@@ -227,11 +245,33 @@ func NewExternalAPIRouter(
 			llmRequest.MaxTokens = 1000
 		}
 
-		// Get system prompt from parameters
-		if param, exists := cache.Get("RAG_SYSTEM_PROMPT"); exists {
-			dataMap, _ := param.GetDataAsMap()
-			if systemPrompt, ok := dataMap["message"].(string); ok {
-				llmRequest.SystemPrompt = systemPrompt
+		// Set system prompt based on category
+		// If category is specified, try to get category-specific prompt first (e.g., "RAG_SYSTEM_PROMPT_DOC_INDECT")
+		// Otherwise, fallback to general "RAG_SYSTEM_PROMPT"
+		if selectedCategory != nil && *selectedCategory != "" {
+			categoryPromptCode := "RAG_SYSTEM_PROMPT_" + *selectedCategory
+			if param, exists := cache.Get(categoryPromptCode); exists {
+				dataMap, _ := param.GetDataAsMap()
+				if systemPrompt, ok := dataMap["message"].(string); ok {
+					llmRequest.SystemPrompt = systemPrompt
+					logger.LogInfo(ctx, "Using category-specific system prompt",
+						"operation", "ChatCompletions",
+						"promptCode", categoryPromptCode,
+					)
+				}
+			}
+		}
+
+		// Fallback to general system prompt if no category-specific prompt was found
+		if llmRequest.SystemPrompt == "" {
+			if param, exists := cache.Get("RAG_SYSTEM_PROMPT"); exists {
+				dataMap, _ := param.GetDataAsMap()
+				if systemPrompt, ok := dataMap["message"].(string); ok {
+					llmRequest.SystemPrompt = systemPrompt
+					logger.LogInfo(ctx, "Using general system prompt",
+						"operation", "ChatCompletions",
+					)
+				}
 			}
 		}
 

@@ -278,6 +278,136 @@ func (u *chunkUseCase) HybridSearch(c context.Context, queryText string, limit i
 	return d.Success(chunks)
 }
 
+// HybridSearchWithCategory performs hybrid search with optional document category filtering
+func (u *chunkUseCase) HybridSearchWithCategory(c context.Context, queryText string, limit int, minSimilarity float64, keywordWeight float64, category *string) d.Result[[]d.ChunkWithHybridSimilarity] {
+	logger.LogInfo(c, "Starting hybrid search with category filter",
+		"operation", "HybridSearchWithCategory",
+		"queryText", queryText,
+		"queryLength", len(queryText),
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+		"keywordWeight", keywordWeight,
+		"category", func() string {
+			if category != nil {
+				return *category
+			}
+			return "none"
+		}(),
+	)
+
+	// Use longer timeout for embedding generation (OpenAI can be slow)
+	embeddingCtx, embeddingCancel := context.WithTimeout(c, 30*time.Second)
+	defer embeddingCancel()
+
+	// Generate embedding from query text
+	logger.LogInfo(embeddingCtx, "Generating embedding for hybrid search query with category filter",
+		"operation", "HybridSearchWithCategory",
+		"queryText", queryText,
+	)
+	queryEmbedding, err := u.embeddingService.GenerateEmbedding(embeddingCtx, queryText)
+	if err != nil {
+		logger.LogError(embeddingCtx, "Failed to generate embedding for hybrid search", err,
+			"operation", "HybridSearchWithCategory",
+			"queryTextLength", len(queryText),
+		)
+		return d.Error[[]d.ChunkWithHybridSimilarity](u.cache, "ERR_EMBEDDING_GENERATION")
+	}
+
+	// Use normal timeout for database operations
+	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
+	defer cancel()
+
+	// Create params with generated embedding, query text, and category filter
+	params := d.HybridSearchParams{
+		QueryEmbedding: pgvector.NewVector(queryEmbedding),
+		QueryText:      queryText,
+		Limit:          limit,
+		MinSimilarity:  minSimilarity,
+		KeywordWeight:  keywordWeight,
+		Category:       category,
+	}
+
+	logger.LogInfo(ctx, "Performing database hybrid search with category filter",
+		"operation", "HybridSearchWithCategory",
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+		"keywordWeight", keywordWeight,
+		"category", func() string {
+			if category != nil {
+				return *category
+			}
+			return "none"
+		}(),
+	)
+
+	chunks, err := u.chunkRepo.HybridSearch(ctx, params)
+	if err != nil {
+		logger.LogError(ctx, "Failed to perform hybrid search with category filter in database", err,
+			"operation", "HybridSearchWithCategory",
+			"limit", limit,
+			"minSimilarity", minSimilarity,
+			"keywordWeight", keywordWeight,
+		)
+		return d.Error[[]d.ChunkWithHybridSimilarity](u.cache, "ERR_INTERNAL_DB")
+	}
+
+	logger.LogInfo(ctx, "Hybrid search with category filter completed",
+		"operation", "HybridSearchWithCategory",
+		"chunksFound", len(chunks),
+		"limit", limit,
+		"minSimilarity", minSimilarity,
+		"keywordWeight", keywordWeight,
+		"category", func() string {
+			if category != nil {
+				return *category
+			}
+			return "none"
+		}(),
+	)
+
+	// Log details of each chunk found
+	if len(chunks) > 0 {
+		for i, chunk := range chunks {
+			logger.LogInfo(ctx, "Retrieved chunk",
+				"operation", "HybridSearchWithCategory",
+				"position", i+1,
+				"chunkID", chunk.ID,
+				"docTitle", chunk.DocTitle,
+				"docCategory", chunk.DocCategory,
+				"similarityScore", chunk.SimilarityScore,
+				"keywordScore", chunk.KeywordScore,
+				"combinedScore", chunk.CombinedScore,
+				"contentPreview", func() string {
+					if len(chunk.Content) > 100 {
+						return chunk.Content[:100] + "..."
+					}
+					return chunk.Content
+				}(),
+			)
+		}
+	} else {
+		logger.LogWarn(ctx, "No chunks found matching criteria with category filter",
+			"operation", "HybridSearchWithCategory",
+			"queryText", queryText,
+			"limit", limit,
+			"minSimilarity", minSimilarity,
+			"keywordWeight", keywordWeight,
+			"category", func() string {
+				if category != nil {
+					return *category
+				}
+				return "none"
+			}(),
+		)
+	}
+
+	// Automatically update statistics for each retrieved chunk
+	// This happens asynchronously to not block the response
+	go u.updateHybridChunkStatistics(chunks)
+
+	return d.Success(chunks)
+}
+
 // updateHybridChunkStatistics updates usage statistics for hybrid search results
 func (u *chunkUseCase) updateHybridChunkStatistics(chunks []d.ChunkWithHybridSimilarity) {
 	asyncCtx, asyncCancel := context.WithTimeout(context.Background(), 10*time.Second)
