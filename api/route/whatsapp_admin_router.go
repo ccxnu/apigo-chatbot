@@ -27,6 +27,14 @@ type GetConversationHistoryResponse struct {
 	Body d.Result[[]d.ConversationMessage]
 }
 
+type LogoutWhatsAppResponse struct {
+	Body d.Result[d.Data]
+}
+
+type ReconnectWhatsAppResponse struct {
+	Body d.Result[d.Data]
+}
+
 func NewWhatsAppAdminRouter(
 	sessionUseCase d.WhatsAppSessionUseCase,
 	convUseCase d.ConversationUseCase,
@@ -104,5 +112,33 @@ func NewWhatsAppAdminRouter(
 	}) (*GetConversationHistoryResponse, error) {
 		result := convUseCase.GetConversationHistory(ctx, input.Body.ChatID, input.Body.Limit)
 		return &GetConversationHistoryResponse{Body: result}, nil
+	})
+
+	huma.Register(humaAPI, huma.Operation{
+		OperationID: "logout-whatsapp",
+		Method:      "POST",
+		Path:        "/api/v1/admin/whatsapp/logout",
+		Summary:     "Logout from WhatsApp",
+		Description: "Logs out from WhatsApp and clears device pairing. A new QR code will be required for next connection.",
+		Tags:        []string{"Admin", "WhatsApp"},
+	}, func(ctx context.Context, input *struct {
+		Body request.GetWhatsAppStatusRequest
+	}) (*LogoutWhatsAppResponse, error) {
+		result := sessionUseCase.Logout(ctx, input.Body.SessionName)
+		return &LogoutWhatsAppResponse{Body: result}, nil
+	})
+
+	huma.Register(humaAPI, huma.Operation{
+		OperationID: "reconnect-whatsapp",
+		Method:      "POST",
+		Path:        "/api/v1/admin/whatsapp/reconnect",
+		Summary:     "Reconnect WhatsApp to generate new QR code",
+		Description: "Disconnects and reconnects to WhatsApp to generate a fresh QR code. Useful when QR code has expired.",
+		Tags:        []string{"Admin", "WhatsApp"},
+	}, func(ctx context.Context, input *struct {
+		Body request.GetWhatsAppStatusRequest
+	}) (*ReconnectWhatsAppResponse, error) {
+		result := sessionUseCase.Reconnect(ctx, input.Body.SessionName)
+		return &ReconnectWhatsAppResponse{Body: result}, nil
 	})
 }

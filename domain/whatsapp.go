@@ -68,6 +68,8 @@ type WhatsAppSessionUseCase interface {
 	GetQRCode(ctx context.Context, sessionName string) Result[Data]
 	UpdateConnectionStatus(ctx context.Context, params UpdateSessionStatusParams) Result[Data]
 	UpdateQRCode(ctx context.Context, sessionName, qrCode string) error
+	Logout(ctx context.Context, sessionName string) Result[Data]
+	Reconnect(ctx context.Context, sessionName string) Result[Data]
 }
 
 // User represents a WhatsApp user (student or professor)

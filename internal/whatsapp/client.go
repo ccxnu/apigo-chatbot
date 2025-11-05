@@ -42,12 +42,8 @@ func NewClient(cfg Config) (*Client, error) {
 }
 
 // Connect establishes connection to WhatsApp
+// For unpaired devices, this will trigger QR code generation
 func (c *Client) Connect(ctx context.Context) error {
-	if c.WAClient.Store.ID == nil {
-		// Not logged in, need QR code
-		return fmt.Errorf("device not paired, QR code required")
-	}
-
 	return c.WAClient.Connect()
 }
 

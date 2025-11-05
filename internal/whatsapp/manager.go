@@ -1,6 +1,10 @@
 package whatsapp
 
-import "sync"
+import (
+	"context"
+	"fmt"
+	"sync"
+)
 
 // Manager manages the global WhatsApp service instance
 type Manager struct {
@@ -47,4 +51,24 @@ func (m *Manager) IsConnected() bool {
 		return false
 	}
 	return m.service.IsConnected()
+}
+
+// Logout logs out from WhatsApp and clears device pairing
+func (m *Manager) Logout(ctx context.Context) error {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.service == nil {
+		return fmt.Errorf("WhatsApp service not initialized")
+	}
+	return m.service.Logout(ctx)
+}
+
+// Reconnect disconnects and reconnects to generate new QR code
+func (m *Manager) Reconnect(ctx context.Context) error {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.service == nil {
+		return fmt.Errorf("WhatsApp service not initialized")
+	}
+	return m.service.Reconnect(ctx)
 }

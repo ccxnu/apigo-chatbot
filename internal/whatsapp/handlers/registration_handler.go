@@ -50,60 +50,98 @@ func (h *RegistrationHandler) Match(ctx context.Context, msg *domain.IncomingMes
 		return false // User already registered, skip this handler
 	}
 
-	// This handler matches for unregistered users
-	return true
+	// Only match if user has a pending registration (started with /register command)
+	pendingResult := h.regUseCase.GetPendingRegistration(ctx, msg.From)
+	return pendingResult.Success && pendingResult.Data != nil
 }
 
 func (h *RegistrationHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) error {
-	slog.Info("User not registered, starting OTP registration flow",
+	slog.Info("Processing registration flow message",
 		"whatsapp", msg.From,
 		"chatID", msg.ChatID,
 	)
 
-	// Check if user has a pending registration
+	// User has pending registration
 	pendingResult := h.regUseCase.GetPendingRegistration(ctx, msg.From)
-
-	if pendingResult.Success && pendingResult.Data != nil {
-		pending := pendingResult.Data
-
-		// Check if user is external and hasn't provided email yet
-		if pending.UserType == "external" && pending.Email == "" {
-			// Extract email from message
-			email := h.extractEmail(msg.Body)
-			name := h.extractName(msg.Body)
-
-			if email != "" && name != "" {
-				// User provided name and email, initiate external registration
-				return h.initiateExternalRegistration(ctx, msg, pending.IdentityNumber, name, email)
-			}
-
-			// Remind them to provide name and email
-			return h.requestExternalUserInfo(msg.ChatID)
-		}
-
-		// User has pending registration with email - check if they're sending an OTP code
-		otpCode := h.extractOTPCode(msg.Body)
-		if otpCode != "" {
-			return h.verifyOTPAndRegister(ctx, msg, otpCode)
-		}
-
-		// Not an OTP code - check if they sent "reenviar" or "resend"
-		if h.isResendRequest(msg.Body) {
-			return h.resendOTP(ctx, msg)
-		}
-
-		// Remind them to enter OTP
-		return h.sendOTPReminder(msg.ChatID, pending)
+	if !pendingResult.Success || pendingResult.Data == nil {
+		// Should not happen since Match() checks for pending registration
+		return h.client.SendText(msg.ChatID,
+			"❌ No tienes un registro pendiente. Usa /register para iniciar el registro.")
 	}
 
-	// No pending registration - start new registration flow
-	cedula := h.extractCedula(msg.Body)
+	pending := pendingResult.Data
 
-	if cedula == "" {
-		return h.requestCedula(msg.ChatID)
+	// Check if user selected a type and now needs to provide name/email
+	if pending.UserType == "selection_required" && pending.Email == "" {
+		// Extract name and email from message
+		email := h.extractEmail(msg.Body)
+		name := h.extractName(msg.Body)
+
+		if email != "" && name != "" {
+			// Complete registration with provided info
+			// Note: Role will be set to ROLE_EXTERNAL for now
+			// Admin can change it later if needed
+			return h.initiateExternalRegistration(ctx, msg, pending.IdentityNumber, name, email)
+		}
+
+		// They haven't provided valid name/email yet - remind them
+		// Check if it's a valid choice number to proceed
+		choice := h.extractChoice(msg.Body)
+		if choice != "" {
+			return h.handleUserTypeSelection(ctx, msg, choice, pending.IdentityNumber)
+		}
+
+		return h.requestUserTypeSelection(msg.ChatID)
 	}
 
-	return h.initiateRegistration(ctx, msg, cedula)
+	// Check if user is external and hasn't provided email yet
+	if pending.UserType == "external" && pending.Email == "" {
+		// Extract email from message
+		email := h.extractEmail(msg.Body)
+		name := h.extractName(msg.Body)
+
+		if email != "" && name != "" {
+			// User provided name and email, initiate external registration
+			return h.initiateExternalRegistration(ctx, msg, pending.IdentityNumber, name, email)
+		}
+
+		// Remind them to provide name and email
+		return h.requestExternalUserInfo(msg.ChatID)
+	}
+
+	// Check if user hasn't sent cedula yet (pending registration exists but no email)
+	if pending.Email == "" && pending.UserType == "" {
+		// Extract cedula from message
+		cedula := h.extractCedula(msg.Body)
+		if cedula == "" {
+			return h.requestCedula(msg.ChatID)
+		}
+		return h.initiateRegistration(ctx, msg, cedula)
+	}
+
+	// Check if user needs to select their type (when API fails or external user detected)
+	if pending.UserType == "selection_required" && pending.Email == "" {
+		// User needs to select: 1=Student, 2=Professor, 3=External
+		choice := h.extractChoice(msg.Body)
+		if choice == "" {
+			return h.requestUserTypeSelection(msg.ChatID)
+		}
+		return h.handleUserTypeSelection(ctx, msg, choice, pending.IdentityNumber)
+	}
+
+	// User has pending registration with email - check if they're sending an OTP code
+	otpCode := h.extractOTPCode(msg.Body)
+	if otpCode != "" {
+		return h.verifyOTPAndRegister(ctx, msg, otpCode)
+	}
+
+	// Not an OTP code - check if they sent "reenviar" or "resend"
+	if h.isResendRequest(msg.Body) {
+		return h.resendOTP(ctx, msg)
+	}
+
+	// Remind them to enter OTP
+	return h.sendOTPReminder(msg.ChatID, pending)
 }
 
 func (h *RegistrationHandler) Priority() int {
@@ -168,13 +206,9 @@ func (h *RegistrationHandler) initiateRegistration(ctx context.Context, msg *dom
 				"❌ Esta cédula ya está registrada con otro número de WhatsApp. Si crees que esto es un error, contacta al administrador.")
 		}
 
-		if result.Code == "ERR_EXTERNAL_USER_INFO_REQUIRED" {
-			return h.handleExternalUser(ctx, msg.From, cedula, msg.ChatID)
-		}
-
-		if result.Code == "ERR_IDENTITY_NOT_FOUND" {
-			return h.client.SendText(msg.ChatID,
-				"❌ No pude validar tu cédula. Por favor verifica que sea correcta e intenta nuevamente.")
+		if result.Code == "ERR_EXTERNAL_USER_INFO_REQUIRED" || result.Code == "ERR_IDENTITY_NOT_FOUND" {
+			// API failed or user not found - let user choose their type
+			return h.handleAPIFailure(ctx, msg.From, cedula, msg.ChatID)
 		}
 
 		return h.client.SendText(msg.ChatID,
@@ -498,3 +532,104 @@ func maskEmail(email string) string {
 
 	return fmt.Sprintf("%s***@%s", localPart[:2], domain)
 }
+
+// handleAPIFailure handles when AcademicOK API fails - ask user to select their type
+func (h *RegistrationHandler) handleAPIFailure(ctx context.Context, whatsapp, cedula, chatID string) error {
+	slog.Info("AcademicOK API failed, requesting user type selection",
+		"whatsapp", whatsapp,
+		"cedula", cedula,
+	)
+
+	// Create pending registration with special marker for selection required
+	result := h.regUseCase.InitiateExternalRegistration(ctx, whatsapp, cedula)
+	if !result.Success {
+		slog.Error("Failed to create pending registration for selection",
+			"code", result.Code,
+		)
+		return h.client.SendText(chatID,
+			"❌ Ocurrió un error al iniciar tu registro. Por favor intenta nuevamente.")
+	}
+
+	// Ask user to select their type
+	return h.requestUserTypeSelection(chatID)
+}
+
+// requestUserTypeSelection asks user to choose their type
+func (h *RegistrationHandler) requestUserTypeSelection(chatID string) error {
+	message := `👤 No pude validar tu cédula automáticamente.
+
+Por favor, selecciona tu tipo de usuario:
+
+*1* - 🎓 Estudiante del instituto
+*2* - 👨‍🏫 Docente del instituto
+*3* - 👤 Usuario externo (visitante)
+
+Envía el número de tu opción (1, 2 o 3).`
+
+	return h.client.SendText(chatID, message)
+}
+
+// extractChoice extracts user choice (1, 2, or 3)
+func (h *RegistrationHandler) extractChoice(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "1" || text == "2" || text == "3" {
+		return text
+	}
+	return ""
+}
+
+// handleUserTypeSelection processes user's type selection
+func (h *RegistrationHandler) handleUserTypeSelection(ctx context.Context, msg *domain.IncomingMessage, choice, cedula string) error {
+	slog.Info("Processing user type selection",
+		"whatsapp", msg.From,
+		"choice", choice,
+	)
+
+	// Map choice to role and request appropriate information
+	switch choice {
+	case "1":
+		// Student
+		return h.requestStudentEmail(msg.ChatID)
+	case "2":
+		// Professor
+		return h.requestProfessorEmail(msg.ChatID)
+	case "3":
+		// External
+		return h.requestExternalUserInfo(msg.ChatID)
+	default:
+		return h.requestUserTypeSelection(msg.ChatID)
+	}
+}
+
+// requestStudentEmail asks student for their institutional email
+func (h *RegistrationHandler) requestStudentEmail(chatID string) error {
+	message := `🎓 *Registro como Estudiante*
+
+Por favor, envíame tu información en el siguiente formato:
+
+*Nombre Completo / correo@institucional.edu.ec*
+
+Ejemplo:
+María García / maria.garcia@ists.edu.ec
+
+Recibirás un código de verificación en ese correo.`
+
+	return h.client.SendText(chatID, message)
+}
+
+// requestProfessorEmail asks professor for their institutional email
+func (h *RegistrationHandler) requestProfessorEmail(chatID string) error {
+	message := `👨‍🏫 *Registro como Docente*
+
+Por favor, envíame tu información en el siguiente formato:
+
+*Nombre Completo / correo@institucional.edu.ec*
+
+Ejemplo:
+Carlos López / carlos.lopez@ists.edu.ec
+
+Recibirás un código de verificación en ese correo.`
+
+	return h.client.SendText(chatID, message)
+}
+

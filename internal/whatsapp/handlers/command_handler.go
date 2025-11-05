@@ -8,20 +8,33 @@ import (
 )
 
 type CommandHandler struct {
-	client     WhatsAppClient
-	paramCache domain.ParameterCache
-	priority   int
+	client      WhatsAppClient
+	paramCache  domain.ParameterCache
+	regUseCase  domain.RegistrationUseCase
+	userUseCase domain.WhatsAppUserUseCase
+	convUseCase domain.ConversationUseCase
+	priority    int
 }
 
 type WhatsAppClient interface {
 	SendText(chatID, message string) error
 }
 
-func NewCommandHandler(client WhatsAppClient, paramCache domain.ParameterCache, priority int) *CommandHandler {
+func NewCommandHandler(
+	client WhatsAppClient,
+	paramCache domain.ParameterCache,
+	regUseCase domain.RegistrationUseCase,
+	userUseCase domain.WhatsAppUserUseCase,
+	convUseCase domain.ConversationUseCase,
+	priority int,
+) *CommandHandler {
 	return &CommandHandler{
-		client:     client,
-		paramCache: paramCache,
-		priority:   priority,
+		client:      client,
+		paramCache:  paramCache,
+		regUseCase:  regUseCase,
+		userUseCase: userUseCase,
+		convUseCase: convUseCase,
+		priority:    priority,
 	}
 }
 
@@ -45,6 +58,8 @@ func (h *CommandHandler) Handle(ctx context.Context, msg *domain.IncomingMessage
 		return h.handleCommands(ctx, msg)
 	case "start", "inicio":
 		return h.handleStart(ctx, msg)
+	case "register", "registrar", "registro":
+		return h.handleRegister(ctx, msg)
 	default:
 		return h.handleUnknownCommand(ctx, msg)
 	}
@@ -65,7 +80,12 @@ func (h *CommandHandler) handleSchedules(ctx context.Context, msg *domain.Incomi
 }
 
 func (h *CommandHandler) handleCommands(ctx context.Context, msg *domain.IncomingMessage) error {
-	message := h.getParam("MESSAGE_COMMANDS", "⚡ *Comandos Disponibles*\n\n/help - Ayuda\n/horarios - Horarios")
+	message := h.getParam("MESSAGE_COMMANDS", `⚡ *Comandos Disponibles*
+
+/help - Ayuda general del bot
+/horarios - Consulta horarios
+/register - Registrarse en el sistema
+/comandos - Lista de comandos`)
 	return h.sendMessage(msg.ChatID, message)
 }
 
@@ -81,6 +101,24 @@ func (h *CommandHandler) handleUnknownCommand(ctx context.Context, msg *domain.I
 
 func (h *CommandHandler) sendMessage(chatID, message string) error {
 	return h.client.SendText(chatID, message)
+}
+
+func (h *CommandHandler) handleRegister(ctx context.Context, msg *domain.IncomingMessage) error {
+	// Check if user is already registered
+	result := h.userUseCase.GetUserByWhatsApp(ctx, msg.From)
+	if result.Success && result.Data != nil {
+		return h.sendMessage(msg.ChatID,
+			"✅ Ya estás registrado en el sistema.\n\nPuedes usar /help para ver lo que puedo hacer por ti.")
+	}
+
+	// Start registration flow - request cedula
+	message := h.getParam("MESSAGE_REQUEST_CEDULA", `👋 ¡Hola! Vamos a registrarte en el sistema.
+
+Para comenzar, envíame tu número de cédula (10 dígitos).
+
+Ejemplo: 1234567890`)
+
+	return h.sendMessage(msg.ChatID, message)
 }
 
 func (h *CommandHandler) getParam(code, defaultValue string) string {

@@ -14,6 +14,7 @@ import (
 type RAGHandler struct {
 	chunkUseCase domain.ChunkUseCase
 	convUseCase  domain.ConversationUseCase
+	userUseCase  domain.WhatsAppUserUseCase
 	llmProvider  llm.Provider
 	client       WhatsAppClient
 	paramCache   domain.ParameterCache
@@ -23,6 +24,7 @@ type RAGHandler struct {
 func NewRAGHandler(
 	chunkUseCase domain.ChunkUseCase,
 	convUseCase domain.ConversationUseCase,
+	userUseCase domain.WhatsAppUserUseCase,
 	llmProvider llm.Provider,
 	client WhatsAppClient,
 	paramCache domain.ParameterCache,
@@ -31,6 +33,7 @@ func NewRAGHandler(
 	return &RAGHandler{
 		chunkUseCase: chunkUseCase,
 		convUseCase:  convUseCase,
+		userUseCase:  userUseCase,
 		llmProvider:  llmProvider,
 		client:       client,
 		paramCache:   paramCache,
@@ -56,6 +59,54 @@ func (h *RAGHandler) Match(ctx context.Context, msg *domain.IncomingMessage) boo
 
 func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) error {
 	query := strings.TrimSpace(msg.Body)
+
+	// Check if user is registered
+	userResult := h.userUseCase.GetUserByWhatsApp(ctx, msg.From)
+	isRegistered := userResult.Success && userResult.Data != nil
+
+	// For unregistered users, check chat limit
+	if !isRegistered {
+		guestLimit := h.getParamInt("GUEST_CHAT_LIMIT", 20)
+
+		// Get conversation to count messages
+		convResult := h.convUseCase.GetOrCreateConversation(ctx, msg.ChatID, msg.SenderName, nil, msg.IsGroup, nil)
+		if convResult.Success && convResult.Data != nil {
+			// Count user messages from today (last 24 hours)
+			historyResult := h.convUseCase.GetConversationHistory(ctx, msg.ChatID, 100)
+			todayStart := time.Now().Add(-24 * time.Hour).Unix()
+			userMessageCount := 0
+
+			if historyResult.Success {
+				for _, histMsg := range historyResult.Data {
+					if !histMsg.FromMe && histMsg.Timestamp >= todayStart {
+						userMessageCount++
+					}
+				}
+			}
+
+			logger.LogInfo(ctx, "Guest user message count check",
+				"whatsapp", msg.From,
+				"messageCount", userMessageCount,
+				"limit", guestLimit,
+			)
+
+			// Check if limit is reached
+			if userMessageCount >= guestLimit {
+				limitMsg := h.getParam("MESSAGE_GUEST_LIMIT_REACHED",
+					"📊 Has alcanzado el límite de mensajes para usuarios no registrados.\n\n✅ Para continuar chateando sin límites, regístrate usando:\n\n/register")
+				return h.sendMessage(msg.ChatID, limitMsg)
+			}
+
+			// Warn when approaching limit (1 message left)
+			if userMessageCount == guestLimit-1 {
+				warningTemplate := h.getParam("MESSAGE_GUEST_LIMIT_WARNING",
+					"⚠️ Te queda %d mensaje disponible hoy.\n\n💡 Regístrate con /register para chat ilimitado.")
+				warningMsg := fmt.Sprintf(warningTemplate, guestLimit-userMessageCount)
+				// Send warning but continue processing
+				h.sendMessage(msg.ChatID, warningMsg)
+			}
+		}
+	}
 
 	convResult := h.convUseCase.GetOrCreateConversation(
 		ctx,

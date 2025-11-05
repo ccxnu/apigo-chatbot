@@ -115,3 +115,45 @@ func (u *whatsAppSessionUseCase) UpdateQRCode(c context.Context, sessionName, qr
 
 	return nil
 }
+
+func (u *whatsAppSessionUseCase) Logout(c context.Context, sessionName string) d.Result[d.Data] {
+	manager := whatsapp.GetManager()
+
+	if err := manager.Logout(c); err != nil {
+		logger.LogError(c, "Failed to logout from WhatsApp", err,
+			"operation", "Logout",
+			"sessionName", sessionName,
+		)
+		return d.Error[d.Data](u.paramCache, "ERR_WHATSAPP_LOGOUT_FAILED")
+	}
+
+	logger.LogInfo(c, "WhatsApp logged out successfully",
+		"operation", "Logout",
+		"sessionName", sessionName,
+	)
+
+	return d.Success(d.Data{
+		"message": "Logged out successfully. Device pairing cleared.",
+	})
+}
+
+func (u *whatsAppSessionUseCase) Reconnect(c context.Context, sessionName string) d.Result[d.Data] {
+	manager := whatsapp.GetManager()
+
+	if err := manager.Reconnect(c); err != nil {
+		logger.LogError(c, "Failed to reconnect WhatsApp", err,
+			"operation", "Reconnect",
+			"sessionName", sessionName,
+		)
+		return d.Error[d.Data](u.paramCache, "ERR_WHATSAPP_RECONNECT_FAILED")
+	}
+
+	logger.LogInfo(c, "WhatsApp reconnected successfully",
+		"operation", "Reconnect",
+		"sessionName", sessionName,
+	)
+
+	return d.Success(d.Data{
+		"message": "Reconnecting... New QR code will be generated.",
+	})
+}

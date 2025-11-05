@@ -74,9 +74,19 @@ func (s *Service) Start(ctx context.Context) error {
 	// Register event handler
 	s.client.WAClient.AddEventHandler(s.handleEvent)
 
-	// Connect to WhatsApp
-	if err := s.client.WAClient.Connect(); err != nil {
-		return fmt.Errorf("failed to connect to WhatsApp: %w", err)
+	// Check if device is paired
+	if s.client.WAClient.Store.ID == nil {
+		// Not paired - need QR code. Connect will trigger QR generation
+		slog.Info("Device not paired, connecting to generate QR code", "session", s.sessionName)
+		if err := s.client.WAClient.Connect(); err != nil {
+			return fmt.Errorf("failed to connect for QR generation: %w", err)
+		}
+	} else {
+		// Already paired - just connect
+		slog.Info("Device already paired, connecting to WhatsApp", "session", s.sessionName)
+		if err := s.client.WAClient.Connect(); err != nil {
+			return fmt.Errorf("failed to connect to WhatsApp: %w", err)
+		}
 	}
 
 	slog.Info("WhatsApp service started", "session", s.sessionName)
@@ -89,6 +99,44 @@ func (s *Service) Stop() {
 		s.client.WAClient.Disconnect()
 		slog.Info("WhatsApp service stopped", "session", s.sessionName)
 	}
+}
+
+// Logout logs out from WhatsApp and clears device pairing
+func (s *Service) Logout(ctx context.Context) error {
+	if s.client == nil || s.client.WAClient == nil {
+		return fmt.Errorf("client not initialized")
+	}
+
+	// Logout from WhatsApp
+	if err := s.client.Logout(); err != nil {
+		return fmt.Errorf("failed to logout: %w", err)
+	}
+
+	// Clear QR code from memory
+	s.currentQR = ""
+
+	slog.Info("WhatsApp logged out successfully", "session", s.sessionName)
+	return nil
+}
+
+// Reconnect disconnects and reconnects to generate a new QR code
+func (s *Service) Reconnect(ctx context.Context) error {
+	if s.client == nil || s.client.WAClient == nil {
+		return fmt.Errorf("client not initialized")
+	}
+
+	// Disconnect first
+	s.client.WAClient.Disconnect()
+	s.currentQR = ""
+
+	slog.Info("Reconnecting to generate new QR code", "session", s.sessionName)
+
+	// Reconnect - will trigger QR if not paired
+	if err := s.client.WAClient.Connect(); err != nil {
+		return fmt.Errorf("failed to reconnect: %w", err)
+	}
+
+	return nil
 }
 
 // GetQRChannel returns the channel for QR code events

@@ -376,8 +376,8 @@ begin
             'APP_CONFIG',
             '{
                 "application": "wsChatbot",
-                "appEnv": "development",
-                "contextTimeout": 2,
+                "appEnv": "production",
+                "contextTimeout": 10,
                 "basicAuth": "X-Auth wiaAchcHks3rBxIhJQem1nLoMDwdoQ=="
             }'::jsonb,
             'General application configuration'
