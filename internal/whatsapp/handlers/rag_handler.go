@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"go.mau.fi/whatsmeow/types"
+
 	"api-chatbot/domain"
 	"api-chatbot/internal/llm"
 	"api-chatbot/internal/logger"
@@ -60,9 +62,13 @@ func (h *RAGHandler) Match(ctx context.Context, msg *domain.IncomingMessage) boo
 func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) error {
 	query := strings.TrimSpace(msg.Body)
 
-	// Check if user is registered
+	// Check if user is registered and get user info
 	userResult := h.userUseCase.GetUserByWhatsApp(ctx, msg.From)
 	isRegistered := userResult.Success && userResult.Data != nil
+	var userName string
+	if isRegistered && userResult.Data != nil {
+		userName = userResult.Data.Name
+	}
 
 	// For unregistered users, check chat limit
 	if !isRegistered {
@@ -132,6 +138,9 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 		logger.LogWarn(ctx, "Failed to store user message", "error", storeResult.Code)
 	}
 
+	// Send typing indicator to make it more natural
+	h.sendTypingIndicator(msg.ChatID, true)
+
 	historyLimit := h.getParamInt("RAG_CONVERSATION_HISTORY_LIMIT", 10)
 	historyResult := h.convUseCase.GetConversationHistory(ctx, msg.ChatID, historyLimit)
 	var conversationHistory []llm.Message
@@ -170,8 +179,9 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	if len(searchResult.Data) == 0 {
 		// No results found - include contact information in context
 		contactInfo := h.getContactInformation()
-		llmResponse, err = h.generateLLMResponse(ctx, query, contactInfo, conversationHistory)
+		llmResponse, err = h.generateLLMResponse(ctx, query, contactInfo, conversationHistory, userName)
 		if err != nil {
+			h.sendTypingIndicator(msg.ChatID, false) // Stop typing
 			noResultsMsg := h.getParam("RAG_NO_RESULTS_MESSAGE", "Lo siento, no encontré información relevante sobre tu consulta.")
 			contactMsg := h.formatContactsForMessage()
 			if contactMsg != "" {
@@ -182,7 +192,7 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 		answer = llmResponse.Content
 	} else {
 		contextStr := h.buildHybridContext(searchResult.Data)
-		llmResponse, err = h.generateLLMResponse(ctx, query, contextStr, conversationHistory)
+		llmResponse, err = h.generateLLMResponse(ctx, query, contextStr, conversationHistory, userName)
 		if err != nil {
 			logger.LogError(ctx, "LLM generation failed", err)
 			answer = h.generateSimpleAnswer(searchResult.Data)
@@ -192,6 +202,9 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	}
 
 	h.storeAssistantMessage(ctx, conversation.ID, answer, timestamp+2, llmResponse)
+
+	// Stop typing indicator before sending response
+	h.sendTypingIndicator(msg.ChatID, false)
 
 	return h.sendMessage(msg.ChatID, answer)
 }
@@ -212,12 +225,18 @@ func (h *RAGHandler) buildHybridContext(chunks []domain.ChunkWithHybridSimilarit
 	return builder.String()
 }
 
-func (h *RAGHandler) generateLLMResponse(ctx context.Context, query, ragContext string, conversationHistory []llm.Message) (*llm.GenerateResponse, error) {
+func (h *RAGHandler) generateLLMResponse(ctx context.Context, query, ragContext string, conversationHistory []llm.Message, userName string) (*llm.GenerateResponse, error) {
 	if h.llmProvider == nil || !h.llmProvider.IsAvailable() {
 		return nil, fmt.Errorf("LLM provider not available")
 	}
 
 	systemPrompt := h.getParam("RAG_SYSTEM_PROMPT", "Eres un asistente virtual del instituto educativo.")
+
+	// Add user name to system prompt if available
+	if userName != "" {
+		systemPrompt = fmt.Sprintf("%s\n\nEl usuario se llama: %s", systemPrompt, userName)
+	}
+
 	temperature := h.getParamFloat("RAG_LLM_TEMPERATURE", 0.7)
 	maxTokens := h.getParamInt("RAG_LLM_MAX_TOKENS", 1000)
 
@@ -441,4 +460,14 @@ func (h *RAGHandler) formatContactsForMessage() string {
 	}
 
 	return strings.TrimSpace(builder.String())
+}
+
+// sendTypingIndicator sends typing presence to make the bot appear more natural
+func (h *RAGHandler) sendTypingIndicator(chatID string, isTyping bool) {
+	// Ignore errors as this is non-critical
+	if isTyping {
+		_ = h.client.SendChatPresence(chatID, types.ChatPresenceComposing, types.ChatPresenceMediaText)
+	} else {
+		_ = h.client.SendChatPresence(chatID, types.ChatPresencePaused, "")
+	}
 }

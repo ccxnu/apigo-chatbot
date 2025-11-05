@@ -126,6 +126,26 @@ func (c *Client) SendText(chatID, text string) error {
 	return nil
 }
 
+// SendChatPresence sends a chat presence (typing indicator)
+func (c *Client) SendChatPresence(chatID string, state types.ChatPresence, media types.ChatPresenceMedia) error {
+	if !c.IsConnected() {
+		return fmt.Errorf("not connected to WhatsApp")
+	}
+
+	// Parse chatID string to JID
+	jid, err := types.ParseJID(chatID)
+	if err != nil {
+		return fmt.Errorf("invalid chat ID: %w", err)
+	}
+
+	err = c.WAClient.SendChatPresence(jid, state, media)
+	if err != nil {
+		return fmt.Errorf("failed to send presence: %w", err)
+	}
+
+	return nil
+}
+
 // SendSticker sends a sticker message to a chat using a URL
 func (c *Client) SendSticker(chatID, stickerURL string) error {
 	if !c.IsConnected() {

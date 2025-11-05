@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"go.mau.fi/whatsmeow/types"
+
 	"api-chatbot/domain"
 )
 
@@ -18,6 +20,7 @@ type CommandHandler struct {
 
 type WhatsAppClient interface {
 	SendText(chatID, message string) error
+	SendChatPresence(chatID string, state types.ChatPresence, media types.ChatPresenceMedia) error
 }
 
 func NewCommandHandler(
