@@ -143,16 +143,17 @@ func (uc *registrationUseCase) InitiateRegistration(
 
 	// Create pending registration
 	createParams := d.CreatePendingRegistrationParams{
-		IdentityNumber: identityNumber,
-		WhatsApp:       whatsapp,
-		Name:           name,
-		Email:          email,
-		Phone:          phone,
-		Role:           role,
-		UserType:       userType,
-		Details:        details,
-		OTPCode:        otpCode,
-		OTPExpiresAt:   otpExpiresAt,
+		IdentityNumber:   identityNumber,
+		WhatsApp:         whatsapp,
+		Name:             name,
+		Email:            email,
+		Phone:            phone,
+		Role:             role,
+		UserType:         userType,
+		Details:          details,
+		RegistrationStep: "STEP_VERIFY_OTP", // Institute user with email - ready for OTP verification
+		OTPCode:          otpCode,
+		OTPExpiresAt:     otpExpiresAt,
 	}
 
 	createResult, err := uc.regRepo.CreatePendingRegistration(ctx, createParams)
@@ -368,16 +369,17 @@ func (uc *registrationUseCase) ResendOTP(
 
 	// Update pending registration with new OTP
 	updateParams := d.CreatePendingRegistrationParams{
-		IdentityNumber: pending.IdentityNumber,
-		WhatsApp:       whatsapp,
-		Name:           pending.Name,
-		Email:          pending.Email,
-		Phone:          pending.Phone,
-		Role:           pending.Role,
-		UserType:       pending.UserType,
-		Details:        pending.Details,
-		OTPCode:        newOTPCode,
-		OTPExpiresAt:   newExpiresAt,
+		IdentityNumber:   pending.IdentityNumber,
+		WhatsApp:         whatsapp,
+		Name:             pending.Name,
+		Email:            pending.Email,
+		Phone:            pending.Phone,
+		Role:             pending.Role,
+		UserType:         pending.UserType,
+		Details:          pending.Details,
+		RegistrationStep: "STEP_VERIFY_OTP", // Resending OTP - ready for verification
+		OTPCode:          newOTPCode,
+		OTPExpiresAt:     newExpiresAt,
 	}
 
 	updateResult, err := uc.regRepo.CreatePendingRegistration(ctx, updateParams)
@@ -453,16 +455,17 @@ func (uc *registrationUseCase) InitiateExternalRegistration(
 	// Create pending registration WITHOUT email (will be collected in next step)
 	// No OTP yet - will be generated after email is provided
 	createParams := d.CreatePendingRegistrationParams{
-		IdentityNumber: identityNumber,
-		WhatsApp:       whatsapp,
-		Name:           "", // Will be provided by user
-		Email:          "", // Will be provided by user
-		Phone:          "",
-		Role:           "ROLE_EXTERNAL",
-		UserType:       "external",
-		Details:        d.Data{},
-		OTPCode:        "", // No OTP yet
-		OTPExpiresAt:   time.Time{}, // No expiration yet
+		IdentityNumber:   identityNumber,
+		WhatsApp:         whatsapp,
+		Name:             "", // Will be provided by user
+		Email:            "", // Will be provided by user
+		Phone:            "",
+		Role:             "ROLE_EXTERNAL",
+		UserType:         "external",
+		Details:          d.Data{},
+		RegistrationStep: "STEP_REQUEST_EMAIL_NAME", // External user - needs to provide email and name
+		OTPCode:          "", // No OTP yet
+		OTPExpiresAt:     time.Time{}, // No expiration yet
 	}
 
 	createResult, err := uc.regRepo.CreatePendingRegistration(ctx, createParams)
@@ -499,6 +502,7 @@ func (uc *registrationUseCase) InitiateExternalRegistration(
 }
 
 // CompleteExternalRegistration updates pending registration with name/email and generates OTP
+// This handles external users, students, and professors when they provide name/email manually
 func (uc *registrationUseCase) CompleteExternalRegistration(
 	c context.Context,
 	whatsapp, name, email string,
@@ -545,30 +549,42 @@ func (uc *registrationUseCase) CompleteExternalRegistration(
 
 	otpExpiresAt := time.Now().UTC().Add(time.Duration(otpExpirationMinutes) * time.Minute)
 
+	// Determine user type based on role (keep role from selection if available)
+	role := pending.Role
+	if role == "" {
+		role = "ROLE_EXTERNAL" // Default to external if no role set
+	}
+
+	userType := "external"
+	if role == "ROLE_STUDENT" || role == "ROLE_PROFESSOR" {
+		userType = "institute" // Student/Professor who selected manually
+	}
+
 	// Update pending registration with name, email, and OTP
 	updateParams := d.CreatePendingRegistrationParams{
-		IdentityNumber: pending.IdentityNumber,
-		WhatsApp:       whatsapp,
-		Name:           name,
-		Email:          email,
-		Phone:          "",
-		Role:           "ROLE_EXTERNAL",
-		UserType:       "external",
-		Details:        d.Data{},
-		OTPCode:        otpCode,
-		OTPExpiresAt:   otpExpiresAt,
+		IdentityNumber:   pending.IdentityNumber,
+		WhatsApp:         whatsapp,
+		Name:             name,
+		Email:            email,
+		Phone:            "",
+		Role:             role,
+		UserType:         userType,
+		Details:          d.Data{},
+		RegistrationStep: "STEP_VERIFY_OTP", // User with email - ready for OTP verification
+		OTPCode:          otpCode,
+		OTPExpiresAt:     otpExpiresAt,
 	}
 
 	updateResult, err := uc.regRepo.CreatePendingRegistration(ctx, updateParams)
 	if err != nil {
-		logger.LogError(ctx, "Failed to update external pending registration", err,
+		logger.LogError(ctx, "Failed to update pending registration", err,
 			"operation", "CompleteExternalRegistration",
 		)
 		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
 	}
 
 	if !updateResult.Success {
-		logger.LogWarn(ctx, "External registration completion failed",
+		logger.LogWarn(ctx, "Registration completion failed",
 			"operation", "CompleteExternalRegistration",
 			"code", updateResult.Code,
 		)
@@ -576,9 +592,9 @@ func (uc *registrationUseCase) CompleteExternalRegistration(
 	}
 
 	// Send OTP email
-	err = uc.mailer.SendOTPEmail(ctx, email, name, otpCode, "external")
+	err = uc.mailer.SendOTPEmail(ctx, email, name, otpCode, userType)
 	if err != nil {
-		logger.LogError(ctx, "Failed to send OTP email to external user", err,
+		logger.LogError(ctx, "Failed to send OTP email", err,
 			"operation", "CompleteExternalRegistration",
 			"email", email,
 		)
@@ -588,19 +604,289 @@ func (uc *registrationUseCase) CompleteExternalRegistration(
 	// Retrieve updated pending registration
 	updatedPending, err := uc.regRepo.GetPendingByWhatsApp(ctx, whatsapp)
 	if err != nil || updatedPending == nil {
-		logger.LogError(ctx, "Failed to retrieve updated external pending registration", err,
+		logger.LogError(ctx, "Failed to retrieve updated pending registration", err,
 			"operation", "CompleteExternalRegistration",
 		)
 		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
 	}
 
-	logger.LogInfo(ctx, "External registration completed with OTP sent",
+	logger.LogInfo(ctx, "Registration completed with OTP sent",
 		"operation", "CompleteExternalRegistration",
 		"whatsapp", whatsapp,
 		"email", email,
+		"role", role,
 	)
 
 	return d.Success(updatedPending)
+}
+
+// InitiatePendingForCedula creates pending registration waiting for cedula input
+func (uc *registrationUseCase) InitiatePendingForCedula(
+	c context.Context,
+	whatsapp string,
+) d.Result[*d.PendingRegistration] {
+	ctx, cancel := context.WithTimeout(c, uc.contextTimeout)
+	defer cancel()
+
+	// Check if user already exists
+	existingUser, err := uc.userRepo.GetByWhatsApp(ctx, whatsapp)
+	if err != nil {
+		logger.LogError(ctx, "Failed to check existing user", err,
+			"operation", "InitiatePendingForCedula",
+			"whatsapp", whatsapp,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if existingUser != nil {
+		logger.LogWarn(ctx, "User already registered",
+			"operation", "InitiatePendingForCedula",
+			"whatsapp", whatsapp,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_USER_ALREADY_EXISTS")
+	}
+
+	// Create pending registration waiting for cedula
+	createParams := d.CreatePendingRegistrationParams{
+		IdentityNumber:   "", // Will be provided by user
+		WhatsApp:         whatsapp,
+		Name:             "",
+		Email:            "",
+		Phone:            "",
+		Role:             "",
+		UserType:         "",
+		Details:          d.Data{},
+		RegistrationStep: "STEP_INIT", // Step 0 - registration initiated, waiting for cedula
+		OTPCode:          "",
+		OTPExpiresAt:     time.Time{},
+	}
+
+	createResult, err := uc.regRepo.CreatePendingRegistration(ctx, createParams)
+	if err != nil {
+		logger.LogError(ctx, "Failed to create pending for cedula", err,
+			"operation", "InitiatePendingForCedula",
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if !createResult.Success {
+		logger.LogWarn(ctx, "Pending creation for cedula failed",
+			"operation", "InitiatePendingForCedula",
+			"code", createResult.Code,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, createResult.Code)
+	}
+
+	// Retrieve the pending registration
+	pending, err := uc.regRepo.GetPendingByWhatsApp(ctx, whatsapp)
+	if err != nil || pending == nil {
+		logger.LogError(ctx, "Failed to retrieve pending for cedula", err,
+			"operation", "InitiatePendingForCedula",
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	logger.LogInfo(ctx, "Pending registration created waiting for cedula",
+		"operation", "InitiatePendingForCedula",
+		"whatsapp", whatsapp,
+	)
+
+	return d.Success(pending)
+}
+
+// InitiateRegistrationWithSelection creates pending for user type selection (when API fails)
+func (uc *registrationUseCase) InitiateRegistrationWithSelection(
+	c context.Context,
+	whatsapp, identityNumber string,
+) d.Result[*d.PendingRegistration] {
+	ctx, cancel := context.WithTimeout(c, uc.contextTimeout)
+	defer cancel()
+
+	// Check if user already exists
+	existingUser, err := uc.userRepo.GetByWhatsApp(ctx, whatsapp)
+	if err != nil {
+		logger.LogError(ctx, "Failed to check existing user", err,
+			"operation", "InitiateRegistrationWithSelection",
+			"whatsapp", whatsapp,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if existingUser != nil {
+		logger.LogWarn(ctx, "User already registered",
+			"operation", "InitiateRegistrationWithSelection",
+			"whatsapp", whatsapp,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_USER_ALREADY_EXISTS")
+	}
+
+	// Create pending registration for user type selection
+	createParams := d.CreatePendingRegistrationParams{
+		IdentityNumber:   identityNumber,
+		WhatsApp:         whatsapp,
+		Name:             "", // Will be provided after type selection
+		Email:            "", // Will be provided after type selection
+		Phone:            "",
+		Role:             "", // Will be set after user selects type
+		UserType:         "selection_required", // Special marker for selection required
+		Details:          d.Data{},
+		RegistrationStep: "STEP_SELECT_USER_TYPE", // User needs to select their type
+		OTPCode:          "", // No OTP yet
+		OTPExpiresAt:     time.Time{}, // No expiration yet
+	}
+
+	createResult, err := uc.regRepo.CreatePendingRegistration(ctx, createParams)
+	if err != nil {
+		logger.LogError(ctx, "Failed to create pending for selection", err,
+			"operation", "InitiateRegistrationWithSelection",
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if !createResult.Success {
+		logger.LogWarn(ctx, "Pending creation for selection failed",
+			"operation", "InitiateRegistrationWithSelection",
+			"code", createResult.Code,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, createResult.Code)
+	}
+
+	// Retrieve the pending registration
+	pending, err := uc.regRepo.GetPendingByWhatsApp(ctx, whatsapp)
+	if err != nil || pending == nil {
+		logger.LogError(ctx, "Failed to retrieve pending for selection", err,
+			"operation", "InitiateRegistrationWithSelection",
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	logger.LogInfo(ctx, "Pending registration created for type selection",
+		"operation", "InitiateRegistrationWithSelection",
+		"whatsapp", whatsapp,
+	)
+
+	return d.Success(pending)
+}
+
+// UpdatePendingWithRole updates pending registration with selected role
+func (uc *registrationUseCase) UpdatePendingWithRole(
+	c context.Context,
+	whatsapp, role string,
+) d.Result[*d.PendingRegistration] {
+	ctx, cancel := context.WithTimeout(c, uc.contextTimeout)
+	defer cancel()
+
+	// Get existing pending registration
+	pending, err := uc.regRepo.GetPendingByWhatsApp(ctx, whatsapp)
+	if err != nil {
+		logger.LogError(ctx, "Failed to get pending registration", err,
+			"operation", "UpdatePendingWithRole",
+			"whatsapp", whatsapp,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if pending == nil {
+		logger.LogWarn(ctx, "No pending registration found",
+			"operation", "UpdatePendingWithRole",
+			"whatsapp", whatsapp,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_NO_PENDING_REGISTRATION")
+	}
+
+	// Update pending with selected role and move to email/name request step
+	updateParams := d.CreatePendingRegistrationParams{
+		IdentityNumber:   pending.IdentityNumber,
+		WhatsApp:         whatsapp,
+		Name:             "",
+		Email:            "",
+		Phone:            "",
+		Role:             role,
+		UserType:         "selection_required", // Mark that user selected type manually
+		Details:          d.Data{},
+		RegistrationStep: "STEP_REQUEST_EMAIL_NAME",
+		OTPCode:          "",
+		OTPExpiresAt:     time.Time{},
+	}
+
+	updateResult, err := uc.regRepo.CreatePendingRegistration(ctx, updateParams)
+	if err != nil {
+		logger.LogError(ctx, "Failed to update pending with role", err,
+			"operation", "UpdatePendingWithRole",
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if !updateResult.Success {
+		logger.LogWarn(ctx, "Update pending with role failed",
+			"operation", "UpdatePendingWithRole",
+			"code", updateResult.Code,
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, updateResult.Code)
+	}
+
+	// Retrieve updated pending registration
+	updatedPending, err := uc.regRepo.GetPendingByWhatsApp(ctx, whatsapp)
+	if err != nil || updatedPending == nil {
+		logger.LogError(ctx, "Failed to retrieve updated pending registration", err,
+			"operation", "UpdatePendingWithRole",
+		)
+		return d.Error[*d.PendingRegistration](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	logger.LogInfo(ctx, "Pending registration updated with selected role",
+		"operation", "UpdatePendingWithRole",
+		"whatsapp", whatsapp,
+		"role", role,
+	)
+
+	return d.Success(updatedPending)
+}
+
+// CancelPendingRegistration cancels/deletes a pending registration (for /reset)
+func (uc *registrationUseCase) CancelPendingRegistration(
+	c context.Context,
+	whatsapp string,
+) d.Result[bool] {
+	ctx, cancel := context.WithTimeout(c, uc.contextTimeout)
+	defer cancel()
+
+	// Get existing pending registration
+	pending, err := uc.regRepo.GetPendingByWhatsApp(ctx, whatsapp)
+	if err != nil {
+		logger.LogError(ctx, "Failed to get pending registration for cancellation", err,
+			"operation", "CancelPendingRegistration",
+			"whatsapp", whatsapp,
+		)
+		return d.Error[bool](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	if pending == nil {
+		// No pending registration - that's OK
+		logger.LogInfo(ctx, "No pending registration to cancel",
+			"operation", "CancelPendingRegistration",
+			"whatsapp", whatsapp,
+		)
+		return d.Success(true)
+	}
+
+	// Delete pending registration
+	err = uc.regRepo.DeletePendingRegistration(ctx, pending.ID)
+	if err != nil {
+		logger.LogError(ctx, "Failed to delete pending registration", err,
+			"operation", "CancelPendingRegistration",
+			"pendingID", pending.ID,
+		)
+		return d.Error[bool](uc.paramCache, "ERR_INTERNAL_DB")
+	}
+
+	logger.LogInfo(ctx, "Pending registration cancelled",
+		"operation", "CancelPendingRegistration",
+		"whatsapp", whatsapp,
+		"pendingID", pending.ID,
+	)
+
+	return d.Success(true)
 }
 
 // generateOTP generates a 6-digit OTP code

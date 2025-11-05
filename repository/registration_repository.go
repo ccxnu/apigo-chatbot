@@ -14,8 +14,9 @@ const (
 	fnVerifyOTPCode                    = "fn_verify_otp_code"
 	fnCleanupExpiredPendingRegs        = "fn_cleanup_expired_pending_registrations"
 	// Stored Procedures (Writes)
-	spCreatePendingRegistration = "sp_create_pending_registration"
-	spDeletePendingRegistration = "sp_delete_pending_registration"
+	spCreatePendingRegistration    = "sp_create_pending_registration"
+	spUpdateRegistrationStep       = "sp_update_registration_step"
+	spDeletePendingRegistration    = "sp_delete_pending_registration"
 )
 
 type registrationRepository struct {
@@ -45,6 +46,7 @@ func (r *registrationRepository) CreatePendingRegistration(
 		params.Role,
 		params.UserType,
 		params.Details,
+		params.RegistrationStep,
 		params.OTPCode,
 		params.OTPExpiresAt,
 	)
@@ -122,6 +124,35 @@ func (r *registrationRepository) DeletePendingRegistration(
 
 	if !result.Success {
 		return fmt.Errorf("failed to delete pending registration: code=%s", result.Code)
+	}
+
+	return nil
+}
+
+// UpdateRegistrationStep updates the registration step for a pending registration
+func (r *registrationRepository) UpdateRegistrationStep(
+	ctx context.Context,
+	whatsapp string,
+	step string,
+) error {
+	type UpdateStepResult struct {
+		dal.DbResult
+	}
+
+	result, err := dal.ExecProc[UpdateStepResult](
+		r.dal,
+		ctx,
+		spUpdateRegistrationStep,
+		whatsapp,
+		step,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to execute %s: %w", spUpdateRegistrationStep, err)
+	}
+
+	if !result.Success {
+		return fmt.Errorf("failed to update registration step: code=%s", result.Code)
 	}
 
 	return nil

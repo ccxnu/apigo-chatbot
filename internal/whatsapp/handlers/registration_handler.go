@@ -71,77 +71,64 @@ func (h *RegistrationHandler) Handle(ctx context.Context, msg *domain.IncomingMe
 
 	pending := pendingResult.Data
 
-	// Check if user selected a type and now needs to provide name/email
-	if pending.UserType == "selection_required" && pending.Email == "" {
-		// Extract name and email from message
-		email := h.extractEmail(msg.Body)
-		name := h.extractName(msg.Body)
-
-		if email != "" && name != "" {
-			// Complete registration with provided info
-			// Note: Role will be set to ROLE_EXTERNAL for now
-			// Admin can change it later if needed
-			return h.initiateExternalRegistration(ctx, msg, pending.IdentityNumber, name, email)
-		}
-
-		// They haven't provided valid name/email yet - remind them
-		// Check if it's a valid choice number to proceed
-		choice := h.extractChoice(msg.Body)
-		if choice != "" {
-			return h.handleUserTypeSelection(ctx, msg, choice, pending.IdentityNumber)
-		}
-
-		return h.requestUserTypeSelection(msg.ChatID)
-	}
-
-	// Check if user is external and hasn't provided email yet
-	if pending.UserType == "external" && pending.Email == "" {
-		// Extract email from message
-		email := h.extractEmail(msg.Body)
-		name := h.extractName(msg.Body)
-
-		if email != "" && name != "" {
-			// User provided name and email, initiate external registration
-			return h.initiateExternalRegistration(ctx, msg, pending.IdentityNumber, name, email)
-		}
-
-		// Remind them to provide name and email
-		return h.requestExternalUserInfo(msg.ChatID)
-	}
-
-	// Check if user hasn't sent cedula yet (pending registration exists but no email)
-	if pending.Email == "" && pending.UserType == "" {
-		// Extract cedula from message
+	// Route based on current registration step
+	switch pending.RegistrationStep {
+	case "STEP_INIT", "STEP_REQUEST_CEDULA":
+		// Step 0 or 1 - User needs to provide cedula
 		cedula := h.extractCedula(msg.Body)
 		if cedula == "" {
-			return h.requestCedula(msg.ChatID)
+			// Not a valid cedula - send reminder
+			message := h.getParam("REG_MSG_WAITING_CEDULA",
+				"⏳ Estoy esperando tu número de cédula para continuar con el registro.\n\nPor favor envía tu cédula de 10 dígitos.\n\nEjemplo: 1234567890")
+			return h.client.SendText(msg.ChatID, message)
 		}
 		return h.initiateRegistration(ctx, msg, cedula)
-	}
 
-	// Check if user needs to select their type (when API fails or external user detected)
-	if pending.UserType == "selection_required" && pending.Email == "" {
-		// User needs to select: 1=Student, 2=Professor, 3=External
+	case "STEP_SELECT_USER_TYPE":
+		// User needs to select their type (student, professor, external)
 		choice := h.extractChoice(msg.Body)
 		if choice == "" {
-			return h.requestUserTypeSelection(msg.ChatID)
+			// Not a valid choice - send reminder
+			message := h.getParam("REG_MSG_WAITING_USER_TYPE",
+				"⏳ Por favor selecciona tu tipo de usuario enviando el número correspondiente:\n\n*1* - 🎓 Estudiante\n*2* - 👨‍🏫 Docente\n*3* - 👤 Usuario externo")
+			return h.client.SendText(msg.ChatID, message)
 		}
 		return h.handleUserTypeSelection(ctx, msg, choice, pending.IdentityNumber)
-	}
 
-	// User has pending registration with email - check if they're sending an OTP code
-	otpCode := h.extractOTPCode(msg.Body)
-	if otpCode != "" {
+	case "STEP_REQUEST_EMAIL_NAME":
+		// User needs to provide name and email
+		email := h.extractEmail(msg.Body)
+		name := h.extractName(msg.Body)
+		if email == "" || name == "" {
+			// Not valid name/email format - send reminder
+			message := h.getParam("REG_MSG_WAITING_EMAIL_NAME",
+				"⏳ Necesito tu nombre completo y correo electrónico.\n\nFormato: *Nombre Completo / correo@email.com*\n\nEjemplo:\nJuan Pérez / juan.perez@gmail.com")
+			return h.client.SendText(msg.ChatID, message)
+		}
+		return h.initiateExternalRegistration(ctx, msg, pending.IdentityNumber, name, email)
+
+	case "STEP_VERIFY_OTP":
+		// User needs to enter OTP code or request resend
+		// Check if they sent "reenviar" or "resend"
+		if h.isResendRequest(msg.Body) {
+			return h.resendOTP(ctx, msg)
+		}
+		// Check if they're sending an OTP code
+		otpCode := h.extractOTPCode(msg.Body)
+		if otpCode == "" {
+			// Not a valid OTP - send reminder
+			message := h.getParam("REG_MSG_WAITING_OTP",
+				"⏳ Estoy esperando el código de verificación que te envié por correo.\n\nPor favor ingresa el código de 6 dígitos.\n\nSi no lo recibiste, escribe 'reenviar'.")
+			return h.client.SendText(msg.ChatID, message)
+		}
 		return h.verifyOTPAndRegister(ctx, msg, otpCode)
-	}
 
-	// Not an OTP code - check if they sent "reenviar" or "resend"
-	if h.isResendRequest(msg.Body) {
-		return h.resendOTP(ctx, msg)
+	default:
+		// Unknown step or completed - shouldn't happen
+		slog.Warn("Unknown registration step", "step", pending.RegistrationStep, "whatsapp", msg.From)
+		return h.client.SendText(msg.ChatID,
+			"❌ Estado de registro desconocido. Por favor contacta al administrador.")
 	}
-
-	// Remind them to enter OTP
-	return h.sendOTPReminder(msg.ChatID, pending)
 }
 
 func (h *RegistrationHandler) Priority() int {
@@ -540,8 +527,8 @@ func (h *RegistrationHandler) handleAPIFailure(ctx context.Context, whatsapp, ce
 		"cedula", cedula,
 	)
 
-	// Create pending registration with special marker for selection required
-	result := h.regUseCase.InitiateExternalRegistration(ctx, whatsapp, cedula)
+	// Create pending registration with STEP_SELECT_USER_TYPE
+	result := h.regUseCase.InitiateRegistrationWithSelection(ctx, whatsapp, cedula)
 	if !result.Success {
 		slog.Error("Failed to create pending registration for selection",
 			"code", result.Code,
@@ -585,20 +572,39 @@ func (h *RegistrationHandler) handleUserTypeSelection(ctx context.Context, msg *
 		"choice", choice,
 	)
 
-	// Map choice to role and request appropriate information
+	var role string
+	var messageFunc func(string) error
+
+	// Map choice to role and message function
 	switch choice {
 	case "1":
 		// Student
-		return h.requestStudentEmail(msg.ChatID)
+		role = "ROLE_STUDENT"
+		messageFunc = h.requestStudentEmail
 	case "2":
 		// Professor
-		return h.requestProfessorEmail(msg.ChatID)
+		role = "ROLE_PROFESSOR"
+		messageFunc = h.requestProfessorEmail
 	case "3":
 		// External
-		return h.requestExternalUserInfo(msg.ChatID)
+		role = "ROLE_EXTERNAL"
+		messageFunc = h.requestExternalUserInfo
 	default:
 		return h.requestUserTypeSelection(msg.ChatID)
 	}
+
+	// Update pending registration with selected role
+	result := h.regUseCase.UpdatePendingWithRole(ctx, msg.From, role)
+	if !result.Success {
+		slog.Error("Failed to update pending registration with user type",
+			"code", result.Code,
+		)
+		return h.client.SendText(msg.ChatID,
+			"❌ Ocurrió un error al actualizar tu registro. Por favor intenta nuevamente.")
+	}
+
+	// Send appropriate message for the selected type
+	return messageFunc(msg.ChatID)
 }
 
 // requestStudentEmail asks student for their institutional email
