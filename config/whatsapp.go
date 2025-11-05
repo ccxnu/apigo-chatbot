@@ -92,7 +92,7 @@ func InitializeWhatsAppService(
 		handlers.NewRAGHandler(chunkUC, convUC, userUC, llmProvider, waClient, app.Cache, 50),
 	}
 
-	service, err := whatsapp.NewServiceWithClient(waClient, sessionName, sessionUC, messageHandlers, app.Cache)
+	service, err := whatsapp.NewServiceWithClient(waClient, sessionName, sessionUC, messageHandlers, app.Cache, container)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create WhatsApp service: %w", err)
 	}

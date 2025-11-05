@@ -61,13 +61,32 @@ func (u *whatsAppSessionUseCase) GetQRCode(c context.Context, sessionName string
 		"operation", "GetQRCode",
 		"sessionName", sessionName,
 		"hasQRCode", qrCode != "",
+		"qrCodeLength", len(qrCode),
 		"connected", connected,
 	)
+
+	if qrCode != "" {
+		logger.LogInfo(c, "Returning QR code to client",
+			"qr_preview", qrCode[:min(50, len(qrCode))],
+		)
+	} else {
+		logger.LogWarn(c, "No QR code available in memory",
+			"connected", connected,
+			"sessionName", sessionName,
+		)
+	}
 
 	return d.Success(d.Data{
 		"qrCode":    qrCode,
 		"connected": connected,
 	})
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (u *whatsAppSessionUseCase) UpdateConnectionStatus(c context.Context, params d.UpdateSessionStatusParams) d.Result[d.Data] {

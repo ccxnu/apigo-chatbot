@@ -194,15 +194,22 @@ type DeviceInfo struct {
 	Connected   bool
 }
 
-// Logout logs out from WhatsApp
+// Logout logs out from WhatsApp and deletes the device from store
 func (c *Client) Logout() error {
 	if c.WAClient.Store.ID == nil {
 		return fmt.Errorf("not logged in")
 	}
 
+	// Logout from WhatsApp
 	err := c.WAClient.Logout(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to logout: %w", err)
+	}
+
+	// Delete the device from the store completely to force fresh pairing
+	err = c.DeviceStore.Delete(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to delete device from store: %w", err)
 	}
 
 	return nil

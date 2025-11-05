@@ -69,11 +69,11 @@ func SetupLogger(cache domain.ParameterCache) (*slog.Logger, func() error) {
 	// Override output based on environment
 	// Development: stdout only (easier for local debugging)
 	// Production: file only (persistent logs, less noise in container logs)
-	if isDevelopment {
-		config.Output = "stdout"
-	} else {
-		config.Output = "file"
-	}
+	// if isDevelopment {
+	config.Output = "stdout"
+	// } else {
+		// config.Output = "file"
+	// }
 
 	// Parse log level
 	var level slog.Level

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types/events"
 
@@ -14,12 +15,13 @@ import (
 
 // Service manages WhatsApp client lifecycle and event handling
 type Service struct {
-	client      *Client
-	dispatcher  *MessageDispatcher
-	sessionUC   d.WhatsAppSessionUseCase
-	sessionName string
-	connectTime	int64
-	currentQR   string // In-memory QR code (not persisted to database)
+	client         *Client
+	dispatcher     *MessageDispatcher
+	sessionUC      d.WhatsAppSessionUseCase
+	sessionName    string
+	connectTime    int64
+	currentQR      string // In-memory QR code (not persisted to database)
+	deviceContainer interface{} // Store container to create new devices
 }
 
 // NewService creates a new WhatsApp service
@@ -58,14 +60,16 @@ func NewServiceWithClient(
 	sessionUC d.WhatsAppSessionUseCase,
 	handlers []MessageHandler,
 	paramCache d.ParameterCache,
+	deviceContainer interface{},
 ) (*Service, error) {
 	dispatcher := NewMessageDispatcher(handlers, paramCache, client)
 
 	return &Service{
-		client:      client,
-		dispatcher:  dispatcher,
-		sessionUC:   sessionUC,
-		sessionName: sessionName,
+		client:          client,
+		dispatcher:      dispatcher,
+		sessionUC:       sessionUC,
+		sessionName:     sessionName,
+		deviceContainer: deviceContainer,
 	}, nil
 }
 
@@ -107,35 +111,145 @@ func (s *Service) Logout(ctx context.Context) error {
 		return fmt.Errorf("client not initialized")
 	}
 
-	// Logout from WhatsApp
-	if err := s.client.Logout(); err != nil {
-		return fmt.Errorf("failed to logout: %w", err)
+	slog.Info("Logout requested - clearing session and QR", "session", s.sessionName)
+
+	// 1. Update database to disconnected state FIRST
+	connected := false
+	params := d.UpdateSessionStatusParams{
+		SessionName: s.sessionName,
+		Connected:   connected,
 	}
 
-	// Clear QR code from memory
+	result := s.sessionUC.UpdateConnectionStatus(ctx, params)
+	if !result.Success {
+		slog.Error("Failed to update disconnection status in database",
+			"session", s.sessionName,
+			"code", result.Code,
+		)
+	} else {
+		slog.Info("Database updated to disconnected", "session", s.sessionName)
+	}
+
+	// 2. Clear QR code from database
+	err := s.sessionUC.UpdateQRCode(ctx, s.sessionName, "")
+	if err != nil {
+		slog.Error("Failed to clear QR code from database",
+			"session", s.sessionName,
+			"error", err,
+		)
+	}
+
+	// 3. Logout from WhatsApp (clears device pairing) - needs websocket connected
+	if s.client.WAClient.Store.ID != nil && s.client.WAClient.IsConnected() {
+		slog.Info("Logging out and clearing device pairing",
+			"session", s.sessionName,
+			"device_id_before", s.client.WAClient.Store.ID.String(),
+		)
+		if err := s.client.Logout(); err != nil {
+			slog.Warn("Failed to logout from WhatsApp (will continue)", "session", s.sessionName, "error", err)
+			// Don't return error, continue to disconnect
+		} else {
+			isPairedAfter := s.client.WAClient.Store.ID != nil
+			slog.Info("Successfully logged out from WhatsApp",
+				"session", s.sessionName,
+				"still_paired_after_logout", isPairedAfter,
+			)
+		}
+	} else {
+		slog.Info("Device not paired or not connected, skipping WhatsApp logout", "session", s.sessionName)
+	}
+
+	// 4. Disconnect websocket
+	if s.client.WAClient.IsConnected() {
+		slog.Info("Disconnecting WhatsApp websocket", "session", s.sessionName)
+		s.client.WAClient.Disconnect()
+	}
+
+	// 5. Clear QR code from memory
 	s.currentQR = ""
 
-	slog.Info("WhatsApp logged out successfully", "session", s.sessionName)
+	slog.Info("Logout completed - QR cleared, DB updated, disconnected", "session", s.sessionName)
 	return nil
 }
 
 // Reconnect disconnects and reconnects to generate a new QR code
+// This is meant to be called AFTER logout has been done
 func (s *Service) Reconnect(ctx context.Context) error {
 	if s.client == nil || s.client.WAClient == nil {
 		return fmt.Errorf("client not initialized")
 	}
 
-	// Disconnect first
-	s.client.WAClient.Disconnect()
+	isPaired := s.client.WAClient.Store.ID != nil
+	isConnected := s.client.WAClient.IsConnected()
+
+	slog.Info("Reconnect requested",
+		"session", s.sessionName,
+		"isPaired", isPaired,
+		"currentlyConnected", isConnected,
+	)
+
+	// Clear QR code from memory
 	s.currentQR = ""
+	slog.Info("QR code cleared from memory", "session", s.sessionName)
 
-	slog.Info("Reconnecting to generate new QR code", "session", s.sessionName)
-
-	// Reconnect - will trigger QR if not paired
-	if err := s.client.WAClient.Connect(); err != nil {
-		return fmt.Errorf("failed to reconnect: %w", err)
+	// If still paired, we need to logout first
+	if isPaired {
+		slog.Info("Device still paired, must logout first before reconnect", "session", s.sessionName)
+		// Call logout which will handle everything properly
+		if err := s.Logout(ctx); err != nil {
+			slog.Warn("Logout failed during reconnect", "session", s.sessionName, "error", err)
+		}
+		// Wait for logout to complete and device deletion
+		time.Sleep(2 * time.Second)
 	}
 
+	// Disconnect if still connected
+	if s.client.WAClient.IsConnected() {
+		slog.Info("Disconnecting before reconnect", "session", s.sessionName)
+		s.client.WAClient.Disconnect()
+		time.Sleep(1 * time.Second)
+	}
+
+	// After device deletion, we need to create a NEW device and client
+	// The old device store has stale keys in memory
+	slog.Info("Creating fresh device and WhatsApp client after logout", "session", s.sessionName)
+
+	// Cast container to proper type and create NEW device
+	if s.deviceContainer == nil {
+		return fmt.Errorf("device container not available")
+	}
+
+	container, ok := s.deviceContainer.(interface {
+		NewDevice() *store.Device
+	})
+	if !ok {
+		return fmt.Errorf("invalid device container type")
+	}
+
+	// Create completely fresh device store
+	newDeviceStore := container.NewDevice()
+	s.client.DeviceStore = newDeviceStore
+
+	slog.Info("New device store created", "session", s.sessionName)
+
+	// Create a completely new whatsmeow client with the fresh device
+	newWAClient := whatsmeow.NewClient(newDeviceStore, s.client.WAClient.Log)
+
+	// Replace the old client
+	s.client.WAClient = newWAClient
+
+	// Re-register event handler for the new client
+	s.client.WAClient.AddEventHandler(s.handleEvent)
+
+	slog.Info("New client created, connecting to generate QR code", "session", s.sessionName)
+
+	// Connect - will trigger QR event if not paired
+	if err := s.client.WAClient.Connect(); err != nil {
+		slog.Error("Failed to connect for QR generation", "session", s.sessionName, "error", err)
+		return fmt.Errorf("failed to connect: %w", err)
+	}
+
+	slog.Info("Connection initiated with new client, waiting for QR event...", "session", s.sessionName)
 	return nil
 }
 
@@ -157,12 +271,17 @@ func (s *Service) GetCurrentQR() string {
 	return s.currentQR
 }
 
-// IsConnected returns the current connection status
+// IsConnected returns true only if connected AND logged in (paired)
+// Returns false if just connected to websocket but waiting for QR scan
 func (s *Service) IsConnected() bool {
 	if s.client == nil || s.client.WAClient == nil {
 		return false
 	}
-	return s.client.WAClient.IsConnected()
+	// Must be connected to websocket AND device must be paired
+	isConnected := s.client.WAClient.IsConnected()
+	isPaired := s.client.WAClient.Store.ID != nil
+
+	return isConnected && isPaired
 }
 
 // handleEvent processes all WhatsApp events
@@ -210,6 +329,7 @@ func (s *Service) handleIncomingMessage(evt *events.Message) {
 // handleQRCode processes QR code events (in-memory only, not saved to database)
 func (s *Service) handleQRCode(evt *events.QR) {
 	if len(evt.Codes) == 0 {
+		slog.Warn("QR event received but no codes available", "session", s.sessionName)
 		return
 	}
 
@@ -219,13 +339,22 @@ func (s *Service) handleQRCode(evt *events.QR) {
 	slog.Info("QR code received - scan with WhatsApp app",
 		"session", s.sessionName,
 		"qr_length", len(qrCode),
+		"qr_preview", qrCode[:min(50, len(qrCode))], // Show first 50 chars
 	)
 
 	// QR codes are NOT saved to database - they are ephemeral
 	// Frontend should call GetCurrentQR() to retrieve the latest QR code
-	slog.Debug("QR code generated and stored in memory (not saved to database)",
+	slog.Info("QR code generated and stored in memory (not saved to database)",
 		"session", s.sessionName,
+		"current_qr_length", len(s.currentQR),
 	)
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // handleConnected processes connection success events
@@ -289,6 +418,24 @@ func (s *Service) handleDisconnected() {
 			"session", s.sessionName,
 			"error", err,
 		)
+	}
+
+	// If device is not paired (no ID), auto-reconnect to generate new QR
+	if s.client != nil && s.client.WAClient != nil && s.client.WAClient.Store.ID == nil {
+		slog.Info("Device not paired after disconnect, reconnecting to generate QR...",
+			"session", s.sessionName,
+		)
+
+		// Wait a bit before reconnecting
+		go func() {
+			time.Sleep(2 * time.Second)
+			if err := s.client.WAClient.Connect(); err != nil {
+				slog.Error("Failed to auto-reconnect for QR generation",
+					"session", s.sessionName,
+					"error", err,
+				)
+			}
+		}()
 	}
 }
 
