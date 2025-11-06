@@ -214,6 +214,10 @@ func PrepareMonthlyReportData(
 			}
 		}
 
+		// Temporal solucion
+		data.TopUsers = []TopUser{}
+		data.CoverageRate = "40.0"
+
 		if costAnalytics.PromptTokens != nil {
 			data.PromptTokens = formatNumber(*costAnalytics.PromptTokens)
 		} else {
@@ -334,6 +338,8 @@ func PrepareMonthlyReportData(
 	}
 
 	// Top Queries
+	data.QueriesNeedingAttention = []QueryData{}
+
 	for i, q := range topQueries {
 		if i >= 10 {
 			break
