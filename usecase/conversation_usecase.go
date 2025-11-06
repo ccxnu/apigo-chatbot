@@ -89,10 +89,17 @@ func (u *conversationUseCase) StoreMessage(c context.Context, conversationID int
 	ctx, cancel := context.WithTimeout(c, u.contextTimeout)
 	defer cancel()
 
+	// Determine sender type based on fromMe flag
+	senderType := "user"
+	if fromMe {
+		senderType = "bot"
+	}
+
 	params := d.CreateConversationMessageParams{
 		ConversationID: conversationID,
 		MessageID:      messageID,
 		FromMe:         fromMe,
+		SenderType:     senderType,
 		MessageType:    "text",
 		Body:           &body,
 		Timestamp:      timestamp,
