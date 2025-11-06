@@ -121,7 +121,7 @@ func (u *reportUseCase) GenerateMonthlyReport(ctx context.Context, year int, mon
 	)
 
 	// Generate PDF report
-	pdfPath, err := u.reportGenerator.GenerateMonthlyReport(ctx, reportData)
+	pdfBytes, err := u.reportGenerator.GenerateMonthlyReport(ctx, reportData)
 	if err != nil {
 		return domain.Result[*domain.GeneratedReport]{
 			Success: false,
@@ -131,12 +131,12 @@ func (u *reportUseCase) GenerateMonthlyReport(ctx context.Context, year int, mon
 	}
 
 	generatedReport := &domain.GeneratedReport{
-		FilePath:      pdfPath,
 		FileName:      fmt.Sprintf("reporte_mensual_%s.pdf", time.Now().Format("2006-01-02")),
 		ReportType:    "monthly",
 		Period:        monthYear,
 		GeneratedAt:   time.Now(),
-		FileSizeBytes: 0, // Could stat the file to get actual size
+		FileSizeBytes: int64(len(pdfBytes)),
+		PDFData:       pdfBytes,
 	}
 
 	return domain.Result[*domain.GeneratedReport]{

@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -126,54 +127,48 @@ type ChunkData struct {
 	AvgSimilarity string `json:"avg_similarity"`
 }
 
-// GenerateMonthlyReport generates a PDF monthly report
-func (rg *ReportGenerator) GenerateMonthlyReport(ctx context.Context, data MonthlyReportData) (string, error) {
-	// Create output directory if it doesn't exist
-	if err := os.MkdirAll(rg.outputDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create output directory: %w", err)
-	}
-
-	// Generate unique filename
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	pdfFilename := fmt.Sprintf("reporte_mensual_%s.pdf", timestamp)
-	jsonFilename := fmt.Sprintf("reporte_mensual_%s.json", timestamp)
-
-	pdfPath := filepath.Join(rg.outputDir, pdfFilename)
-	jsonPath := filepath.Join(rg.outputDir, jsonFilename)
-
+// GenerateMonthlyReport generates a PDF monthly report and returns the PDF bytes
+func (rg *ReportGenerator) GenerateMonthlyReport(ctx context.Context, data MonthlyReportData) ([]byte, error) {
 	// Template path
 	templatePath := filepath.Join(rg.templateDir, "monthly_report.typ")
 
 	// Check if template exists
 	if _, err := os.Stat(templatePath); err != nil {
-		return "", fmt.Errorf("failed to find template: %w", err)
+		return nil, fmt.Errorf("failed to find template: %w", err)
 	}
 
-	// Write data to JSON file
-	jsonData, err := json.MarshalIndent(data, "", "  ")
+	// Convert data to JSON string
+	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal data to JSON: %w", err)
+		return nil, fmt.Errorf("failed to marshal data to JSON: %w", err)
 	}
 
-	if err := os.WriteFile(jsonPath, jsonData, 0644); err != nil {
-		return "", fmt.Errorf("failed to write JSON file: %w", err)
-	}
+	// Don't escape - exec.Command handles arguments properly
+	// No need for shell escaping when using exec.Command
+	jsonString := string(jsonData)
 
-	// Execute typst compile with JSON data file as input
+	// Execute typst compile with output to stdout (-)
+	// typst compile template.typ - --input data="json_string"
 	cmd := exec.CommandContext(ctx, "typst", "compile",
-		"--input", fmt.Sprintf("data-file=%s", jsonFilename),
-		templatePath, pdfPath)
-	cmd.Dir = rg.outputDir
+		templatePath, "-",
+		"--input", fmt.Sprintf("data=%s", jsonString))
 
-	output, err := cmd.CombinedOutput()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err = cmd.Run()
 	if err != nil {
-		return "", fmt.Errorf("failed to compile typst to PDF: %w, output: %s", err, string(output))
+		return nil, fmt.Errorf("failed to compile typst to PDF: %w, stderr: %s", err, stderr.String())
 	}
 
-	// Clean up JSON file after successful compilation (optional)
-	// os.Remove(jsonPath)
+	// Log warning if there's stderr output
+	if stderr.Len() > 0 {
+		fmt.Printf("Typst warning: %s\n", stderr.String())
+	}
 
-	return pdfPath, nil
+	return stdout.Bytes(), nil
 }
 
 // PrepareMonthlyReportData prepares report data from analytics

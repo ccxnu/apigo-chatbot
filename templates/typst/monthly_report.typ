@@ -1,8 +1,8 @@
 // Monthly Analytics Report Template
-// Data loaded from JSON file passed via --input data-file parameter
+// Data loaded from JSON string passed via --input data parameter
 
-// Load data from JSON file
-#let data = json(sys.inputs.at("data-file"))
+// Load data from JSON string input (convert string to bytes first)
+#let data = json(bytes(sys.inputs.data))
 
 #set document(
   title: "Reporte Mensual - " + data.month_year,
@@ -23,7 +23,7 @@
   footer: align(center)[
     #line(length: 100%, stroke: 0.5pt + gray)
     #text(size: 9pt, fill: gray)[
-      Instituto Superior Tecnológico Sudamericano · #counter(page).display("1 / 1")
+      Instituto Superior Tecnológico Sudamericano · #context counter(page).display("1 / 1")
     ]
   ]
 )
@@ -96,12 +96,12 @@ Este reporte presenta las métricas clave del sistema de chatbot del Instituto S
     #text(size: 10pt, fill: gray)[*Costo Total*]
     #v(0.3em)
     #text(size: 20pt, weight: "bold", fill: blue.darken(30%))[
-      $#data.cost_this_month
+      \$#data.cost_this_month
     ]
     #v(0.2em)
     #text(size: 9pt, fill: gray)[
-      #if get("cost_change") != "" and get("cost_change") != "0" [
-        #if float(get("cost_change")) > 0 [
+      #if data.cost_change != 0 [
+        #if data.cost_change > 0 [
           ↑ #str(data.cost_change)% vs mes anterior
         ] else [
           ↓ #str(data.cost_change)% vs mes anterior
@@ -167,7 +167,7 @@ Este reporte presenta las métricas clave del sistema de chatbot del Instituto S
     ]
     #v(0.2em)
     #text(size: 9pt, fill: gray)[
-      $#data.cost_per_conversation por conversación
+      \$#data.cost_per_conversation por conversación
     ]
   ],
 )
@@ -182,7 +182,7 @@ Este reporte presenta las métricas clave del sistema de chatbot del Instituto S
 
 == Desglose de Costos
 
-El costo total del mes fue de *$#data.cost_this_month*, distribuido de la siguiente manera:
+El costo total del mes fue de *\$#data.cost_this_month*, distribuido de la siguiente manera:
 
 #table(
   columns: (2fr, 1fr, 1fr),
@@ -193,10 +193,10 @@ El costo total del mes fue de *$#data.cost_this_month*, distribuido de la siguie
     [*Concepto*], [*Costo*], [*Porcentaje*]
   ),
 
-  [Costo LLM (Generación)], [$#data.llm_cost], [#data.llm_cost_percent%],
-  [Costo Embeddings], [$#data.embedding_cost], [#data.embedding_cost_percent%],
+  [Costo LLM (Generación)], [\$#data.llm_cost], [#data.llm_cost_percent%],
+  [Costo Embeddings], [\$#data.embedding_cost], [#data.embedding_cost_percent%],
   table.cell(fill: gray.lighten(80%), [*Total*]),
-  table.cell(fill: gray.lighten(80%), [*$#data.cost_this_month*]),
+  table.cell(fill: gray.lighten(80%), [*\$#data.cost_this_month*]),
   table.cell(fill: gray.lighten(80%), [*100%*]),
 )
 
@@ -211,9 +211,9 @@ El costo total del mes fue de *$#data.cost_this_month*, distribuido de la siguie
     [*Tipo*], [*Cantidad*], [*Costo Unitario*]
   ),
 
-  [Tokens de Entrada (Prompt)], [#data.prompt_tokens], [$0.50/M],
-  [Tokens de Salida (Completion)], [#data.completion_tokens], [$1.50/M],
-  [Tokens de Embeddings], [#data.embedding_tokens], [$0.13/M],
+  [Tokens de Entrada (Prompt)], [#data.prompt_tokens], [\$0.50/M],
+  [Tokens de Salida (Completion)], [#data.completion_tokens], [\$1.50/M],
+  [Tokens de Embeddings], [#data.embedding_tokens], [\$0.13/M],
   table.cell(fill: gray.lighten(80%), [*Total Tokens*]),
   table.cell(fill: gray.lighten(80%), [*#data.total_tokens*]),
   table.cell(fill: gray.lighten(80%), []),
@@ -221,14 +221,14 @@ El costo total del mes fue de *$#data.cost_this_month*, distribuido de la siguie
 
 == Métricas de Eficiencia
 
-- *Costo por Conversación:* $#data.cost_per_conversation
+- *Costo por Conversación:* \$#data.cost_per_conversation
 - *Tokens Promedio por Conversación:* #data.avg_tokens_per_conversation
-- *Costo por Usuario Activo:* $#data.cost_per_active_user
+- *Costo por Usuario Activo:* \$#data.cost_per_active_user
 
-#if get("cost_projection") != "" [
+#if data.cost_projection != "" [
 == Proyección de Fin de Mes
 
-Basado en el uso actual, el costo estimado para fin de mes es de *$#data.cost_projection*.
+Basado en el uso actual, el costo estimado para fin de mes es de *\$#data.cost_projection*.
 ]
 
 #pagebreak()
@@ -286,7 +286,7 @@ Basado en el uso actual, el costo estimado para fin de mes es de *$#data.cost_pr
   inset: 8pt,
   stroke: 0.5pt + gray,
   table.header(
-    [*#*], [*Usuario*], [*Mensajes*]
+    [*\#*], [*Usuario*], [*Mensajes*]
   ),
   ..for (index, user) in data.top_users.enumerate() {
     ([#(index + 1)], [#user.name], [#str(user.message_count)])
@@ -328,7 +328,7 @@ Basado en el uso actual, el costo estimado para fin de mes es de *$#data.cost_pr
 
   De #str(data.conversations_this_month) conversaciones este mes, #str(data.conversations_with_admin_help) requirieron asistencia del administrador.
 
-  #let intervention = float(get("admin_intervention_rate", default: "0"))
+  #let intervention = float(data.admin_intervention_rate)
   #if intervention > 15.0 [
     ⚠ *Alerta:* La tasa de intervención es alta. Considere revisar y mejorar el contenido de la base de conocimientos.
   ]
@@ -371,10 +371,10 @@ Basado en el uso actual, el costo estimado para fin de mes es de *$#data.cost_pr
 
 == Distribución Horaria
 
-#if get("peak_hour") != "" [
+#if data.peak_hour != 0 [
 *Hora Pico:* #str(data.peak_hour):00 hrs (#str(data.peak_hour_count) mensajes)
 
-#let peak = int(get("peak_hour", default: "0"))
+#let peak = data.peak_hour
 Los usuarios son más activos entre las #str(data.peak_hour):00 y las #(peak + 2):00 horas.
 ]
 
@@ -396,7 +396,7 @@ Las siguientes son las preguntas más realizadas por los usuarios durante este m
   inset: 8pt,
   stroke: 0.5pt + gray,
   table.header(
-    [*#*], [*Consulta*], [*Veces*], [*Calidad*]
+    [*\#*], [*Consulta*], [*Veces*], [*Calidad*]
   ),
   ..for (index, query) in data.top_queries.enumerate() {
     let quality = if query.has_good_answer { "✓" } else { "⚠" }
@@ -442,7 +442,7 @@ Las siguientes consultas tienen baja calidad de respuesta y deberían agregarse 
   inset: 8pt,
   stroke: 0.5pt + gray,
   table.header(
-    [*#*], [*Documento*], [*Usos*], [*Similaridad*]
+    [*\#*], [*Documento*], [*Usos*], [*Similaridad*]
   ),
   ..for (index, chunk) in data.top_chunks.enumerate() {
     ([#(index + 1)], [#chunk.document_title], [#str(chunk.usage_count)], [#chunk.avg_similarity])
@@ -465,7 +465,7 @@ Las siguientes consultas tienen baja calidad de respuesta y deberían agregarse 
   [*Tasa de Cobertura*], [#data.coverage_rate%],
 )
 
-#let coverage = float(get("coverage_rate", default: "0"))
+#let coverage = float(data.coverage_rate)
 #if coverage < 50.0 [
 #box(
   fill: yellow.lighten(80%),
@@ -515,7 +515,7 @@ Las siguientes consultas tienen baja calidad de respuesta y deberían agregarse 
   [*Disponibilidad*], [#data.uptime%],
 )
 
-#let errors = int(get("errors_last_24h", default: "0"))
+#let errors = data.errors_last_24h
 #if errors > 10 [
 #box(
   fill: red.lighten(80%),
@@ -539,15 +539,15 @@ Basado en los datos recopilados este mes, se sugieren las siguientes acciones:
 
 == Optimización de Costos
 
-#let cost_conv = float(get("cost_per_conversation", default: "0"))
+#let cost_conv = float(data.cost_per_conversation)
 #if cost_conv > 0.05 [
-- El costo por conversación ($#data.cost_per_conversation) es alto. Considere:
+- El costo por conversación (\$#data.cost_per_conversation) es alto. Considere:
   - Reducir el tamaño del contexto del prompt
   - Limitar el número de chunks recuperados
   - Ajustar los parámetros del modelo (temperatura, max_tokens)
 ]
 
-#let avg_tokens = float(get("avg_tokens_per_conversation", default: "0"))
+#let avg_tokens = float(data.avg_tokens_per_conversation)
 #if avg_tokens > 5000 [
 - El promedio de tokens por conversación (#data.avg_tokens_per_conversation) es elevado
 - Revise si el sistema está enviando información innecesaria al LLM
@@ -555,7 +555,7 @@ Basado en los datos recopilados este mes, se sugieren las siguientes acciones:
 
 == Mejora de Contenidos
 
-#let intervention = float(get("admin_intervention_rate", default: "0"))
+#let intervention = float(data.admin_intervention_rate)
 #if intervention > 15.0 [
 - La tasa de intervención del administrador (#data.admin_intervention_rate%) indica que el bot no puede responder muchas consultas
 - Priorice agregar contenido para las consultas más frecuentes sin buena respuesta
@@ -571,13 +571,13 @@ Basado en los datos recopilados este mes, se sugieren las siguientes acciones:
 
 == Base de Conocimientos
 
-#let coverage_rec = float(get("coverage_rate", default: "0"))
+#let coverage_rec = float(data.coverage_rate)
 #if coverage_rec < 40.0 [
 - La cobertura de la base de conocimientos es baja (#data.coverage_rate%)
 - Elimine fragmentos no utilizados y agregue contenido relevante
 ]
 
-#let chunks_unused = int(get("chunks_never_used", default: "0"))
+#let chunks_unused = data.chunks_never_used
 #if chunks_unused > 0 [
 - Hay #str(data.chunks_never_used) fragmentos que nunca han sido utilizados
 - Revise y actualice o elimine este contenido
@@ -585,7 +585,7 @@ Basado en los datos recopilados este mes, se sugieren las siguientes acciones:
 
 == Experiencia de Usuario
 
-#let avg_msgs = float(get("avg_messages_per_conversation", default: "0"))
+#let avg_msgs = float(data.avg_messages_per_conversation)
 #if avg_msgs > 10.0 [
 - El promedio de #data.avg_messages_per_conversation mensajes por conversación es alto
 - Considere mejorar las respuestas para que sean más completas y directas
@@ -601,21 +601,21 @@ Basado en los datos recopilados este mes, se sugieren las siguientes acciones:
 
 == Resumen del Período
 
-Durante #data.month_year, el chatbot del Instituto Superior Tecnológico Sudamericano atendió a *#str(data.active_users_this_month) usuarios activos* a través de *#str(data.conversations_this_month) conversaciones*, con un costo total de *$#data.cost_this_month*.
+Durante #data.month_year, el chatbot del Instituto Superior Tecnológico Sudamericano atendió a *#str(data.active_users_this_month) usuarios activos* a través de *#str(data.conversations_this_month) conversaciones*, con un costo total de *\$#data.cost_this_month*.
 
 == Indicadores Clave
 
-#let satisfaction = 100.0 - float(get("admin_intervention_rate", default: "0"))
+#let satisfaction = 100.0 - float(data.admin_intervention_rate)
 - ✓ *Usuarios satisfechos:* #calc.round(satisfaction, digits: 1)% de conversaciones resueltas sin intervención
 - ✓ *Disponibilidad:* #data.uptime%
-- ✓ *Eficiencia:* $#data.cost_per_conversation por conversación
+- ✓ *Eficiencia:* \$#data.cost_per_conversation por conversación
 
-#let intervention_conc = float(get("admin_intervention_rate", default: "0"))
+#let intervention_conc = float(data.admin_intervention_rate)
 #if intervention_conc > 20.0 [
 - ⚠ *Área de mejora:* Tasa de intervención del administrador alta
 ]
 
-#let coverage_conc = float(get("coverage_rate", default: "0"))
+#let coverage_conc = float(data.coverage_rate)
 #if coverage_conc < 50.0 [
 - ⚠ *Área de mejora:* Cobertura de la base de conocimientos baja
 ]

@@ -208,12 +208,13 @@ type AnalyticsUseCase interface {
 // =====================================================
 
 type GeneratedReport struct {
-	FilePath      string    `json:"filePath"`
+	FilePath      string    `json:"filePath,omitempty"` // Optional, for file-based storage
 	FileName      string    `json:"fileName"`
 	ReportType    string    `json:"reportType"` // "monthly", "quarterly", "custom"
 	Period        string    `json:"period"`
 	GeneratedAt   time.Time `json:"generatedAt"`
 	FileSizeBytes int64     `json:"fileSizeBytes"`
+	PDFData       []byte    `json:"-"` // PDF bytes, not included in JSON
 }
 
 // =====================================================
