@@ -53,17 +53,17 @@ func (h *CommandHandler) Handle(ctx context.Context, msg *domain.IncomingMessage
 	cmd = strings.Fields(cmd)[0]
 
 	switch cmd {
-	case "help", "ayuda":
+	case "ayuda", "help":
 		return h.handleHelp(ctx, msg)
 	case "horarios", "schedule":
 		return h.handleSchedules(ctx, msg)
-	case "commands", "comandos":
+	case "comandos", "commands":
 		return h.handleCommands(ctx, msg)
-	case "start", "inicio":
+	case "inicio", "start":
 		return h.handleStart(ctx, msg)
-	case "register", "registrar", "registro":
+	case "registrar", "registro", "register":
 		return h.handleRegister(ctx, msg)
-	case "reset", "cancelar":
+	case "cancelar", "reset":
 		return h.handleReset(ctx, msg)
 	default:
 		return h.handleUnknownCommand(ctx, msg)
@@ -87,11 +87,14 @@ func (h *CommandHandler) handleSchedules(ctx context.Context, msg *domain.Incomi
 func (h *CommandHandler) handleCommands(ctx context.Context, msg *domain.IncomingMessage) error {
 	message := h.getParam("MESSAGE_COMMANDS", `⚡ *Comandos Disponibles*
 
-/help - Ayuda general del bot
-/horarios - Consulta horarios
-/register - Registrarse en el sistema
-/reset - Cancelar registro en curso
-/comandos - Lista de comandos`)
+/ayuda - Ayuda general del bot
+/inicio - Mensaje de bienvenida
+/horarios - Consulta horarios disponibles
+/registrar - Registrarse en el sistema
+/cancelar - Cancelar registro en curso
+/comandos - Ver esta lista de comandos
+
+💡 _También puedes escribir tus preguntas directamente sin usar comandos._`)
 	return h.sendMessage(msg.ChatID, message)
 }
 
@@ -101,7 +104,7 @@ func (h *CommandHandler) handleStart(ctx context.Context, msg *domain.IncomingMe
 }
 
 func (h *CommandHandler) handleUnknownCommand(ctx context.Context, msg *domain.IncomingMessage) error {
-	message := h.getParam("MESSAGE_UNKNOWN_COMMAND", "❓ Comando no reconocido.")
+	message := h.getParam("MESSAGE_UNKNOWN_COMMAND", "❓ Comando no reconocido.\n\nUsa /comandos para ver los comandos disponibles.")
 	return h.sendMessage(msg.ChatID, message)
 }
 
@@ -114,7 +117,7 @@ func (h *CommandHandler) handleRegister(ctx context.Context, msg *domain.Incomin
 	result := h.userUseCase.GetUserByWhatsApp(ctx, msg.From)
 	if result.Success && result.Data != nil {
 		return h.sendMessage(msg.ChatID,
-			"✅ Ya estás registrado en el sistema.\n\nPuedes usar /help para ver lo que puedo hacer por ti.")
+			"✅ Ya estás registrado en el sistema.\n\nPuedes usar /ayuda para ver lo que puedo hacer por ti.")
 	}
 
 	// Check if user already has a pending registration
@@ -137,7 +140,7 @@ func (h *CommandHandler) handleRegister(ctx context.Context, msg *domain.Incomin
 		}
 
 		return h.sendMessage(msg.ChatID,
-			"ℹ️ "+stepMessage+"\n\nSi quieres cancelar y empezar de nuevo, usa /reset")
+			"ℹ️ "+stepMessage+"\n\nSi quieres cancelar y empezar de nuevo, usa /cancelar")
 	}
 
 	// Create a pending registration with STEP_REQUEST_CEDULA
@@ -163,7 +166,7 @@ func (h *CommandHandler) handleReset(ctx context.Context, msg *domain.IncomingMe
 	pendingResult := h.regUseCase.GetPendingRegistration(ctx, msg.From)
 	if !pendingResult.Success || pendingResult.Data == nil {
 		return h.sendMessage(msg.ChatID,
-			"ℹ️ No tienes un registro en curso.\n\nUsa /register para iniciar el registro.")
+			"ℹ️ No tienes un registro en curso.\n\nUsa /registrar para iniciar el registro.")
 	}
 
 	// Cancel the pending registration
@@ -177,9 +180,9 @@ func (h *CommandHandler) handleReset(ctx context.Context, msg *domain.IncomingMe
 		`✅ Tu registro ha sido cancelado.
 
 Ahora puedes:
-• Usar /register para iniciar un nuevo registro
+• Usar /registrar para iniciar un nuevo registro
 • Chatear conmigo si eres usuario externo (límite de 10 mensajes por día)
-• Usar /help para ver la ayuda`)
+• Usar /ayuda para ver la ayuda`)
 }
 
 func (h *CommandHandler) getParam(code, defaultValue string) string {
