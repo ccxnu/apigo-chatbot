@@ -101,11 +101,12 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	if totalUserMessageCount == 0 {
 		var welcomeMsg string
 		if isRegistered {
-			welcomeMsg = h.getParam("MESSAGE_WELCOME_REGISTERED",
-				"👋 ¡Hola "+userName+"! Bienvenido.\n\n¿En qué puedo ayudarte hoy?")
+			welcomeMsgTemplate := h.getParam("MESSAGE_WELCOME_REGISTERED",
+				"👋 ¡Hola %s! Bienvenido.\n\nSoy *Alfibot* y estoy aquí para ayudarte.\n\n¿En qué puedo ayudarte hoy?")
+			welcomeMsg = fmt.Sprintf(welcomeMsgTemplate, userName)
 		} else {
 			welcomeMsg = h.getParam("MESSAGE_START",
-				"👋 ¡Hola! Soy el asistente virtual del Instituto.\n\nEstoy aquí para ayudarte con información sobre:\n   • Programas académicos\n   • Admisiones y matrículas\n   • Horarios y calendarios\n   • Y mucho más...\n\nEscribe /ayuda para ver todo lo que puedo hacer, o simplemente hazme una pregunta.\n\n¿En qué puedo ayudarte?")
+				"👋 ¡Hola! Soy *Alfibot*, el asistente virtual del Instituto.\n\nEstoy aquí para ayudarte con información sobre:\n   • Programas académicos\n   • Admisiones y matrículas\n   • Horarios y calendarios\n   • Y mucho más...\n\nEscribe /ayuda para ver todo lo que puedo hacer, o simplemente hazme una pregunta.\n\n¿En qué puedo ayudarte?")
 		}
 		h.sendMessage(msg.ChatID, welcomeMsg)
 	}
