@@ -39,7 +39,7 @@ type AdminConversationMessage struct {
 	ID             int        `json:"id" db:"cvm_id"`
 	MessageID      string     `json:"messageId" db:"cvm_message_id"`
 	FromMe         bool       `json:"fromMe" db:"cvm_from_me"`
-	SenderName     string     `json:"senderName" db:"cvm_sender_name"`
+	SenderName     *string    `json:"senderName,omitempty" db:"cvm_sender_name"`
 	SenderType     string     `json:"senderType" db:"cvm_sender_type"` // user, admin, bot
 	MessageType    string     `json:"messageType" db:"cvm_message_type"`
 	Body           *string    `json:"body,omitempty" db:"cvm_body"`
