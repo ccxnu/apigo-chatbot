@@ -139,6 +139,7 @@ func (u *reportUseCase) GenerateMonthlyReport(ctx context.Context, year int, mon
 		PDFData:       pdfBytes,
 	}
 
+	// return domain.Success(generatedReport)
 	return domain.Result[*domain.GeneratedReport]{
 		Success: true,
 		Info:    "Reporte generado exitosamente",

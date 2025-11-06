@@ -149,9 +149,7 @@ func (rg *ReportGenerator) GenerateMonthlyReport(ctx context.Context, data Month
 
 	// Execute typst compile with output to stdout (-)
 	// typst compile template.typ - --input data="json_string"
-	cmd := exec.CommandContext(ctx, "typst", "compile",
-		templatePath, "-",
-		"--input", fmt.Sprintf("data=%s", jsonString))
+	cmd := exec.CommandContext(ctx, "typst", "compile", templatePath, "-", "--input", fmt.Sprintf("data=%s", jsonString))
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

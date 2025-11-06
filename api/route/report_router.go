@@ -2,7 +2,7 @@ package route
 
 import (
 	"context"
-	"encoding/base64"
+	"fmt"
 	"os"
 
 	"api-chatbot/api/request"
@@ -18,50 +18,32 @@ func RegisterReportRoutes(humaAPI huma.API, reportUseCase domain.ReportUseCase) 
 	// =====================================================
 
 	type GenerateMonthlyReportResponse struct {
-		Body struct {
-			Success  bool   `json:"success"`
-			Info     string `json:"info"`
-			Code     string `json:"code"`
-			FileName string `json:"fileName,omitempty"`
-			FileSize int64  `json:"fileSize,omitempty"`
-			PDFData  string `json:"pdfData,omitempty"` // Base64 encoded PDF
-		}
+		ContentType string `header:"Content-Type"`
+		ContentDisposition string `header:"Content-Disposition"`
+		Body []byte
 	}
 
 	huma.Register(humaAPI, huma.Operation{
 		OperationID: "generate-monthly-report",
 		Method:      "POST",
 		Path:        "/api/v1/admin/reports/generate-monthly",
-		Summary:     "Generate monthly PDF report",
-		Description: "Generates a comprehensive monthly analytics report in PDF format using Typst. The report includes cost analysis, user activity, conversation metrics, top queries, and system health. Returns the PDF as base64 encoded string.",
+		Summary:     "Generate and download monthly PDF report",
+		Description: "Generates a comprehensive monthly analytics report in PDF format using Typst. The report includes cost analysis, user activity, conversation metrics, top queries, and system health. Returns the PDF file directly for download.",
 		Tags:        []string{"Reports"},
 	}, func(ctx context.Context, input *struct {
 		Body request.GenerateMonthlyReportRequest
 	}) (*GenerateMonthlyReportResponse, error) {
 		result := reportUseCase.GenerateMonthlyReport(ctx, input.Body.Year, input.Body.Month)
 
-		response := GenerateMonthlyReportResponse{
-			Body: struct {
-				Success  bool   `json:"success"`
-				Info     string `json:"info"`
-				Code     string `json:"code"`
-				FileName string `json:"fileName,omitempty"`
-				FileSize int64  `json:"fileSize,omitempty"`
-				PDFData  string `json:"pdfData,omitempty"`
-			}{
-				Success: result.Success,
-				Info:    result.Info,
-				Code:    result.Code,
-			},
+		if !result.Success || result.Data == nil {
+			return nil, huma.Error500InternalServerError(result.Info)
 		}
 
-		if result.Success && result.Data != nil {
-			response.Body.FileName = result.Data.FileName
-			response.Body.FileSize = result.Data.FileSizeBytes
-			response.Body.PDFData = base64.StdEncoding.EncodeToString(result.Data.PDFData)
-		}
-
-		return &response, nil
+		return &GenerateMonthlyReportResponse{
+			ContentType: "application/pdf",
+			ContentDisposition: fmt.Sprintf("attachment; filename=\"%s\"", result.Data.FileName),
+			Body: result.Data.PDFData,
+		}, nil
 	})
 
 	// =====================================================
