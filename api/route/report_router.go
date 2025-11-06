@@ -18,9 +18,9 @@ func RegisterReportRoutes(humaAPI huma.API, reportUseCase domain.ReportUseCase) 
 	// =====================================================
 
 	type GenerateMonthlyReportResponse struct {
-		ContentType string `header:"Content-Type"`
+		ContentType        string `header:"Content-Type"`
 		ContentDisposition string `header:"Content-Disposition"`
-		Body []byte
+		Body               []byte
 	}
 
 	huma.Register(humaAPI, huma.Operation{
@@ -40,9 +40,9 @@ func RegisterReportRoutes(humaAPI huma.API, reportUseCase domain.ReportUseCase) 
 		}
 
 		return &GenerateMonthlyReportResponse{
-			ContentType: "application/pdf",
+			ContentType:        "application/pdf",
 			ContentDisposition: fmt.Sprintf("attachment; filename=\"%s\"", result.Data.FileName),
-			Body: result.Data.PDFData,
+			Body:               result.Data.PDFData,
 		}, nil
 	})
 

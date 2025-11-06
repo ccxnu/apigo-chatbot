@@ -14,9 +14,9 @@ const (
 	fnVerifyOTPCode                    = "fn_verify_otp_code"
 	fnCleanupExpiredPendingRegs        = "fn_cleanup_expired_pending_registrations"
 	// Stored Procedures (Writes)
-	spCreatePendingRegistration    = "sp_create_pending_registration"
-	spUpdateRegistrationStep       = "sp_update_registration_step"
-	spDeletePendingRegistration    = "sp_delete_pending_registration"
+	spCreatePendingRegistration = "sp_create_pending_registration"
+	spUpdateRegistrationStep    = "sp_update_registration_step"
+	spDeletePendingRegistration = "sp_delete_pending_registration"
 )
 
 type registrationRepository struct {

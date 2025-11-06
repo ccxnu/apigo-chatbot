@@ -8,19 +8,19 @@ import (
 // AdminConversationListItem represents a conversation in the admin panel list
 type AdminConversationListItem struct {
 	// Conversation data
-	ID                   int        `json:"id" db:"cnv_id"`
-	ChatID               string     `json:"chatId" db:"cnv_chat_id"`
-	PhoneNumber          string     `json:"phoneNumber" db:"cnv_phone_number"`
-	ContactName          *string    `json:"contactName,omitempty" db:"cnv_contact_name"`
-	IsGroup              bool       `json:"isGroup" db:"cnv_is_group"`
-	GroupName            *string    `json:"groupName,omitempty" db:"cnv_group_name"`
-	LastMessageAt        *time.Time `json:"lastMessageAt,omitempty" db:"cnv_last_message_at"`
-	MessageCount         int        `json:"messageCount" db:"cnv_message_count"`
-	UnreadCount          int        `json:"unreadCount" db:"cnv_unread_count"`
-	Blocked              bool       `json:"blocked" db:"cnv_blocked"`
-	AdminIntervened      bool       `json:"adminIntervened" db:"cnv_admin_intervened"`
-	Temporary            bool       `json:"temporary" db:"cnv_temporary"`
-	ExpiresAt            *time.Time `json:"expiresAt,omitempty" db:"cnv_expires_at"`
+	ID              int        `json:"id" db:"cnv_id"`
+	ChatID          string     `json:"chatId" db:"cnv_chat_id"`
+	PhoneNumber     string     `json:"phoneNumber" db:"cnv_phone_number"`
+	ContactName     *string    `json:"contactName,omitempty" db:"cnv_contact_name"`
+	IsGroup         bool       `json:"isGroup" db:"cnv_is_group"`
+	GroupName       *string    `json:"groupName,omitempty" db:"cnv_group_name"`
+	LastMessageAt   *time.Time `json:"lastMessageAt,omitempty" db:"cnv_last_message_at"`
+	MessageCount    int        `json:"messageCount" db:"cnv_message_count"`
+	UnreadCount     int        `json:"unreadCount" db:"cnv_unread_count"`
+	Blocked         bool       `json:"blocked" db:"cnv_blocked"`
+	AdminIntervened bool       `json:"adminIntervened" db:"cnv_admin_intervened"`
+	Temporary       bool       `json:"temporary" db:"cnv_temporary"`
+	ExpiresAt       *time.Time `json:"expiresAt,omitempty" db:"cnv_expires_at"`
 
 	// User data
 	UserID             *int    `json:"userId,omitempty" db:"usr_id"`
@@ -36,20 +36,20 @@ type AdminConversationListItem struct {
 
 // AdminConversationMessage represents a message in the admin panel
 type AdminConversationMessage struct {
-	ID             int        `json:"id" db:"cvm_id"`
-	MessageID      string     `json:"messageId" db:"cvm_message_id"`
-	FromMe         bool       `json:"fromMe" db:"cvm_from_me"`
-	SenderName     *string    `json:"senderName,omitempty" db:"cvm_sender_name"`
-	SenderType     string     `json:"senderType" db:"cvm_sender_type"` // user, admin, bot
-	MessageType    string     `json:"messageType" db:"cvm_message_type"`
-	Body           *string    `json:"body,omitempty" db:"cvm_body"`
-	MediaURL       *string    `json:"mediaUrl,omitempty" db:"cvm_media_url"`
-	QuotedMessage  *string    `json:"quotedMessage,omitempty" db:"cvm_quoted_message"`
-	Timestamp      int64      `json:"timestamp" db:"cvm_timestamp"`
-	IsForwarded    bool       `json:"isForwarded" db:"cvm_is_forwarded"`
-	Read           bool       `json:"read" db:"cvm_read"`
-	CreatedAt      time.Time  `json:"createdAt" db:"cvm_created_at"`
-	AdminName      *string    `json:"adminName,omitempty" db:"admin_name"`
+	ID            int       `json:"id" db:"cvm_id"`
+	MessageID     string    `json:"messageId" db:"cvm_message_id"`
+	FromMe        bool      `json:"fromMe" db:"cvm_from_me"`
+	SenderName    *string   `json:"senderName,omitempty" db:"cvm_sender_name"`
+	SenderType    string    `json:"senderType" db:"cvm_sender_type"` // user, admin, bot
+	MessageType   string    `json:"messageType" db:"cvm_message_type"`
+	Body          *string   `json:"body,omitempty" db:"cvm_body"`
+	MediaURL      *string   `json:"mediaUrl,omitempty" db:"cvm_media_url"`
+	QuotedMessage *string   `json:"quotedMessage,omitempty" db:"cvm_quoted_message"`
+	Timestamp     int64     `json:"timestamp" db:"cvm_timestamp"`
+	IsForwarded   bool      `json:"isForwarded" db:"cvm_is_forwarded"`
+	Read          bool      `json:"read" db:"cvm_read"`
+	CreatedAt     time.Time `json:"createdAt" db:"cvm_created_at"`
+	AdminName     *string   `json:"adminName,omitempty" db:"admin_name"`
 }
 
 // BlockUserParams parameters for blocking a user
@@ -83,9 +83,9 @@ type SendAdminMessageResult struct {
 
 // SetTemporaryParams parameters for setting conversation as temporary
 type SetTemporaryParams struct {
-	ConversationID    int
-	Temporary         bool
-	HoursUntilExpiry  int
+	ConversationID   int
+	Temporary        bool
+	HoursUntilExpiry int
 }
 
 // SetTemporaryResult result of setting temporary

@@ -9,14 +9,14 @@ import (
 
 // CustomClaims represents JWT claims with custom fields
 type CustomClaims struct {
-	UserID      int                    `json:"userId"`
-	Username    string                 `json:"username"`
-	Email       string                 `json:"email"`
-	Name        string                 `json:"name"`
-	Role        string                 `json:"role"`
-	Permissions []string               `json:"permissions,omitempty"`
-	Claims      d.Data `json:"claims,omitempty"` // Custom extensible claims
-	TokenType   string                 `json:"tokenType"`        // "access" or "refresh"
+	UserID      int      `json:"userId"`
+	Username    string   `json:"username"`
+	Email       string   `json:"email"`
+	Name        string   `json:"name"`
+	Role        string   `json:"role"`
+	Permissions []string `json:"permissions,omitempty"`
+	Claims      d.Data   `json:"claims,omitempty"` // Custom extensible claims
+	TokenType   string   `json:"tokenType"`        // "access" or "refresh"
 	jwt.RegisteredClaims
 }
 

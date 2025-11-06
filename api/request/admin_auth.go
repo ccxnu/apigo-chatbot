@@ -24,11 +24,11 @@ type LogoutRequest struct {
 // CreateAdminRequest represents admin user creation request
 type CreateAdminRequest struct {
 	d.Base
-	Username    string              `json:"username" validate:"required,min=3,max=50" doc:"Admin username"`
-	Email       string              `json:"email" validate:"required,email,max=100" doc:"Admin email address"`
-	Password    string              `json:"password" validate:"required,min=8" doc:"Admin password"`
-	Name        string              `json:"name" validate:"required,min=3,max=100" doc:"Full name"`
-	Role        string              `json:"role" validate:"required,min=2,max=50" doc:"Admin role (e.g., super_admin, admin, moderator)"`
-	Permissions []string            `json:"permissions,omitempty" doc:"Array of permission strings"`
-	Claims      map[string]any      `json:"claims,omitempty" doc:"Custom claims as key-value pairs"`
+	Username    string         `json:"username" validate:"required,min=3,max=50" doc:"Admin username"`
+	Email       string         `json:"email" validate:"required,email,max=100" doc:"Admin email address"`
+	Password    string         `json:"password" validate:"required,min=8" doc:"Admin password"`
+	Name        string         `json:"name" validate:"required,min=3,max=100" doc:"Full name"`
+	Role        string         `json:"role" validate:"required,min=2,max=50" doc:"Admin role (e.g., super_admin, admin, moderator)"`
+	Permissions []string       `json:"permissions,omitempty" doc:"Array of permission strings"`
+	Claims      map[string]any `json:"claims,omitempty" doc:"Custom claims as key-value pairs"`
 }

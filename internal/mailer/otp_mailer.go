@@ -36,22 +36,22 @@ func NewOTPMailer(
 
 // EmailRequest represents the request structure for Tikee email API
 type EmailRequest struct {
-	IDUser          string   `json:"idUser"`
-	IDInstitution   int      `json:"idInstitution"`
-	IDSolution      int      `json:"idSolution"`
-	IDRequest       string   `json:"idRequest"`
-	ProcessDate     string   `json:"processDate"`
-	Process         string   `json:"process"`
-	Tipo            string   `json:"tipo"`
-	Prioridad       string   `json:"prioridad"`
-	Destinos        []string `json:"destinos"`
-	Plantilla       string   `json:"plantilla"`
-	ListaValsEmail  []string `json:"lista_vals_email"`
-	ListaVarsEmail  []string `json:"lista_vars_email"`
-	Asunto          string   `json:"asunto"`
-	NomEnvia        string   `json:"nom_envia"`
-	CorreoEnvia     string   `json:"correo_envia"`
-	Intentos        int      `json:"intentos"`
+	IDUser         string   `json:"idUser"`
+	IDInstitution  int      `json:"idInstitution"`
+	IDSolution     int      `json:"idSolution"`
+	IDRequest      string   `json:"idRequest"`
+	ProcessDate    string   `json:"processDate"`
+	Process        string   `json:"process"`
+	Tipo           string   `json:"tipo"`
+	Prioridad      string   `json:"prioridad"`
+	Destinos       []string `json:"destinos"`
+	Plantilla      string   `json:"plantilla"`
+	ListaValsEmail []string `json:"lista_vals_email"`
+	ListaVarsEmail []string `json:"lista_vars_email"`
+	Asunto         string   `json:"asunto"`
+	NomEnvia       string   `json:"nom_envia"`
+	CorreoEnvia    string   `json:"correo_envia"`
+	Intentos       int      `json:"intentos"`
 }
 
 // SendOTPEmail sends an OTP code to the user's email
@@ -112,7 +112,7 @@ func (m *OTPMailer) SendOTPEmail(ctx context.Context, email, name, otpCode, user
 		Asunto:         subject,
 		NomEnvia:       "automatizaciones@tikee.tech", // AWS SES verified email
 		CorreoEnvia:    "automatizaciones@tikee.tech", // AWS SES verified email - must match NomEnvia
-		Intentos:       0, // Changed from 1 to match TypeScript default
+		Intentos:       0,                             // Changed from 1 to match TypeScript default
 	}
 
 	// Log the request for debugging

@@ -11,15 +11,15 @@ import (
 
 const (
 	// Analytics functions
-	fnGetCostAnalytics      = "fn_get_cost_analytics"
-	fnGetTokenUsage         = "fn_get_token_usage"
-	fnGetActiveUsers        = "fn_get_active_users"
+	fnGetCostAnalytics       = "fn_get_cost_analytics"
+	fnGetTokenUsage          = "fn_get_token_usage"
+	fnGetActiveUsers         = "fn_get_active_users"
 	fnGetConversationMetrics = "fn_get_conversation_metrics"
-	fnGetMessageAnalytics   = "fn_get_message_analytics"
-	fnGetTopQueries         = "fn_get_top_queries"
-	fnGetKnowledgeUsage     = "fn_get_knowledge_usage"
-	fnGetSystemHealth       = "fn_get_system_health"
-	fnGetAnalyticsOverview  = "fn_get_analytics_overview"
+	fnGetMessageAnalytics    = "fn_get_message_analytics"
+	fnGetTopQueries          = "fn_get_top_queries"
+	fnGetKnowledgeUsage      = "fn_get_knowledge_usage"
+	fnGetSystemHealth        = "fn_get_system_health"
+	fnGetAnalyticsOverview   = "fn_get_analytics_overview"
 )
 
 type analyticsRepository struct {

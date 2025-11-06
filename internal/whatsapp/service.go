@@ -15,12 +15,12 @@ import (
 
 // Service manages WhatsApp client lifecycle and event handling
 type Service struct {
-	client         *Client
-	dispatcher     *MessageDispatcher
-	sessionUC      d.WhatsAppSessionUseCase
-	sessionName    string
-	connectTime    int64
-	currentQR      string // In-memory QR code (not persisted to database)
+	client          *Client
+	dispatcher      *MessageDispatcher
+	sessionUC       d.WhatsAppSessionUseCase
+	sessionName     string
+	connectTime     int64
+	currentQR       string      // In-memory QR code (not persisted to database)
 	deviceContainer interface{} // Store container to create new devices
 }
 
@@ -310,7 +310,7 @@ func (s *Service) handleIncomingMessage(evt *events.Message) {
 	msg := convertEventToMessage(evt)
 
 	const timeThreshold = 5000
-	if !evt.Info.IsFromMe && evt.Info.Timestamp.Unix() < (s.connectTime - timeThreshold) {
+	if !evt.Info.IsFromMe && evt.Info.Timestamp.Unix() < (s.connectTime-timeThreshold) {
 		return
 	}
 

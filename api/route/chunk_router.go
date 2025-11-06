@@ -78,7 +78,9 @@ func NewChunkRouter(chunkUseCase d.ChunkUseCase, mux *http.ServeMux, humaAPI hum
 		Summary:     "Vector similarity search",
 		Description: "Performs semantic search using text query (automatically converted to embedding). Returns top K most similar chunks ordered by cosine similarity.",
 		Tags:        []string{"Chunks", "RAG"},
-	}, func(ctx context.Context, input *struct { Body request.SimilaritySearchRequest }) (*SimilaritySearchResponse, error) {
+	}, func(ctx context.Context, input *struct {
+		Body request.SimilaritySearchRequest
+	}) (*SimilaritySearchResponse, error) {
 		result := chunkUseCase.SimilaritySearch(ctx, input.Body.QueryText, input.Body.Limit, input.Body.MinSimilarity)
 		return &SimilaritySearchResponse{Body: result}, nil
 	})

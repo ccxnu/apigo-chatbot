@@ -21,11 +21,11 @@ type ChatMessageInput struct {
 
 // RAGConfig contains RAG-specific configuration
 type RAGConfig struct {
-	Enabled        bool     `json:"enabled"`
-	SearchLimit    int      `json:"search_limit" validate:"omitempty,gt=0,lte=50"`
-	MinSimilarity  float64  `json:"min_similarity" validate:"omitempty,gte=0,lte=1"`
-	KeywordWeight  float64  `json:"keyword_weight" validate:"omitempty,gte=0,lte=1"`
-	EventFilter    []string `json:"event_filter,omitempty"` // Filter by event categories (e.g., ["EVENT_INDTEC"])
+	Enabled       bool     `json:"enabled"`
+	SearchLimit   int      `json:"search_limit" validate:"omitempty,gt=0,lte=50"`
+	MinSimilarity float64  `json:"min_similarity" validate:"omitempty,gte=0,lte=1"`
+	KeywordWeight float64  `json:"keyword_weight" validate:"omitempty,gte=0,lte=1"`
+	EventFilter   []string `json:"event_filter,omitempty"` // Filter by event categories (e.g., ["EVENT_INDTEC"])
 }
 
 // EmbeddingsRequest represents the OpenAI-compatible embeddings request

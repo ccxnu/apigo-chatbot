@@ -265,9 +265,9 @@ func (u *documentUseCase) UploadPDF(c context.Context, params d.UploadPDFDocumen
 			"textLength", len(text),
 		)
 		return d.Success(d.Data{
-			"docId":        docID,
+			"docId":         docID,
 			"chunksCreated": 0,
-			"message":      "Document created but no chunks generated (text might be empty)",
+			"message":       "Document created but no chunks generated (text might be empty)",
 		})
 	}
 

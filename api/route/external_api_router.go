@@ -62,9 +62,9 @@ func NewExternalAPIRouter(
 			ctx,
 			chatID,
 			input.Body.DeviceAddress, // Using device address as phone number
-			nil,                       // No contact name
-			false,                     // Not a group
-			nil,                       // No group name
+			nil,                      // No contact name
+			false,                    // Not a group
+			nil,                      // No group name
 		)
 
 		if !convResult.Success {

@@ -56,10 +56,10 @@ type DeleteDocumentRequest struct {
 
 type UploadPDFDocumentRequest struct {
 	domain.Base
-	Category    string  `json:"category" validate:"required"`
-	Title       string  `json:"title" validate:"required,min=1,max=200"`
-	Source      *string `json:"source" validate:"omitempty,max=500"`
-	FileBase64  string  `json:"fileBase64" validate:"required"`
-	ChunkSize   *int    `json:"chunkSize" validate:"omitempty,gte=100,lte=5000"`
-	ChunkOverlap *int   `json:"chunkOverlap" validate:"omitempty,gte=0,lte=500"`
+	Category     string  `json:"category" validate:"required"`
+	Title        string  `json:"title" validate:"required,min=1,max=200"`
+	Source       *string `json:"source" validate:"omitempty,max=500"`
+	FileBase64   string  `json:"fileBase64" validate:"required"`
+	ChunkSize    *int    `json:"chunkSize" validate:"omitempty,gte=100,lte=5000"`
+	ChunkOverlap *int    `json:"chunkOverlap" validate:"omitempty,gte=0,lte=500"`
 }

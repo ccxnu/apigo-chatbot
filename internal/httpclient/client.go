@@ -74,13 +74,13 @@ func (c *httpClient) Do(ctx context.Context, req domain.HTTPRequest, result any)
 
 	// Debug log disabled - uncomment to debug HTTP requests
 	/*
-	if len(jsonData) > 0 && req.URL != "" {
-		bodyPreview := string(jsonData)
-		if len(bodyPreview) > 1000 {
-			bodyPreview = bodyPreview[:1000] + "..."
+		if len(jsonData) > 0 && req.URL != "" {
+			bodyPreview := string(jsonData)
+			if len(bodyPreview) > 1000 {
+				bodyPreview = bodyPreview[:1000] + "..."
+			}
+			fmt.Printf("\n=== HTTP Request to %s ===\n%s\n===\n\n", req.URL, bodyPreview)
 		}
-		fmt.Printf("\n=== HTTP Request to %s ===\n%s\n===\n\n", req.URL, bodyPreview)
-	}
 	*/
 
 	response, err := c.client.Do(request)

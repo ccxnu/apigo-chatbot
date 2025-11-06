@@ -72,7 +72,7 @@ func SetupLogger(cache domain.ParameterCache) (*slog.Logger, func() error) {
 	// if isDevelopment {
 	config.Output = "stdout"
 	// } else {
-		// config.Output = "file"
+	// config.Output = "file"
 	// }
 
 	// Parse log level

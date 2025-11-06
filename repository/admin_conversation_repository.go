@@ -14,11 +14,11 @@ const (
 	fnGetConversationMessages     = "fn_get_conversation_messages"
 
 	// Procedures
-	spBlockUser                  = "sp_block_user"
-	spDeleteConversation         = "sp_delete_conversation"
-	spSendAdminMessage           = "sp_send_admin_message"
-	spMarkMessagesAsRead         = "sp_mark_messages_as_read"
-	spSetConversationTemporary   = "sp_set_conversation_temporary"
+	spBlockUser                = "sp_block_user"
+	spDeleteConversation       = "sp_delete_conversation"
+	spSendAdminMessage         = "sp_send_admin_message"
+	spMarkMessagesAsRead       = "sp_mark_messages_as_read"
+	spSetConversationTemporary = "sp_set_conversation_temporary"
 )
 
 type adminConversationRepository struct {

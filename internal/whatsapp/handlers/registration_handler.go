@@ -638,4 +638,3 @@ Recibirás un código de verificación en ese correo.`
 
 	return h.client.SendText(chatID, message)
 }
-

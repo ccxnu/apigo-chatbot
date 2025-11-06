@@ -218,27 +218,27 @@ type AdminUseCase interface {
 
 // APIUsage represents a tracked API usage record
 type APIUsage struct {
-	ID             int        `json:"id" db:"usg_id"`
-	APIKeyID       int        `json:"apiKeyId" db:"usg_api_key_id"`
-	Endpoint       string     `json:"endpoint" db:"usg_endpoint"`
-	Method         string     `json:"method" db:"usg_method"`
-	StatusCode     int        `json:"statusCode" db:"usg_status_code"`
-	TokensUsed     int        `json:"tokensUsed" db:"usg_tokens_used"`
-	RequestTimeMs  int        `json:"requestTimeMs" db:"usg_request_time_ms"`
-	IPAddress      *string    `json:"ipAddress,omitempty" db:"usg_ip_address"`
-	UserAgent      *string    `json:"userAgent,omitempty" db:"usg_user_agent"`
-	ErrorMessage   *string    `json:"errorMessage,omitempty" db:"usg_error_message"`
-	CreatedAt      time.Time  `json:"createdAt" db:"usg_created_at"`
+	ID            int       `json:"id" db:"usg_id"`
+	APIKeyID      int       `json:"apiKeyId" db:"usg_api_key_id"`
+	Endpoint      string    `json:"endpoint" db:"usg_endpoint"`
+	Method        string    `json:"method" db:"usg_method"`
+	StatusCode    int       `json:"statusCode" db:"usg_status_code"`
+	TokensUsed    int       `json:"tokensUsed" db:"usg_tokens_used"`
+	RequestTimeMs int       `json:"requestTimeMs" db:"usg_request_time_ms"`
+	IPAddress     *string   `json:"ipAddress,omitempty" db:"usg_ip_address"`
+	UserAgent     *string   `json:"userAgent,omitempty" db:"usg_user_agent"`
+	ErrorMessage  *string   `json:"errorMessage,omitempty" db:"usg_error_message"`
+	CreatedAt     time.Time `json:"createdAt" db:"usg_created_at"`
 }
 
 // APIUsageStats represents aggregated usage statistics
 type APIUsageStats struct {
-	TotalRequests       int64  `json:"totalRequests" db:"total_requests"`
-	TotalTokens         int64  `json:"totalTokens" db:"total_tokens"`
-	AvgResponseTime     float64 `json:"avgResponseTime" db:"avg_response_time"`
-	SuccessRate         float64 `json:"successRate" db:"success_rate"`
-	RequestsByEndpoint  Data   `json:"requestsByEndpoint" db:"requests_by_endpoint"`
-	RequestsByStatus    Data   `json:"requestsByStatus" db:"requests_by_status"`
+	TotalRequests      int64   `json:"totalRequests" db:"total_requests"`
+	TotalTokens        int64   `json:"totalTokens" db:"total_tokens"`
+	AvgResponseTime    float64 `json:"avgResponseTime" db:"avg_response_time"`
+	SuccessRate        float64 `json:"successRate" db:"success_rate"`
+	RequestsByEndpoint Data    `json:"requestsByEndpoint" db:"requests_by_endpoint"`
+	RequestsByStatus   Data    `json:"requestsByStatus" db:"requests_by_status"`
 }
 
 // CreateAPIKeyParams parameters for creating an API key

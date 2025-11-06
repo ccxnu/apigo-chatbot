@@ -592,7 +592,7 @@ func (u *chunkUseCase) UpdateContent(c context.Context, chunkID int, content str
 	params := d.UpdateChunkEmbeddingParams{
 		ChunkID:   chunkID,
 		Embedding: pgvector.NewVector(embedding),
-		Content: content,
+		Content:   content,
 	}
 
 	result, err := u.chunkRepo.UpdateEmbedding(ctx, params)

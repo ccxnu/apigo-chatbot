@@ -23,7 +23,7 @@ func NewTokenService(paramCache any) *TokenService {
 	// Default values
 	accessSecret := "change-me-in-production-access-secret-key"
 	refreshSecret := "change-me-in-production-refresh-secret-key"
-	accessExpiryHours := 1   // 1 hour for access token
+	accessExpiryHours := 1    // 1 hour for access token
 	refreshExpiryHours := 168 // 7 days for refresh token
 
 	// Try to get configuration from parameter cache

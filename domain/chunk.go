@@ -9,12 +9,12 @@ import (
 )
 
 type Chunk struct {
-	ID         int        `json:"id" db:"chk_id"`
-	DocumentID int        `json:"documentId" db:"chk_fk_document"`
-	Content    string     `json:"content" db:"chk_content"`
+	ID         int    `json:"id" db:"chk_id"`
+	DocumentID int    `json:"documentId" db:"chk_fk_document"`
+	Content    string `json:"content" db:"chk_content"`
 	// Embedding  *[]float32 `json:"embedding,omitempty" db:"chk_embedding"`
-	CreatedAt  time.Time  `json:"createdAt" db:"chk_created_at"`
-	UpdatedAt  time.Time  `json:"updatedAt" db:"chk_updated_at"`
+	CreatedAt time.Time `json:"createdAt" db:"chk_created_at"`
+	UpdatedAt time.Time `json:"updatedAt" db:"chk_updated_at"`
 }
 
 // ChunkWithSimilarity extends Chunk for similarity search results

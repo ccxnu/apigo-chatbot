@@ -464,8 +464,8 @@ func (uc *registrationUseCase) InitiateExternalRegistration(
 		UserType:         "external",
 		Details:          d.Data{},
 		RegistrationStep: "STEP_REQUEST_EMAIL_NAME", // External user - needs to provide email and name
-		OTPCode:          "", // No OTP yet
-		OTPExpiresAt:     time.Time{}, // No expiration yet
+		OTPCode:          "",                        // No OTP yet
+		OTPExpiresAt:     time.Time{},               // No expiration yet
 	}
 
 	createResult, err := uc.regRepo.CreatePendingRegistration(ctx, createParams)
@@ -727,12 +727,12 @@ func (uc *registrationUseCase) InitiateRegistrationWithSelection(
 		Name:             "", // Will be provided after type selection
 		Email:            "", // Will be provided after type selection
 		Phone:            "",
-		Role:             "", // Will be set after user selects type
+		Role:             "",                   // Will be set after user selects type
 		UserType:         "selection_required", // Special marker for selection required
 		Details:          d.Data{},
 		RegistrationStep: "STEP_SELECT_USER_TYPE", // User needs to select their type
-		OTPCode:          "", // No OTP yet
-		OTPExpiresAt:     time.Time{}, // No expiration yet
+		OTPCode:          "",                      // No OTP yet
+		OTPExpiresAt:     time.Time{},             // No expiration yet
 	}
 
 	createResult, err := uc.regRepo.CreatePendingRegistration(ctx, createParams)
