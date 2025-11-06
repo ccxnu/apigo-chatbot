@@ -70,64 +70,71 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 		userName = userResult.Data.Name
 	}
 
-	// For unregistered users, check chat limit
-	if !isRegistered {
-		guestLimit := h.getParamInt("GUEST_CHAT_LIMIT", 20)
-
-		// Get conversation to count messages
-		convResult := h.convUseCase.GetOrCreateConversation(ctx, msg.ChatID, msg.SenderName, nil, msg.IsGroup, nil)
-		if convResult.Success && convResult.Data != nil {
-			// Count user messages from today (last 24 hours)
-			historyResult := h.convUseCase.GetConversationHistory(ctx, msg.ChatID, 100)
-			todayStart := time.Now().Add(-24 * time.Hour).Unix()
-			userMessageCount := 0
-
-			if historyResult.Success {
-				for _, histMsg := range historyResult.Data {
-					if !histMsg.FromMe && histMsg.Timestamp >= todayStart {
-						userMessageCount++
-					}
-				}
-			}
-
-			logger.LogInfo(ctx, "Guest user message count check",
-				"whatsapp", msg.From,
-				"messageCount", userMessageCount,
-				"limit", guestLimit,
-			)
-
-			// Check if limit is reached
-			if userMessageCount >= guestLimit {
-				limitMsg := h.getParam("MESSAGE_GUEST_LIMIT_REACHED",
-					"📊 Has alcanzado el límite de mensajes para usuarios no registrados.\n\n✅ Para continuar chateando sin límites, regístrate usando:\n\n/register")
-				return h.sendMessage(msg.ChatID, limitMsg)
-			}
-
-			// Warn when approaching limit (1 message left)
-			if userMessageCount == guestLimit-1 {
-				warningTemplate := h.getParam("MESSAGE_GUEST_LIMIT_WARNING",
-					"⚠️ Te queda %d mensaje disponible hoy.\n\n💡 Regístrate con /register para chat ilimitado.")
-				warningMsg := fmt.Sprintf(warningTemplate, guestLimit-userMessageCount)
-				// Send warning but continue processing
-				h.sendMessage(msg.ChatID, warningMsg)
-			}
-		}
-	}
-
-	convResult := h.convUseCase.GetOrCreateConversation(
-		ctx,
-		msg.ChatID,
-		msg.SenderName,
-		nil,
-		msg.IsGroup,
-		nil,
-	)
+	// Get conversation and message history (needed for both registered and unregistered)
+	convResult := h.convUseCase.GetOrCreateConversation(ctx, msg.ChatID, msg.SenderName, nil, msg.IsGroup, nil)
 	if !convResult.Success {
 		logger.LogError(ctx, "Failed to get/create conversation", nil,
 			"chatID", msg.ChatID,
 			"error", convResult.Code,
 		)
 		return h.sendMessage(msg.ChatID, h.getParam("RAG_ERROR_MESSAGE", "Lo siento, ocurrió un error al procesar tu mensaje."))
+	}
+
+	// Get message history and count user messages
+	historyResult := h.convUseCase.GetConversationHistory(ctx, msg.ChatID, 100)
+	todayStart := time.Now().Add(-24 * time.Hour).Unix()
+	userMessageCount := 0
+	totalUserMessageCount := 0
+
+	if historyResult.Success {
+		for _, histMsg := range historyResult.Data {
+			if !histMsg.FromMe {
+				totalUserMessageCount++
+				if histMsg.Timestamp >= todayStart {
+					userMessageCount++
+				}
+			}
+		}
+	}
+
+	// Send welcome message for first-time users (totalUserMessageCount == 0)
+	if totalUserMessageCount == 0 {
+		var welcomeMsg string
+		if isRegistered {
+			welcomeMsg = h.getParam("MESSAGE_WELCOME_REGISTERED",
+				"👋 ¡Hola "+userName+"! Bienvenido.\n\n¿En qué puedo ayudarte hoy?")
+		} else {
+			welcomeMsg = h.getParam("MESSAGE_START",
+				"👋 ¡Hola! Soy el asistente virtual del Instituto.\n\nEstoy aquí para ayudarte con información sobre:\n   • Programas académicos\n   • Admisiones y matrículas\n   • Horarios y calendarios\n   • Y mucho más...\n\nEscribe /ayuda para ver todo lo que puedo hacer, o simplemente hazme una pregunta.\n\n¿En qué puedo ayudarte?")
+		}
+		h.sendMessage(msg.ChatID, welcomeMsg)
+	}
+
+	// For unregistered users, check chat limit
+	if !isRegistered {
+		guestLimit := h.getParamInt("GUEST_CHAT_LIMIT", 20)
+
+		logger.LogInfo(ctx, "Guest user message count check",
+			"whatsapp", msg.From,
+			"messageCount", userMessageCount,
+			"limit", guestLimit,
+		)
+
+		// Check if limit is reached
+		if userMessageCount >= guestLimit {
+			limitMsg := h.getParam("MESSAGE_GUEST_LIMIT_REACHED",
+				"📊 Has alcanzado el límite de mensajes para usuarios no registrados.\n\n✅ Para continuar chateando sin límites, regístrate usando:\n\n/registrar")
+			return h.sendMessage(msg.ChatID, limitMsg)
+		}
+
+		// Warn when approaching limit (1 message left)
+		if userMessageCount == guestLimit-1 {
+			warningTemplate := h.getParam("MESSAGE_GUEST_LIMIT_WARNING",
+				"⚠️ Te queda %d mensaje disponible hoy.\n\n💡 Regístrate con /registrar para chat ilimitado.")
+			warningMsg := fmt.Sprintf(warningTemplate, guestLimit-userMessageCount)
+			// Send warning but continue processing
+			h.sendMessage(msg.ChatID, warningMsg)
+		}
 	}
 
 	conversation := convResult.Data
@@ -142,7 +149,7 @@ func (h *RAGHandler) Handle(ctx context.Context, msg *domain.IncomingMessage) er
 	h.sendTypingIndicator(msg.ChatID, true)
 
 	historyLimit := h.getParamInt("RAG_CONVERSATION_HISTORY_LIMIT", 10)
-	historyResult := h.convUseCase.GetConversationHistory(ctx, msg.ChatID, historyLimit)
+	historyResult = h.convUseCase.GetConversationHistory(ctx, msg.ChatID, historyLimit)
 	var conversationHistory []llm.Message
 	if historyResult.Success && len(historyResult.Data) > 0 {
 		for i := len(historyResult.Data) - 1; i >= 0; i-- {
