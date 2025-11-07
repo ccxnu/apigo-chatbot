@@ -125,6 +125,22 @@ func NewExternalAPIRouter(
 			}
 		}
 
+		// Query expansion: If event_filter is provided, expand the query with event keywords
+		// This improves semantic similarity for generic queries like "De qué es este evento"
+		expandedQuery := userMessage
+		if input.Body.RAGConfig != nil && len(input.Body.RAGConfig.EventFilter) > 0 {
+			eventCategory := input.Body.RAGConfig.EventFilter[0]
+			// Add event name to query for better semantic matching
+			if eventCategory == "DOC_INDTEC" {
+				expandedQuery = userMessage + " INDTEC congreso tecnología"
+				logger.LogInfo(ctx, "Query expanded for better semantic matching",
+					"operation", "ChatCompletions",
+					"originalQuery", userMessage,
+					"expandedQuery", expandedQuery,
+				)
+			}
+		}
+
 		// Save user message to database
 		if conversationID > 0 && userMessage != "" {
 			userMessageID := fmt.Sprintf("msg-%s-user", completionID)
@@ -175,10 +191,30 @@ func NewExternalAPIRouter(
 				)
 			}
 
-			// Perform hybrid search with category filter
+			// Context Injection: Always inject base context for specific event categories
+			// This ensures the LLM has essential information even for generic queries
+			var contextBuilder strings.Builder
+			if selectedCategory != nil && *selectedCategory != "" {
+				baseContextCode := "BASE_CONTEXT_" + *selectedCategory
+				if param, exists := cache.Get(baseContextCode); exists {
+					dataMap, _ := param.GetDataAsMap()
+					if baseContext, ok := dataMap["context"].(string); ok && baseContext != "" {
+						contextBuilder.WriteString("Essential Event Information:\n")
+						contextBuilder.WriteString(baseContext)
+						contextBuilder.WriteString("\n\n")
+						logger.LogInfo(ctx, "Base context injected for event category",
+							"operation", "ChatCompletions",
+							"category", *selectedCategory,
+							"baseContextCode", baseContextCode,
+						)
+					}
+				}
+			}
+
+			// Perform hybrid search with category filter using expanded query
 			logger.LogInfo(ctx, "Performing RAG search",
 				"operation", "ChatCompletions",
-				"query", userMessage,
+				"query", expandedQuery,
 				"searchLimit", searchLimit,
 				"category", func() string {
 					if selectedCategory != nil {
@@ -190,23 +226,22 @@ func NewExternalAPIRouter(
 
 			var searchResult d.Result[[]d.ChunkWithHybridSimilarity]
 			if selectedCategory != nil {
-				// Use category-filtered search
-				searchResult = chunkUseCase.HybridSearchWithCategory(ctx, userMessage, searchLimit, minSimilarity, keywordWeight, selectedCategory)
+				// Use category-filtered search with expanded query
+				searchResult = chunkUseCase.HybridSearchWithCategory(ctx, expandedQuery, searchLimit, minSimilarity, keywordWeight, selectedCategory)
 			} else {
-				// Use regular search
-				searchResult = chunkUseCase.HybridSearch(ctx, userMessage, searchLimit, minSimilarity, keywordWeight)
+				// Use regular search with expanded query
+				searchResult = chunkUseCase.HybridSearch(ctx, expandedQuery, searchLimit, minSimilarity, keywordWeight)
 			}
 
-			if searchResult.Success {
+			if searchResult.Success && len(searchResult.Data) > 0 {
 				chunks := searchResult.Data
 
-				// Build RAG context
+				// Build RAG context with retrieved chunks
 				ragContext = &d.RAGContextInfo{
 					ChunksRetrieved: len(chunks),
 					Sources:         make([]d.SourceInfo, 0, len(chunks)),
 				}
 
-				var contextBuilder strings.Builder
 				contextBuilder.WriteString("Relevant information from knowledge base:\n\n")
 
 				for i, chunk := range chunks {
@@ -220,9 +255,16 @@ func NewExternalAPIRouter(
 						Similarity:    chunk.CombinedScore,
 					})
 				}
-
-				retrievedContext = contextBuilder.String()
+			} else {
+				// No chunks retrieved, but we may still have base context
+				logger.LogWarn(ctx, "No chunks retrieved from RAG search",
+					"operation", "ChatCompletions",
+					"query", expandedQuery,
+					"hasBaseContext", contextBuilder.Len() > 0,
+				)
 			}
+
+			retrievedContext = contextBuilder.String()
 		}
 
 		// Build LLM request
